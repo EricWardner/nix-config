@@ -4,23 +4,126 @@
 }:
 {
   secondfront.hyprland.monitors = [
-    # Setup your monitors
     {
       name = "eDP-1";
+      resolution = "highres@highrr";
       position = "auto";
+      scale = "1";
+    }
+    {
+      name = "desc:GIGA-BYTE TECHNOLOGY CO. LTD. Gigabyte M32U 22181B002365";
+      resolution = "highres@highrr";
+      position = "-3072x-1000";
+      scale = "1.25";
+    }
+    {
+      name = "desc:ESP eD13(2022) 0x00023552";
+      resolution = "highres@highrr";
+      position = "auto-left";
+      scale = "1";
     }
   ];
+
+  stylix = {
+    targets.k9s.enable = true;
+    targets.vscode.enable = false;
+  };
+
   home.packages = with pkgs; [
     # twofctl
+    go
+    gopls
+    sqlc
+    gotools
+    delve
+    rustup
+    python3
+    poetry
+    nodejs_22
+    typescript
+    pre-commit
+    go-mockery
+    golangci-lint
+    cypress
+    bun
+    air
+    jdk
+    postgresql
+    protobuf
+    apko
+    
+    # Additional DevOps tools
+    pulumi-bin
+    sops
+    age
+    nss
+    cosign
+    curl
+    dive
+    trivy
+    yq  # jq is provided, but not yq
+    ssm-session-manager-plugin
+    grype
+    syft
+    mysql80
+    openssl
+    
+    # System utilities
+    brightnessctl
+    imv
+    lshw
+    unzip
+    tiled
+    atuin
+    nautilus
+    coreutils
+    file
+    pgloader
+    hubble
+    
+    # Smart card tools
+    pcsc-tools
+    
+    # Bluetooth
+    bluez
+    bluez-tools
+    
+    # Additional chat/communication
+    signal-desktop
+    
+    # Additional screenshot tools
+    grimblast  # grim/slurp/swappy already provided
+    flameshot
+    
+    # Image editing
+    gimp
+    inkscape
+    
+    # Additional clipboard (wl-clipboard-rs provided, but you had wl-clipboard)
+    cliphist  # Actually already provided as a service!
+    
+    # YubiKey (yubikey-manager provided)
+    yubioath-flutter
+    
+    # Browsers
+    google-chrome
+    
+    # Other tools
+    spotify
+    crane
+    wireguard-tools
+    ngrok
+    claude-code
   ];
 
   programs = {
-    # Add packages from home Manager that you want
-    # nixcord.enable = true;
-    # nixcord.vesktop.enable = true;
-    # obs-studio.enable = true;
-    # foot.enable = true;
+    k9s.settings.ui.skin = "skin";
+    vscode = {
+      enable = true;
+      package = pkgs.vscode.fhsWithPackages (ps: with ps; [ nodejs rustup zlib openssl.dev pkg-config ]);
+    };
   };
+
   wayland.windowManager.hyprland = {
     settings = {
       exec-once = [

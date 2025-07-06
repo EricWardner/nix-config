@@ -1,5 +1,5 @@
 {
-  description = "USERS personal flake";
+  description = "Eric's personal flake";
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
@@ -15,7 +15,7 @@
     hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
     stylix.url = "github:danth/stylix";
     # SecondFront Modules and Projects
-    secondfront.url = "github:tonybutt/modules";
+    secondfront.url = "github:ericwardner/modules/feat/flexible-monitor-resolution";
     # twofctl = {
     #   type = "gitlab";
     #   host = "code.il2.gamewarden.io";
@@ -49,10 +49,10 @@
         # overlays = [ twofctl.overlays.default ];
       };
       user = {
-        name = "USERNAME";
-        fullName = "USER FULL NAME";
-        email = "USER EMAIL";
-        signingkey = "USER SIGNING KEY";
+        name = "eric";
+        fullName = "Eric Wardner";
+        email = "eric.wardner@secondfront.com";
+        signingkey = "CD50EBA2A34C316D93C8D72DBC4B0DB6C91C99BC";
       };
     in
     {
