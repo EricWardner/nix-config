@@ -18,7 +18,7 @@
         ];
         modules-right = [
           "mpd"
-          "idle_inhibitor"
+          # "idle_inhibitor"
           "temperature"
           "cpu"
           "memory"
