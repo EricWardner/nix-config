@@ -47,8 +47,8 @@
       };
 
       sizes = lib.mkForce {
-        desktop = 11;
-        popups = 10;
+        desktop = 13;
+        popups = 11;
       };
     };
 
