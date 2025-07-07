@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   ...
 }:
 {
@@ -25,8 +26,13 @@
   ];
 
   stylix = {
-    targets.k9s.enable = true;
     targets.vscode.enable = false;
+
+    fonts.monospace = lib.mkForce {
+      package = pkgs.cascadia-code;
+      name = "Cascadia Code NF";
+    };
+
   };
 
   home.packages = with pkgs; [
@@ -117,7 +123,7 @@
   ];
 
   programs = {
-    k9s.settings.ui.skin = "skin";
+    # k9s.settings.ui.skin = "skin";
     vscode = {
       enable = true;
       package = pkgs.vscode.fhsWithPackages (ps: with ps; [ nodejs rustup zlib openssl.dev pkg-config ]);
