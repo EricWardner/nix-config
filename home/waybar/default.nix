@@ -106,11 +106,13 @@
         };
 
         cpu = {
-          format = "  {usage}%";
+          format = "";
+          format-alt = "  {usage}%";
         };
 
         memory = {
-          format = " {}%";
+          format = "";
+          format-alt = " {}%";
         };
 
         temperature = {
@@ -118,13 +120,16 @@
           hwmon-path = "/sys/class/hwmon/hwmon2/temp1_input";
           critical-threshold = 80;
           format-critical = "{icon} {temperatureC}°C";
-          format = "{icon} {temperatureC}°C";
+          format = "{icon}";
+          format-alt = "{icon} {temperatureC}°C";
           format-icons = [ "" "" "" ];
         };
 
         backlight = {
-          format = "{icon} {percent}%";
-          format-icons = [ "" "" "" "" "" "" "" "" "" ];
+          format = "{icon}";
+          format-alt = "{icon} {percent}%";
+          # format-icons = [ "" "" "" "" "" "" "" "" "" ];
+          format-icons = [ "󰃚" "󰃛" "󰃜" "󰃝" "󰃞" "󰃟" "󰃠" ];
           tooltip-format = "Backlight: {percent}%";
         };
 
@@ -145,27 +150,30 @@
         };
 
         network = {
-          format-wifi = "{essid} ({signalStrength}%) ";
-          format-ethernet = "󰈁 {ifname}";
-          tooltip-format = " {ifname} via {gwaddr}";
-          format-linked = " {ifname} (No IP)";
-          format-disconnected = "Disconnected ⚠ {ifname}";
-          format-alt = " {ifname}: {ipaddr}/{cidr}";
+          format-wifi = "";
+          tooltip-format-wifi = "{essid} ({signalStrength}%)";
+          format-ethernet = "󰈁";
+          tooltip-format-ethernet = "󰈁 {ifname}";
+          format-linked = "󱚵";
+          tooltip-format-linked = "{ifname} (No IP)";
+          format-disconnected = "󰤫";
+          tooltip-format-disconnected = "Disconnected ⚠ {ifname}";
+          format-alt = "{ifname}: {ipaddr}/{cidr}";
         };
 
         pulseaudio = {
           scroll-step = 5;
-          format = "{icon}  {volume}% {format_source}";
+          format = "{icon}";
+          format-alt = "{icon}  {volume}% {format_source}";
           format-bluetooth = " {icon} {volume}% {format_source}";
-          format-bluetooth-muted = "   {icon} {format_source}";
-          format-muted = "  {format_source}";
+          format-bluetooth-muted = "󰝟   {icon} {format_source}";
+          format-muted = "󰝟  {format_source}";
           format-source = " {volume}%";
           format-source-muted = "";
           format-icons = {
             default = [ "" "" "" ];
           };
-          on-click = "pavucontrol";
-          on-click-right = "foot -a pw-top pw-top";
+          on-click-right = "pavucontrol";
         };
       };
     };
