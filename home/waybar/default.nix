@@ -46,18 +46,6 @@
           tooltip = false;
         };
 
-        "sway/mode" = {
-          format = "<span style=\"italic\">{}</span>";
-        };
-
-        "sway/scratchpad" = {
-          format = "{icon} {count}";
-          show-empty = false;
-          format-icons = [ "" "" ];
-          tooltip = true;
-          tooltip-format = "{app}: {title}";
-        };
-
         mpd = {
           format = "  {title} - {artist} {stateIcon} [{elapsedTime:%M:%S}/{totalTime:%M:%S}] {consumeIcon}{randomIcon}{repeatIcon}{singleIcon}[{songPosition}/{queueLength}] [{volume}%]";
           format-disconnected = " Disconnected";
