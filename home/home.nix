@@ -30,23 +30,35 @@
     targets.vscode.enable = false;
     targets.waybar.enable = false;
 
-    fonts.monospace = lib.mkForce {
-      package = pkgs.cascadia-code;
-      name = "Cascadia Code NF";
+    fonts = {
+      monospace = lib.mkForce {
+        package = pkgs.cascadia-code;
+        name = "Cascadia Code NF";
+      };
+
+      serif = lib.mkForce {
+        package = inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd;
+        name = "SFProDisplay Nerd Font";
+      };
+
+      sansSerif = lib.mkForce {
+        package = inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd;
+        name = "SFProDisplay Nerd Font";
+      };
+
+      sizes = lib.mkForce {
+        desktop = 11;
+        popups = 10;
+      };
     };
 
-    fonts.serif = lib.mkForce {
-      package = inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd;
-      name = "SFProDisplay Nerd Font";
-    };
 
-    fonts.sizes = lib.mkForce {
-      desktop = 11;
-      popups = 10;
-    };
   };
 
   home.packages = with pkgs; [
+    inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd
+    inputs.apple-fonts.packages.${pkgs.system}.sf-mono-nerd
+
     # twofctl
     go
     gopls

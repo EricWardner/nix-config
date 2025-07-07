@@ -1,6 +1,6 @@
 * {
-  font-family: "SFProDisplay Nerd Font", sans-serif;
-  font-size: 16px;
+  font-family: "SFProDisplay Nerd Font";
+  font-size: 13px;
   min-height: 0;
   border-radius: 1rem;
   padding: 0.1rem;
@@ -72,7 +72,7 @@ tooltip label {
 }
 
 #clock {
-  font-size: 14px;
+  font-size: 11px;
 }
 
 #battery icon {
