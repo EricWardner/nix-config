@@ -37,8 +37,8 @@ tooltip label {
 #workspaces button.focused,
 #workspaces button.visible,
 #workspaces button.active {
-  background: rgba(255, 255, 255, 0.3);
-  color: #000000;
+  background: rgba(255, 255, 255, 0.2);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.6);
 }
 
 #mode,
