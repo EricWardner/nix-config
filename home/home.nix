@@ -101,7 +101,6 @@
     openssl
     
     # System utilities
-    brightnessctl
     imv
     lshw
     unzip
@@ -123,17 +122,10 @@
     # Additional chat/communication
     signal-desktop
     
-    # Additional screenshot tools
-    grimblast  # grim/slurp/swappy already provided
-    flameshot
-    
     # Image editing
     gimp
     inkscape
-    
-    # Additional clipboard (wl-clipboard-rs provided, but you had wl-clipboard)
-    cliphist  # Actually already provided as a service!
-    
+        
     # YubiKey (yubikey-manager provided)
     yubioath-flutter
     
@@ -175,14 +167,14 @@
         "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service"
       ];
       bind = [
-        "$mainMod, V, exec, cliphist list | fuzzel --dmenu | cliphist decode | wl-copy"
+        "$mainMod, V, exec, ${pkgs.cliphist}/bin/cliphist list | ${pkgs.fuzzel}/bin/fuzzel --dmenu | ${pkgs.cliphist}/bin/cliphist decode | ${pkgs.wl-clipboard}/bin/wl-copy"
         "$mainMod, G, togglegroup"
-        "$mainMod, Return, exec, kitty"
+        "$mainMod, Return, exec, ${pkgs.kitty}/bin/kitty"
         "$mainMod, Y, exec, ykmanoath"
         "$mainMod, Q, killactive,"
-        "$mainMod, E, exec, thunar"
+        "$mainMod, E, exec, ${pkgs.nautilus}/bin/nautilus"
         "$mainMod, F, togglefloating,"
-        "$mainMod, SPACE, exec, fuzzel"
+        "$mainMod, SPACE, exec, ${pkgs.fuzzel}/bin/fuzzel"
         "$mainMod, P, pseudo, # dwindle"
         "$mainMod, S, togglesplit, # dwindle"
         "$mainMod, TAB, workspace, previous"
@@ -223,15 +215,15 @@
         "$mainMod SHIFT, 0, movetoworkspacesilent, 10"
         "$mainMod, mouse_down, workspace, e+1"
         "$mainMod, mouse_up, workspace, e-1"
-        "$mainMod, F3, exec, brightnessctl -d *::kbd_backlight set +33%"
-        "$mainMod, F2, exec, brightnessctl -d *::kbd_backlight set 33%-"
-        ", XF86AudioRaiseVolume, exec, pamixer -i 5 "
-        ", XF86AudioLowerVolume, exec, pamixer -d 5 "
-        ", XF86AudioMute, exec, pamixer -t"
-        ", XF86AudioMicMute, exec, pamixer --default-source -m"
-        ", XF86MonBrightnessDown, exec, brightnessctl set 5%- "
-        ", XF86MonBrightnessUp, exec, brightnessctl set +5% "
-        '', Print, exec, grim -g "$(slurp)" - | swappy -f -''
+        "$mainMod, F3, exec, ${pkgs.brightnessctl}/bin/brightnessctl -d *::kbd_backlight set +33%"
+        "$mainMod, F2, exec, ${pkgs.brightnessctl}/bin/brightnessctl -d *::kbd_backlight set 33%-"
+        ", XF86AudioRaiseVolume, exec, ${pkgs.pamixer}/bin/pamixer -i 5"
+        ", XF86AudioLowerVolume, exec, ${pkgs.pamixer}/bin/pamixer -d 5"
+        ", XF86AudioMute, exec, ${pkgs.pamixer}/bin/pamixer -t"
+        ", XF86AudioMicMute, exec, ${pkgs.pamixer}/bin/pamixer --default-source -m"
+        ", XF86MonBrightnessDown, exec, ${pkgs.brightnessctl}/bin/brightnessctl set 5%-"
+        ", XF86MonBrightnessUp, exec, ${pkgs.brightnessctl}/bin/brightnessctl set +5%"
+        '', Print, exec, ${pkgs.grim}/bin/grim -g "$(${pkgs.slurp}/bin/slurp)" - | ${pkgs.swappy}/bin/swappy -f -''
         "$mainMod, B, exec, pkill -SIGUSR1 waybar"
         "$mainMod, W, exec, pkill -SIGUSR2 waybar"
       ];
