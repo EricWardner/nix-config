@@ -25,7 +25,6 @@
           "network"
           "pulseaudio"
           "backlight"
-          "keyboard-state"
           "battery"
           "battery#bat2"
           "tray"
