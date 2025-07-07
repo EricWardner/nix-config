@@ -9,6 +9,8 @@
         position = "top";
         height = 24;
         spacing = 5;
+        margin-left = 2;
+        margin-right = 2;
         modules-left = [
           "custom/launcher"
           "hyprland/workspaces"
@@ -127,7 +129,7 @@
             critical = 15;
           };
           format = "{icon} {capacity}%";
-          format-charging = " {capacity}%";
+          format-charging = "󰂄 {capacity}%";
           format-plugged = "  {capacity}%";
           format-alt = "{icon} {time}";
           format-icons = [ "" "" "" "" "" ];

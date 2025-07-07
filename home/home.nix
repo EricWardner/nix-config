@@ -32,6 +32,7 @@
   stylix = {
     targets.vscode.enable = false;
     targets.waybar.enable = false;
+    opacity.terminal = lib.mkForce 0.95;
 
     fonts = {
       monospace = lib.mkForce {
@@ -152,6 +153,19 @@
         pkg-config 
       ]);
     };
+
+    # kitty.settings = lib.mkAfter {
+    #   background_blur = 1;
+    # };
+  };
+
+  services.hyprpaper = {
+    settings.preload = [
+      "~/Wallpapers/2f-ai-mountains.png"
+    ];
+    settings.wallpaper = [
+      ",~/Wallpapers/2f-ai-mountains.png"
+    ];
   };
 
   gtk = {
