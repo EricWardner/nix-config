@@ -33,6 +33,11 @@
       name = "Cascadia Code NF";
     };
 
+    fonts.sizes = lib.mkForce {
+      desktop = 11;
+      popups = 10;
+    };
+
   };
 
   home.packages = with pkgs; [
@@ -126,8 +131,16 @@
     # k9s.settings.ui.skin = "skin";
     vscode = {
       enable = true;
-      package = pkgs.vscode.fhsWithPackages (ps: with ps; [ nodejs rustup zlib openssl.dev pkg-config ]);
+      package = pkgs.vscode.fhsWithPackages (ps: with ps; [ 
+        nodejs 
+        rustup 
+        zlib 
+        openssl.dev 
+        pkg-config 
+      ]);
     };
+
+    waybar.style = lib.mkAfter (builtins.readFile ./waybar.css);
   };
 
   wayland.windowManager.hyprland = {
