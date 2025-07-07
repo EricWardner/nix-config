@@ -101,7 +101,7 @@
         };
 
         clock = {
-          format = "{:%A %B %d %H:%M %p}";
+          format = "{:%a %d %b  %H:%M %p}";
           tooltip-format = "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>";
         };
 
