@@ -41,8 +41,8 @@
         };
 
         "custom/launcher" = {
-          format = "🔍";
-          on-click = "wofi --show drun";
+          format = "";
+          on-click = "fuzzel";
           tooltip = false;
         };
 
@@ -125,6 +125,7 @@
         backlight = {
           format = "{icon} {percent}%";
           format-icons = [ "" "" "" "" "" "" "" "" "" ];
+          tooltip-format = "Backlight: {percent}%";
         };
 
         battery = {
@@ -144,12 +145,12 @@
         };
 
         network = {
-          format-wifi = "{essid} ({signalStrength}%) ";
-          format-ethernet = " {ifname}";
-          tooltip-format = " {ifname} via {gwaddr}";
-          format-linked = " {ifname} (No IP)";
+          format-wifi = "{essid} ({signalStrength}%) ";
+          format-ethernet = "󰈁 {ifname}";
+          tooltip-format = " {ifname} via {gwaddr}";
+          format-linked = " {ifname} (No IP)";
           format-disconnected = "Disconnected ⚠ {ifname}";
-          format-alt = " {ifname}: {ipaddr}/{cidr}";
+          format-alt = " {ifname}: {ipaddr}/{cidr}";
         };
 
         pulseaudio = {

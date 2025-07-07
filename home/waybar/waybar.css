@@ -7,8 +7,12 @@
 }
 
 window#waybar {
-  background: rgba(255, 255, 255, 0.5);
-  color: rgb(0, 0, 0);
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+#custom-launcher {
+  margin-left: 10px;
 }
 
 tooltip {
@@ -26,7 +30,6 @@ tooltip label {
 #workspaces button {
   padding: 0 8px;
   background: transparent;
-  color: #000000;
   border: none;
   border-radius: 6px;
   margin: 0 2px;
@@ -38,7 +41,6 @@ tooltip label {
 #workspaces button.visible,
 #workspaces button.active {
   background: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 -2px 0 0 rgba(0, 0, 0, 0.6) inset;
 }
 
 #mode,
@@ -71,7 +73,6 @@ tooltip label {
   margin: 2px;
   padding-left: 4px;
   padding-right: 4px;
-  color: #000000;
 }
 
 .modules-left > widget:first-child > #workspaces {
@@ -84,6 +85,7 @@ tooltip label {
 
 #clock {
   font-size: 11px;
+  margin-right: 10px;
 }
 
 #battery icon {
