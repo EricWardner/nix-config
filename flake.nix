@@ -2,18 +2,28 @@
   description = "Eric's personal flake";
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
+    
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
+    
+    # San Francisco Fonts | Apple Fonts
+    apple-fonts.url= "github:Lyndeno/apple-fonts.nix";
+    apple-fonts.inputs.nixpkgs.follows = "nixpkgs";
+    
     stylix.url = "github:danth/stylix";
+
+    
     # SecondFront Modules and Projects
     secondfront.url = "github:ericwardner/modules/feat/flexible-monitor-resolution";
     # twofctl = {
@@ -34,6 +44,7 @@
     {
       nixpkgs,
       stylix,
+      apple-fonts,
       home-manager,
       hyprland,
       disko,
