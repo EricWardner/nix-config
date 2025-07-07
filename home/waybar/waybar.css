@@ -18,16 +18,27 @@ tooltip label {
   color: white;
 }
 
-#workspaces button {
-  padding: 0 5px;
+#workspaces {
   background: transparent;
-  color: white;
-  border-bottom: 3px solid transparent;
+  margin: 0 4px;
 }
 
-#workspaces button.focused {
-  background: #64727d;
-  border-bottom: 3px solid white;
+#workspaces button {
+  padding: 0 8px;
+  background: transparent;
+  color: #000000;
+  border: none;
+  border-radius: 6px;
+  margin: 0 2px;
+  transition: all 0.3s ease;
+  font-weight: normal;
+}
+
+#workspaces button.focused,
+#workspaces button.visible,
+#workspaces button.active {
+  background: rgba(255, 255, 255, 0.3);
+  color: #000000;
 }
 
 #mode,
