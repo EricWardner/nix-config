@@ -86,6 +86,7 @@
     postgresql
     protobuf
     apko
+    git-filter-repo
 
     # Additional DevOps tools
     pulumi-bin
