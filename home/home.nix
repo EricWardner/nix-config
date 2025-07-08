@@ -34,6 +34,10 @@
     targets.waybar.enable = false;
     targets.kitty.enable = false;
 
+    cursor.package = pkgs.adwaita-icon-theme;
+    cursor.name = "Adwaita";
+    cursor.size = 16;
+
     fonts = {
       monospace = lib.mkForce {
         package = pkgs.cascadia-code;
@@ -357,6 +361,10 @@
       bindm = [
         "$mainMod, mouse:272, movewindow"
         "$mainMod, mouse:273, resizewindow"
+      ];
+
+      env = [
+        "HYPRCURSOR_THEME,Adwaita"
       ];
     };
   };
