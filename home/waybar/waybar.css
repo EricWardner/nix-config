@@ -70,10 +70,33 @@ tooltip label {
 #idle_inhibitor,
 #scratchpad,
 #mpd {
-  margin: 2px;
+  margin: 4px;
   padding-left: 5px;
   padding-right: 5px;
 }
+
+#temperature,
+#cpu,
+#battery,
+#memory,
+#disk,
+#network,
+#backlight,
+#pulseaudio,
+#wireplumber,
+#custom-media,
+#tray,
+#mode,
+#idle_inhibitor,
+#mpd {
+  font-family: 'SFMono Nerd Font';
+}
+
+#temperature {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 
 .modules-left > widget:first-child > #workspaces {
   margin-left: 0;
