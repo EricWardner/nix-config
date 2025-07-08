@@ -44,7 +44,7 @@
 
         "custom/launcher" = {
           format = "";
-          on-click = "fuzzel";
+          on-click = "fuzzel --icon-theme=Papirus";
           tooltip = false;
         };
 

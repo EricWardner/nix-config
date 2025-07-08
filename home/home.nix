@@ -236,9 +236,10 @@
   };
 
   gtk = {
+    enable = true;
     iconTheme = {
-      package = pkgs.colloid-icon-theme;
-      name = "Colloid";
+      package = pkgs.papirus-icon-theme ;
+      name = "Papirus";
     };
   };
 
@@ -266,7 +267,7 @@
         "$mainMod, Q, killactive,"
         "$mainMod, E, exec, ${pkgs.nautilus}/bin/nautilus"
         "$mainMod, F, togglefloating,"
-        "$mainMod, SPACE, exec, ${pkgs.fuzzel}/bin/fuzzel"
+        "$mainMod, SPACE, exec, ${pkgs.fuzzel}/bin/fuzzel --icon-theme=Papirus"
         "$mainMod, P, pseudo, # dwindle"
         "$mainMod, S, togglesplit, # dwindle"
         "$mainMod, TAB, workspace, previous"
