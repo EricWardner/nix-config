@@ -55,8 +55,6 @@
         popups = 11;
       };
     };
-
-
   };
 
   home.packages = with pkgs; [
@@ -84,7 +82,7 @@
     postgresql
     protobuf
     apko
-    
+
     # Additional DevOps tools
     pulumi-bin
     sops
@@ -94,13 +92,13 @@
     curl
     dive
     trivy
-    yq  # jq is provided, but not yq
+    yq # jq is provided, but not yq
     ssm-session-manager-plugin
     grype
     syft
     mysql80
     openssl
-    
+
     # System utilities
     imv
     lshw
@@ -112,46 +110,49 @@
     file
     pgloader
     hubble
-    
+
     # Smart card tools
     pcsc-tools
-    
+
     # Bluetooth
     bluez
     bluez-tools
-    
+
     # Additional chat/communication
     signal-desktop
-    
+
     # Image editing
     gimp
     inkscape
-        
+
     # YubiKey (yubikey-manager provided)
     yubioath-flutter
-    
+
     # Browsers
     google-chrome
-    
+
     # Other tools
     spotify
     crane
     wireguard-tools
     ngrok
     claude-code
+    nixfmt-rfc-style
   ];
 
   programs = {
     # k9s.settings.ui.skin = "skin";
     vscode = {
       enable = true;
-      package = pkgs.vscode.fhsWithPackages (ps: with ps; [ 
-        nodejs 
-        rustup 
-        zlib 
-        openssl.dev 
-        pkg-config 
-      ]);
+      package = pkgs.vscode.fhsWithPackages (
+        ps: with ps; [
+          nodejs
+          rustup
+          zlib
+          openssl.dev
+          pkg-config
+        ]
+      );
     };
 
     kitty.extraConfig = ''
@@ -160,38 +161,38 @@
       shell_integration no-rc
       font_family Cascadia Code NF
       font_size 12
-      
+
       # Override the entire base16 theme to remove macos_titlebar_color
       # Keep the colors but remove the problematic settings
-      
+
       # The basic colors
       background #060f11
       foreground #e7e7e8
       selection_background #687275
       selection_foreground #e7e7e8
-      
+
       # Cursor colors
       cursor #e7e7e8
       cursor_text_color #060f11
-      
+
       # URL underline color when hovering with mouse
       url_color #6c7174
-      
+
       # Kitty window border colors
       active_border_color #687275
       inactive_border_color #0e1618
-      
+
       # OS Window titlebar colors (only set wayland, skip macos)
       wayland_titlebar_color #060f11
       # macos_titlebar_color REMOVED - this was causing the conflict
-      
+
       # Tab bar colors
       active_tab_background #060f11
       active_tab_foreground #e7e7e8
       inactive_tab_background #0e1618
       inactive_tab_foreground #6c7174
       tab_bar_background #0e1618
-      
+
       # The 16 terminal colors
       # normal
       color0 #060f11
@@ -202,7 +203,7 @@
       color5 #6377c0
       color6 #94e2d5
       color7 #e7e7e8
-      
+
       # bright
       color8 #9ca3af
       color9 #ff6286
@@ -212,7 +213,7 @@
       color13 #6377c0
       color14 #94e2d5
       color15 #aa7ed0
-      
+
       # extended base16 colors
       color16 #301b1d
       color17 #f2cdcd
@@ -220,7 +221,7 @@
       color19 #9ca3af
       color20 #6c7174
       color21 #301b1d
-      
+
       # Your custom settings
       background_opacity 0.95
     '';
@@ -238,27 +239,30 @@
   gtk = {
     enable = true;
     iconTheme = {
-      package = pkgs.papirus-icon-theme ;
+      package = pkgs.papirus-icon-theme;
       name = "Papirus";
     };
   };
 
   wayland.windowManager.hyprland = {
-      settings = {
-        layerrule = [
-          "blur,waybar"
-        ];
-        decoration = {
-          blur = lib.mkForce {
-            enabled = true;
-            new_optimizations = true;
-            xray = true;
-            popups = true;
-          };
+    settings = {
+      layerrule = [
+        "blur,waybar"
+      ];
+
+      decoration = {
+        blur = lib.mkForce {
+          enabled = true;
+          new_optimizations = true;
+          xray = true;
+          popups = true;
         };
+      };
+
       exec-once = [
         "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service"
       ];
+
       bind = [
         "$mainMod, V, exec, ${pkgs.cliphist}/bin/cliphist list | ${pkgs.fuzzel}/bin/fuzzel --dmenu | ${pkgs.cliphist}/bin/cliphist decode | ${pkgs.wl-clipboard}/bin/wl-copy"
         "$mainMod, G, togglegroup"
@@ -320,6 +324,7 @@
         "$mainMod, B, exec, pkill -SIGUSR1 waybar"
         "$mainMod, W, exec, pkill -SIGUSR2 waybar"
       ];
+
       bindm = [
         "$mainMod, mouse:272, movewindow"
         "$mainMod, mouse:273, resizewindow"
