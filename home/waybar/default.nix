@@ -113,7 +113,7 @@
           format-critical = "{icon} {temperatureC}°C";
           format = "{icon}";
           format-alt = "{icon} {temperatureC}°C";
-          format-icons = [ "" "" "" ];
+          format-icons = [ "" "" "" "" "" ];
         };
 
         backlight = {

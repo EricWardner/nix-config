@@ -128,6 +128,8 @@
     pgloader
     hubble
 
+    networkmanagerapplet
+
     # Smart card tools
     pcsc-tools
 
@@ -307,6 +309,7 @@
 
       exec-once = [
         "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service"
+        "nm-applet --indicator"
       ];
 
       bind = [
