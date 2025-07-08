@@ -8,6 +8,18 @@
   imports = [
     ./waybar
   ];
+  
+  xdg.mimeApps.defaultApplications = {
+    "x-scheme-handler/https" = lib.mkForce [ "google-chrome.desktop" ];  # or whatever browser you prefer
+    "x-scheme-handler/http" = lib.mkForce [ "google-chrome.desktop" ];  # or whatever browser you prefer
+  
+    "inode/directory" = [ "org.gnome.Nautilus.desktop" ];
+    
+    "application/zip" = [ "org.gnome.Nautilus.desktop" ];
+    "application/x-tar" = [ "org.gnome.Nautilus.desktop" ];
+    "application/gzip" = [ "org.gnome.Nautilus.desktop" ];
+  };
+
   secondfront.hyprland.monitors = [
     {
       name = "eDP-1";
@@ -151,7 +163,7 @@
       enable = true;
       package = pkgs.vscode.fhsWithPackages (
         ps: with ps; [
-          nodejs
+          nodejs_22
           rustup
           zlib
           openssl.dev
