@@ -248,6 +248,8 @@
     settings = {
       layerrule = [
         "blur,waybar"
+        "blur,group"
+        "blur,launcher"
       ];
 
       decoration = {
@@ -256,6 +258,31 @@
           new_optimizations = true;
           xray = true;
           popups = true;
+        };
+      };
+
+      group = lib.mkForce {
+        # Group bar styling (higher opacity for bright wallpaper)
+        "col.border_active" = "rgba(ffffffff)"; # White border for active
+        "col.border_inactive" = "rgba(3a3a3c80)"; # Your waybar color at 50% opacity
+        "col.border_locked_active" = "rgba(f53c3cff)"; # Red for locked (matches your battery critical)
+        "col.border_locked_inactive" = "rgba(3a3a3c60)";
+
+        groupbar = {
+          enabled = true;
+          font_size = 11;
+          font_family = "SFProText Nerd Font";
+          font_weight_active = "Bold"; 
+          height = 14;
+          render_titles = true;
+          scrolling = true;
+          text_color = "rgba(000000ff)"; # Dark text
+
+          "col.active" = "rgba(ffffffcc)"; # Same as workspace active (0.2 opacity)
+          "col.inactive" = "rgba(ffffff66)"; # Transparent like inactive workspaces
+          "col.locked_active" = "rgba(f53c3ccc)"; # Red version of active state
+          "col.locked_inactive" = "rgba(ffffff40)";
+          gradients = false;
         };
       };
 
