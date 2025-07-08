@@ -273,7 +273,7 @@
           font_size = 11;
           font_family = "SFProText Nerd Font";
           font_weight_inactive = "Normal"; # Lighter weight
-          font_weight_active = "Heavy"; # Heavy weight
+          font_weight_active = "Bold"; # Heavy weight
           height = 14;
           render_titles = true;
           scrolling = true;
