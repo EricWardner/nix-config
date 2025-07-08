@@ -272,7 +272,8 @@
           enabled = true;
           font_size = 11;
           font_family = "SFProText Nerd Font";
-          font_weight_active = "Bold"; 
+          font_weight_inactive = "Bold"; 
+          font_weight_active = "Heavy"; 
           height = 14;
           render_titles = true;
           scrolling = true;
@@ -282,7 +283,7 @@
           "col.inactive" = "rgba(ffffff66)"; # Transparent like inactive workspaces
           "col.locked_active" = "rgba(f53c3ccc)"; # Red version of active state
           "col.locked_inactive" = "rgba(ffffff40)";
-          gradients = false;
+          gradients = true;
         };
       };
 
