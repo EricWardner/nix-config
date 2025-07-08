@@ -50,6 +50,7 @@
       disko,
       nixos-hardware,
       secondfront,
+      twofctl,
       ...
     }@inputs:
     let
@@ -57,7 +58,7 @@
       pkgs = import nixpkgs {
         inherit system;
         config.allowUnfree = true;
-        # overlays = [ twofctl.overlays.default ];
+        overlays = [ twofctl.overlays.default ];
       };
       user = {
         name = "eric";

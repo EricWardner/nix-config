@@ -77,7 +77,7 @@
     inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd
     inputs.apple-fonts.packages.${pkgs.system}.sf-mono-nerd
 
-    # twofctl
+    twofctl
     go
     gopls
     sqlc
