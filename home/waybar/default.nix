@@ -7,10 +7,11 @@
       mainBar = {
         layer = "top";
         position = "top";
-        height = 24;
+        height = 16;
         spacing = 5;
         margin-left = 2;
         margin-right = 2;
+        margin-top = 2;
         modules-left = [
           "custom/launcher"
           "hyprland/workspaces"
