@@ -272,16 +272,17 @@
           enabled = true;
           font_size = 11;
           font_family = "SFProText Nerd Font";
-          font_weight_inactive = "Bold"; 
-          font_weight_active = "Heavy"; 
+          font_weight_inactive = "Normal"; # Lighter weight
+          font_weight_active = "Heavy"; # Heavy weight
           height = 14;
           render_titles = true;
           scrolling = true;
-          text_color = "rgba(000000ff)"; # Dark text
+          text_color = "rgba(000000dd)"; # Slightly more opaque
+          indicator_height = 0;
 
-          "col.active" = "rgba(ffffffcc)"; # Same as workspace active (0.2 opacity)
-          "col.inactive" = "rgba(ffffff66)"; # Transparent like inactive workspaces
-          "col.locked_active" = "rgba(f53c3ccc)"; # Red version of active state
+          "col.active" = "rgba(ffffffcc)"; # White, 80% opacity
+          "col.inactive" = "rgba(ffffff33)"; # White, 20% opacity
+          "col.locked_active" = "rgba(f53c3ccc)";
           "col.locked_inactive" = "rgba(ffffff40)";
           gradients = true;
         };
