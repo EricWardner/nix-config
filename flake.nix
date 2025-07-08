@@ -26,12 +26,12 @@
     
     # SecondFront Modules and Projects
     secondfront.url = "github:ericwardner/modules/feat/flexible-monitor-resolution";
-    # twofctl = {
-    #   type = "gitlab";
-    #   host = "code.il2.gamewarden.io";
-    #   owner = "gamewarden%2Fplatform";
-    #   repo = "2fctl";
-    # };
+    twofctl = {
+      type = "gitlab";
+      host = "code.il2.gamewarden.io";
+      owner = "gamewarden%2Fplatform";
+      repo = "2fctl";
+    };
   };
   nixConfig = {
     extra-substituters = [ "https://hyprland.cachix.org" ];
