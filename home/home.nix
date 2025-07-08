@@ -244,6 +244,9 @@
 
   wayland.windowManager.hyprland = {
       settings = {
+        layerrule = [
+          "blur,waybar"
+        ];
         decoration = {
           blur = lib.mkForce {
             enabled = true;

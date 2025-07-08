@@ -7,7 +7,7 @@
 }
 
 window#waybar {
-  background: rgba(58, 58, 60, 0.9);
+  background: rgba(58, 58, 60, 0.6);
   color: white;
 }
 
@@ -16,7 +16,7 @@ window#waybar {
 }
 
 tooltip {
-  background: #000000;
+  background: rgba(58, 58, 60, 1);
 }
 tooltip label {
   color: white;
