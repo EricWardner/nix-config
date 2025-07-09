@@ -309,6 +309,9 @@
 
       exec-once = [
         "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service"
+      ];
+
+      exec = [
         "nm-applet --indicator"
       ];
 
