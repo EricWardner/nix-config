@@ -44,7 +44,10 @@
   stylix = {
     targets.vscode.enable = false;
     targets.waybar.enable = false;
-    targets.kitty.enable = false;
+
+    opacity.desktop = lib.mkForce 0.9;
+    opacity.terminal = lib.mkForce 0.92;
+    opacity.popups = lib.mkForce 0.8;
 
     cursor.package = pkgs.adwaita-icon-theme;
     cursor.name = "Adwaita";
@@ -173,77 +176,6 @@
         ]
       );
     };
-
-    kitty.extraConfig = ''
-      background_blur 1
-
-      shell_integration no-rc
-      font_family Cascadia Code NF
-      font_size 12
-
-      # Override the entire base16 theme to remove macos_titlebar_color
-      # Keep the colors but remove the problematic settings
-
-      # The basic colors
-      background #060f11
-      foreground #e7e7e8
-      selection_background #687275
-      selection_foreground #e7e7e8
-
-      # Cursor colors
-      cursor #e7e7e8
-      cursor_text_color #060f11
-
-      # URL underline color when hovering with mouse
-      url_color #6c7174
-
-      # Kitty window border colors
-      active_border_color #687275
-      inactive_border_color #0e1618
-
-      # OS Window titlebar colors (only set wayland, skip macos)
-      wayland_titlebar_color #060f11
-      # macos_titlebar_color REMOVED - this was causing the conflict
-
-      # Tab bar colors
-      active_tab_background #060f11
-      active_tab_foreground #e7e7e8
-      inactive_tab_background #0e1618
-      inactive_tab_foreground #6c7174
-      tab_bar_background #0e1618
-
-      # The 16 terminal colors
-      # normal
-      color0 #060f11
-      color1 #ff6286
-      color2 #00d992
-      color3 #ffb615
-      color4 #738be3
-      color5 #6377c0
-      color6 #94e2d5
-      color7 #e7e7e8
-
-      # bright
-      color8 #9ca3af
-      color9 #ff6286
-      color10 #00d992
-      color11 #ffb615
-      color12 #738be3
-      color13 #6377c0
-      color14 #94e2d5
-      color15 #aa7ed0
-
-      # extended base16 colors
-      color16 #301b1d
-      color17 #f2cdcd
-      color18 #0e1618
-      color19 #9ca3af
-      color20 #6c7174
-      color21 #301b1d
-
-      # Your custom settings
-      background_opacity 0.95
-    '';
   };
 
   services.hyprpaper = {
