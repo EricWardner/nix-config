@@ -44,10 +44,11 @@
   stylix = {
     targets.vscode.enable = false;
     targets.waybar.enable = false;
+    targets.k9s.enable = true;
 
-    opacity.desktop = lib.mkForce 0.9;
+    opacity.desktop = lib.mkForce 0.92;
     opacity.terminal = lib.mkForce 0.92;
-    opacity.popups = lib.mkForce 0.8;
+    opacity.popups = lib.mkForce 0.92;
 
     cursor.package = pkgs.adwaita-icon-theme;
     cursor.name = "Adwaita";
@@ -163,7 +164,6 @@
   ];
 
   programs = {
-    # k9s.settings.ui.skin = "skin";
     vscode = {
       enable = true;
       package = pkgs.vscode.fhsWithPackages (
@@ -175,6 +175,18 @@
           pkg-config
         ]
       );
+    };
+
+    fuzzel = {
+      enable = true;
+      settings = {
+        main = {
+          prompt = "\" \"";
+        };
+        border = {
+          radius = 10;
+        };
+      };
     };
   };
 
@@ -201,6 +213,7 @@
         "blur,waybar"
         "blur,group"
         "blur,launcher"
+        "ignorealpha 0.5, launcher"
       ];
 
       decoration = {
