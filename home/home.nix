@@ -71,8 +71,8 @@
       };
 
       sizes = lib.mkForce {
-        desktop = 13;
-        popups = 11;
+        desktop = 12;
+        popups = 8;
       };
     };
   };
@@ -182,6 +182,7 @@
       settings = {
         main = {
           prompt = "\" \"";
+          font = lib.mkForce "SFProText Nerd Font:size=8";
         };
         border = {
           radius = 10;

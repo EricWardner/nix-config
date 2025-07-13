@@ -35,7 +35,6 @@
       # Handle lid switch when on external power
       HandleLidSwitchExternalPower=suspend
       
-      # Optional: What to do when power button is pressed
       HandlePowerKey=poweroff
     '';
   };
@@ -43,8 +42,6 @@
   # Basic power management
   powerManagement = {
     enable = true;
-    # CPU frequency governor (will be overridden by TLP)
-    # cpuFreqGovernor = "ondemand"; # Not needed since TLP handles this
   };
 
   # Advanced power management with TLP
