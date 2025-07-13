@@ -45,7 +45,7 @@
 
         "custom/launcher" = {
           format = "";
-          on-click = "fuzzel --icon-theme=Colloid";
+          on-click = "fuzzel";
           tooltip = false;
         };
 

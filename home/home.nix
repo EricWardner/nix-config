@@ -183,6 +183,7 @@
         main = {
           prompt = "\" \"";
           font = lib.mkForce "SFProText Nerd Font:size=8";
+          icon-theme = "Colloid";
         };
         border = {
           radius = 10;
@@ -269,7 +270,7 @@
         "$mainMod, Q, killactive,"
         "$mainMod, E, exec, ${pkgs.nautilus}/bin/nautilus"
         "$mainMod, F, togglefloating,"
-        "$mainMod, SPACE, exec, ${pkgs.fuzzel}/bin/fuzzel --icon-theme=Colloid"
+        "$mainMod, SPACE, exec, ${pkgs.fuzzel}/bin/fuzzel"
         "$mainMod, P, pseudo, # dwindle"
         "$mainMod, S, togglesplit, # dwindle"
         "$mainMod, TAB, workspace, previous"
