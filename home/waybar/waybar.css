@@ -13,6 +13,10 @@ window#waybar {
 
 #custom-launcher {
   margin-left: 10px;
+  color: white;
+}
+
+#custom-launcher:hover {
   color: #47FF51;
 }
 

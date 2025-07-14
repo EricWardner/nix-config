@@ -91,6 +91,7 @@
     python3
     poetry
     nodejs_22
+    deno
     typescript
     pre-commit
     go-mockery
