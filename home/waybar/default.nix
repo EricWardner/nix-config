@@ -112,12 +112,12 @@
 
         cpu = {
           format = "";
-          format-alt = "  {usage}%";
+          format-alt = "  {usage}%";
         };
 
         memory = {
           format = "";
-          format-alt = " {}%";
+          format-alt = "  {}%";
         };
 
         temperature = {
@@ -126,7 +126,7 @@
           critical-threshold = 80;
           format-critical = "{icon} {temperatureC}°C";
           format = "{icon}";
-          format-alt = "{icon} {temperatureC}°C";
+          format-alt = "{icon} {temperatureC}°C";
           format-icons = [
             ""
             ""
@@ -161,6 +161,7 @@
           format-charging = "󰂄 {capacity}%";
           format-plugged = "  {capacity}%";
           format-alt = "{icon} {time}";
+          tooltip-format = "{power}W {timeTo}";
           format-icons = [
             ""
             ""
@@ -189,7 +190,7 @@
         pulseaudio = {
           scroll-step = 5;
           format = "{icon}";
-          format-alt = "{icon}  {volume}% {format_source}";
+          format-alt = "{icon} {volume}% {format_source}";
           format-bluetooth = " {icon} {volume}% {format_source}";
           format-bluetooth-muted = "󰝟   {icon} {format_source}";
           format-muted = "󰝟  {format_source}";
