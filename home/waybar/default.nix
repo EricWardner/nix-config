@@ -92,8 +92,22 @@
         };
 
         clock = {
-          format = "{:%a %d %b  %H:%M %p}";
-          tooltip-format = "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>";
+          format = "{:%a %d %b  %H:%M %p %Z}";
+          timezones = [
+            "America/New_York"
+            "Etc/UTC"
+          ];
+          tooltip-format = "<tt>{calendar}</tt>";
+          calendar = {
+            mode = "month";
+            on-scroll = 1;
+            format = {
+              today = "<span color='#47FF51'><b><u>{}</u></b></span>"; # This highlights today
+            };
+          };
+          actions = {
+            on-click-right = "tz_up";
+          };
         };
 
         cpu = {
@@ -113,14 +127,28 @@
           format-critical = "{icon} {temperatureC}°C";
           format = "{icon}";
           format-alt = "{icon} {temperatureC}°C";
-          format-icons = [ "" "" "" "" "" ];
+          format-icons = [
+            ""
+            ""
+            ""
+            ""
+            ""
+          ];
         };
 
         backlight = {
           format = "{icon}";
           format-alt = "{icon} {percent}%";
           # format-icons = [ "" "" "" "" "" "" "" "" "" ];
-          format-icons = [ "󰃚" "󰃛" "󰃜" "󰃝" "󰃞" "󰃟" "󰃠" ];
+          format-icons = [
+            "󰃚"
+            "󰃛"
+            "󰃜"
+            "󰃝"
+            "󰃞"
+            "󰃟"
+            "󰃠"
+          ];
           tooltip-format = "Backlight: {percent}%";
         };
 
@@ -133,7 +161,13 @@
           format-charging = "󰂄 {capacity}%";
           format-plugged = "  {capacity}%";
           format-alt = "{icon} {time}";
-          format-icons = [ "" "" "" "" "" ];
+          format-icons = [
+            ""
+            ""
+            ""
+            ""
+            ""
+          ];
         };
 
         "battery#bat2" = {
@@ -162,7 +196,11 @@
           format-source = " {volume}%";
           format-source-muted = "";
           format-icons = {
-            default = [ "" "" "" ];
+            default = [
+              ""
+              ""
+              ""
+            ];
           };
           on-click-right = "pavucontrol";
         };

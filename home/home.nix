@@ -211,6 +211,12 @@
 
   wayland.windowManager.hyprland = {
     settings = {
+      general = {
+        "col.active_border" = lib.mkForce "rgba(ffffffff)"; # White border like your groups
+        "col.inactive_border" = lib.mkForce "rgba(3a3a3c80)"; # Match your group colors
+      };
+
+
       layerrule = [
         "blur,waybar"
         "blur,group"
