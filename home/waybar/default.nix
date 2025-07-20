@@ -190,11 +190,11 @@
         pulseaudio = {
           scroll-step = 5;
           format = "{icon}";
-          format-alt = "{icon} {volume}% {format_source}";
+          format-alt = "{icon}  {volume}% {format_source}";
           format-bluetooth = " {icon} {volume}% {format_source}";
           format-bluetooth-muted = "󰝟   {icon} {format_source}";
           format-muted = "󰝟  {format_source}";
-          format-source = " {volume}%";
+          format-source = " {volume}%";
           format-source-muted = "";
           format-icons = {
             default = [
