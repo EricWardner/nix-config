@@ -342,6 +342,9 @@
         '', Print, exec, ${pkgs.grim}/bin/grim -g "$(${pkgs.slurp}/bin/slurp)" - | ${pkgs.swappy}/bin/swappy -f -''
         "$mainMod, B, exec, pkill -SIGUSR1 waybar"
         "$mainMod, W, exec, pkill -SIGUSR2 waybar"
+
+        "ALT, TAB, cyclenext"
+        "ALT SHIFT, TAB, cyclenext, prev"
       ];
 
       bindm = [
