@@ -43,6 +43,21 @@
           };
         };
 
+        "hyprland/workspaces" = {
+          show-special = true;
+          format = "{name} {windows}";
+          format-alt = "poopt";
+          icon-size = 24;
+          format-window-separator = " ";
+          window-rewrite-default = "";
+          window-rewrite = {
+            "class<google-chrome>" = "";
+            "class<kitty>" = "";
+            "class<code>" = "󰨞";
+            "title<(.*) - (.*) - Visual Studio Code>" = "󰨞 $2";
+          };
+        };
+
         "custom/launcher" = {
           format = "";
           on-click = "fuzzel";
