@@ -378,6 +378,7 @@
 
         "ALT, TAB, cyclenext"
         "ALT SHIFT, TAB, cyclenext, prev"
+        "$mainMod, X, exec, loginctl lock-session"
       ];
 
       bindm = [

@@ -177,7 +177,7 @@
   # Lid close and power button behavior
   services.logind = {
     lidSwitch = "suspend";
-    lidSwitchDocked = "suspend"; # or "ignore" if you want it to stay awake when docked
+    lidSwitchDocked = "loginctl lock-session"; # or "ignore" if you want it to stay awake when docked
 
     extraConfig = ''
       # Suspend after 20 minutes of inactivity
@@ -187,35 +187,14 @@
       # Handle lid switch when on external power
       HandleLidSwitchExternalPower=suspend
 
-      HandlePowerKey=poweroff
-    '';
-  };
-
-  services.hypridle = {
-    enable = true;
-    settings = {
-      general = {
-        after_sleep_cmd = "hyprctl dispatch dpms on";
-        before_sleep_cmd = "loginctl lock-session";
-        lock_cmd = "pidof hyprlock || hyprlock";
-      };
+      # Short press = suspend, long press = poweroff
+      HandlePowerKey=suspend
+      PowerKeyIgnoreInhibited=no
       
-      listener = [
-        {
-          timeout = 300; # 5 minutes - lock the screen
-          on-timeout = "hyprlock";
-        }
-        {
-          timeout = 600; # 10 minutes - turn off displays
-          on-timeout = "hyprctl dispatch dpms off";
-          on-resume = "hyprctl dispatch dpms on";
-        }
-        {
-          timeout = 1200; # 20 minutes - suspend system
-          on-timeout = "systemctl suspend";
-        }
-      ];
-    };
+      # Long press duration (default is 2s, you can adjust)
+      HoldoffTimeoutSec=2s
+      HandlePowerKeyLongPress=poweroff      
+    '';
   };
 
   # Basic power management
