@@ -217,7 +217,18 @@
         "col.inactive_border" = lib.mkForce "rgba(3a3a3c80)"; # Match your group colors
       };
 
-      input.touchpad.natural_scroll = lib.mkForce true;
+      input = {
+        touchpad = {
+          natural_scroll = lib.mkForce true;  # You already have this
+          tap-to-click = true;  # Enable tap-to-click
+          disable_while_typing = true;  # Prevent accidental touches
+          clickfinger_behavior = true;  # 2-finger = right click, 3-finger = middle click
+          scroll_factor = 0.5;  # Adjust scroll sensitivity (1.0 = default, lower = less sensitive)
+          drag_lock = false;  # Disable tap-drag-lock
+        };
+        
+        accel_profile = "adaptive";  # or "flat" for no acceleration
+      };
 
       layerrule = [
         "blur,waybar"
