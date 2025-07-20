@@ -8,6 +8,10 @@
     ./disko-config.nix
   ];
 
+  boot.extraModprobeConfig = ''
+    options snd-hda-intel model=dell-headset-multi
+  '';
+
   modules = {
     hostName = "nixtop";
     peripherals = {
