@@ -284,6 +284,7 @@
       bind = [
         "$mainMod, V, exec, ${pkgs.cliphist}/bin/cliphist list | ${pkgs.fuzzel}/bin/fuzzel --dmenu | ${pkgs.cliphist}/bin/cliphist decode | ${pkgs.wl-clipboard}/bin/wl-copy"
         "$mainMod, G, togglegroup"
+        "$mainMod, U, moveoutofgroup"
         "$mainMod, Return, exec, ${pkgs.kitty}/bin/kitty"
         "$mainMod, Y, exec, ykmanoath"
         "$mainMod, Q, killactive,"
