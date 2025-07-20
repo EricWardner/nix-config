@@ -8,13 +8,13 @@
   imports = [
     ./waybar
   ];
-  
+
   xdg.mimeApps.defaultApplications = {
-    "x-scheme-handler/https" = lib.mkForce [ "google-chrome.desktop" ];  # or whatever browser you prefer
-    "x-scheme-handler/http" = lib.mkForce [ "google-chrome.desktop" ];  # or whatever browser you prefer
-  
+    "x-scheme-handler/https" = lib.mkForce [ "google-chrome.desktop" ]; # or whatever browser you prefer
+    "x-scheme-handler/http" = lib.mkForce [ "google-chrome.desktop" ]; # or whatever browser you prefer
+
     "inode/directory" = [ "org.gnome.Nautilus.desktop" ];
-    
+
     "application/zip" = [ "org.gnome.Nautilus.desktop" ];
     "application/x-tar" = [ "org.gnome.Nautilus.desktop" ];
     "application/gzip" = [ "org.gnome.Nautilus.desktop" ];
@@ -202,6 +202,33 @@
     ];
   };
 
+  services.hypridle = {
+    enable = true;
+    settings = {
+      general = {
+        after_sleep_cmd = "hyprctl dispatch dpms on";
+        before_sleep_cmd = "loginctl lock-session";
+        lock_cmd = "pidof hyprlock || hyprlock";
+      };
+
+      listener = [
+        {
+          timeout = 300; # 5 minutes - lock the screen
+          on-timeout = "hyprlock";
+        }
+        {
+          timeout = 600; # 10 minutes - turn off displays
+          on-timeout = "hyprctl dispatch dpms off";
+          on-resume = "hyprctl dispatch dpms on";
+        }
+        {
+          timeout = 1200; # 20 minutes - suspend system
+          on-timeout = "systemctl suspend";
+        }
+      ];
+    };
+  };
+
   gtk = {
     enable = true;
     iconTheme = {
@@ -219,15 +246,15 @@
 
       input = {
         touchpad = {
-          natural_scroll = lib.mkForce true;  # You already have this
-          tap-to-click = true;  # Enable tap-to-click
-          disable_while_typing = true;  # Prevent accidental touches
-          clickfinger_behavior = true;  # 2-finger = right click, 3-finger = middle click
-          scroll_factor = 0.5;  # Adjust scroll sensitivity (1.0 = default, lower = less sensitive)
-          drag_lock = false;  # Disable tap-drag-lock
+          natural_scroll = lib.mkForce true; # You already have this
+          tap-to-click = true; # Enable tap-to-click
+          disable_while_typing = true; # Prevent accidental touches
+          clickfinger_behavior = true; # 2-finger = right click, 3-finger = middle click
+          scroll_factor = 0.5; # Adjust scroll sensitivity (1.0 = default, lower = less sensitive)
+          drag_lock = false; # Disable tap-drag-lock
         };
-        
-        accel_profile = "adaptive";  # or "flat" for no acceleration
+
+        accel_profile = "adaptive"; # or "flat" for no acceleration
       };
 
       layerrule = [
@@ -275,6 +302,7 @@
 
       exec-once = [
         "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service"
+        "hypridle"
       ];
 
       exec = [

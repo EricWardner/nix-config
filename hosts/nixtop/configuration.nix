@@ -191,6 +191,33 @@
     '';
   };
 
+  services.hypridle = {
+    enable = true;
+    settings = {
+      general = {
+        after_sleep_cmd = "hyprctl dispatch dpms on";
+        before_sleep_cmd = "loginctl lock-session";
+        lock_cmd = "pidof hyprlock || hyprlock";
+      };
+      
+      listener = [
+        {
+          timeout = 300; # 5 minutes - lock the screen
+          on-timeout = "hyprlock";
+        }
+        {
+          timeout = 600; # 10 minutes - turn off displays
+          on-timeout = "hyprctl dispatch dpms off";
+          on-resume = "hyprctl dispatch dpms on";
+        }
+        {
+          timeout = 1200; # 20 minutes - suspend system
+          on-timeout = "systemctl suspend";
+        }
+      ];
+    };
+  };
+
   # Basic power management
   powerManagement = {
     enable = true;
