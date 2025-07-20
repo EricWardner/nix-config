@@ -217,6 +217,7 @@
         "col.inactive_border" = lib.mkForce "rgba(3a3a3c80)"; # Match your group colors
       };
 
+      input.touchpad.natural_scroll = lib.mkForce true;
 
       layerrule = [
         "blur,waybar"

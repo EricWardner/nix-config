@@ -25,12 +25,14 @@
 
     
     # SecondFront Modules and Projects
-    secondfront.url = "github:ericwardner/modules/feat/flexible-monitor-resolution";
+    secondfront.url = "github:ericwardner/modules/remove-hyprland-render_ahead";
+    # secondfront.url = "github:tonybutt/modules";
     twofctl = {
       type = "gitlab";
       host = "code.il2.gamewarden.io";
       owner = "gamewarden%2Fplatform";
       repo = "2fctl";
+      ref = "gomod2nix-generate-20250720";
     };
   };
   nixConfig = {
