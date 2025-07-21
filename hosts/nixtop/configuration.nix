@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   ...
 }:
 {
@@ -19,6 +20,18 @@
       obs.enable = true;
       scarlettRite.enable = true;
     };
+  };
+
+  services.xserver.videoDrivers = ["nvidia"];
+  hardware.nvidia.prime.sync.enable = lib.mkForce true;
+  hardware.nvidia.prime.offload.enable = lib.mkForce false;
+  hardware.nvidia.modesetting.enable = lib.mkForce true;
+
+  # Add the required NVIDIA environment variables globally
+  environment.sessionVariables = {
+    LIBVA_DRIVER_NAME = "nvidia";
+    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+    NVD_BACKEND = "direct"; # For hardware video acceleration
   };
 
   fonts.packages = [
@@ -177,7 +190,7 @@
   # Lid close and power button behavior
   services.logind = {
     lidSwitch = "suspend";
-    lidSwitchDocked = "loginctl lock-session"; # or "ignore" if you want it to stay awake when docked
+    lidSwitchDocked = "suspend"; # or "ignore" if you want it to stay awake when docked
 
     extraConfig = ''
       # Suspend after 20 minutes of inactivity
@@ -190,7 +203,7 @@
       # Short press = suspend, long press = poweroff
       HandlePowerKey=suspend
       PowerKeyIgnoreInhibited=no
-      
+
       # Long press duration (default is 2s, you can adjust)
       HoldoffTimeoutSec=2s
       HandlePowerKeyLongPress=poweroff      

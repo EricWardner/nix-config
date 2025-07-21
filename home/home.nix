@@ -29,7 +29,7 @@
     }
     {
       name = "desc:GIGA-BYTE TECHNOLOGY CO. LTD. Gigabyte M32U 22181B002365";
-      resolution = "highres@highrr";
+      resolution = "3840x2160@144";
       position = "-3072x-1000";
       scale = "1.25";
     }
@@ -387,6 +387,8 @@
       ];
 
       env = [
+        "LIBVA_DRIVER_NAME,nvidia"
+        "__GLX_VENDOR_LIBRARY_NAME,nvidia"
         "HYPRCURSOR_THEME,Adwaita"
       ];
     };
