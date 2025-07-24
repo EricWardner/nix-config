@@ -2,6 +2,7 @@
   pkgs,
   lib,
   inputs,
+  config,
   ...
 }:
 {
@@ -41,8 +42,14 @@
     }
   ];
 
+  secondfront.themes.enable = false;
   stylix = {
-    targets.vscode.enable = false;
+    base16Scheme = ./. + "/themes/2f-ai-mountains.yaml";
+    # image = ./. + "/2f-ai-mountains.png";
+    # polarity = "dark";
+
+    enable = true;
+    targets.vscode.enable = true;
     targets.waybar.enable = false;
     targets.k9s.enable = true;
 

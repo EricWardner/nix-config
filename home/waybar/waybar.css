@@ -1,5 +1,5 @@
 * {
-  font-family: "SFProDisplay Nerd Font";
+  font-family: "SFProText Nerd Font";
   font-size: 13px;
   min-height: 0;
   border-radius: 1rem;
@@ -115,13 +115,13 @@ tooltip label {
 }
 
 #battery icon {
-  color: red;
+  color: #ff645a;
 }
 
 #battery.charging,
 #battery.plugged {
   color: #ffffff;
-  background-color: #26a65b;
+  background-color: #639b1a;
 }
 
 @keyframes blink {
@@ -132,7 +132,7 @@ tooltip label {
 }
 
 #battery.warning:not(.charging) {
-  background-color: #f53c3c;
+  background-color: #ff8c42;
   color: #ffffff;
   animation-name: blink;
   animation-duration: 0.5s;
@@ -142,7 +142,7 @@ tooltip label {
 }
 
 #battery.critical:not(.charging) {
-  background-color: #f53c3c;
+  background-color: #ff645a;
   color: #ffffff;
   animation-name: blink;
   animation-duration: 0.5s;
@@ -156,11 +156,11 @@ label:focus {
 }
 
 #network.disconnected {
-  background-color: #f53c3c;
+  background-color: #ff645a;
 }
 
 #temperature.critical {
-  background-color: #eb4d4b;
+  background-color: #ff645a;
 }
 
 #idle_inhibitor.activated {
@@ -184,4 +184,15 @@ label:focus {
 #custom-os_button:hover {
   background: white;
   color: black;
+}
+
+/* Better spacing for calendar grid */
+tooltip #calendar {
+  padding: 4px;
+}
+
+/* Make sure tooltip text is readable */
+tooltip label {
+  color: white;
+  font-family: "SFProText Nerd Font";
 }

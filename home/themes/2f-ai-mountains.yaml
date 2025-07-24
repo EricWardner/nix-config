@@ -1,0 +1,18 @@
+scheme: "AI Mountains"
+author: "Generated from 2f-ai-mountains.png"
+base00: "1a1f2e"  # Dark background (darkest mountain shadows)
+base01: "2c3e50"  # Lighter background (structural shadows)
+base02: "34495e"  # Selection background (medium gray)
+base03: "7a8b99"  # Comments (mountain gray)
+base04: "95a5a6"  # Dark foreground (lighter mountain)
+base05: "ecf0f1"  # Default foreground (cloud white)
+base06: "e8f4f8"  # Light foreground (bright clouds)
+base07: "ffffff"  # Light background (pure white)
+base08: "ff645a"  # Red (errors) - purposeful red, not from image
+base09: "ff8c42"  # Orange (warnings) - architectural accent
+base0A: "f1c40f"  # Yellow (search/caution) - bright yellow
+base0B: "6b8e3d"  # Green (success) - natural vegetation
+base0C: "42b883"  # Cyan (info) - technological teal
+base0D: "4a90e2"  # Blue (keywords) - dominant sky blue
+base0E: "9b59b6"  # Magenta (special) - synthetic purple
+base0F: "8e44ad"  # Brown/misc (deprecated) - deep purple
