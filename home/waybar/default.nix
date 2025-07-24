@@ -29,7 +29,6 @@
           "pulseaudio"
           "backlight"
           "battery"
-          "battery#bat2"
           "tray"
           "clock"
         ];
@@ -185,10 +184,6 @@
             ""
             ""
           ];
-        };
-
-        "battery#bat2" = {
-          bat = "BAT2";
         };
 
         network = {
