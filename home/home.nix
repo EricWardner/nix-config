@@ -62,17 +62,18 @@
 
       serif = lib.mkForce {
         package = inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd;
-        name = "SFProDisplay Nerd Font";
+        name = "SFProText Nerd Font";
       };
 
       sansSerif = lib.mkForce {
         package = inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd;
-        name = "SFProDisplay Nerd Font";
+        name = "SFProText Nerd Font";
       };
 
       sizes = lib.mkForce {
-        desktop = 12;
-        popups = 8;
+        desktop = 13;
+        applications = 13;
+        popups = 11;
       };
     };
   };
@@ -183,7 +184,7 @@
       settings = {
         main = {
           prompt = "\" \"";
-          font = lib.mkForce "SFProText Nerd Font:size=8";
+          font = lib.mkForce "SFProText Nerd Font:size=13";
           icon-theme = "Colloid";
         };
         border = {
