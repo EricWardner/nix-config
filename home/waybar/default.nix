@@ -54,6 +54,7 @@
             "class<google-chrome>" = "";
             "class<kitty>" = "";
             "class<code>" = "󰨞";
+            "class<slack>" = "";
             "title<(.*) - (.*) - Visual Studio Code>" = "󰨞 $2";
           };
         };
