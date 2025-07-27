@@ -2,9 +2,10 @@
   description = "Eric's personal flake";
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
-    
+    nixpkgs-mockery.url = "github:NixOS/nixpkgs/031d372ada3b0708f60755ebac756b07cacd5f3e";
+
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-    
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -16,14 +17,13 @@
     };
 
     hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
-    
+
     # San Francisco Fonts | Apple Fonts
-    apple-fonts.url= "github:Lyndeno/apple-fonts.nix";
+    apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
     apple-fonts.inputs.nixpkgs.follows = "nixpkgs";
-    
+
     stylix.url = "github:danth/stylix";
 
-    
     # SecondFront Modules and Projects
     secondfront.url = "github:ericwardner/modules/remove-hyprland-render_ahead";
     # secondfront.url = "github:tonybutt/modules";
@@ -45,6 +45,7 @@
   outputs =
     {
       nixpkgs,
+      nixpkgs-mockery,
       stylix,
       apple-fonts,
       home-manager,
@@ -60,7 +61,12 @@
       pkgs = import nixpkgs {
         inherit system;
         config.allowUnfree = true;
-        overlays = [ twofctl.overlays.default ];
+        overlays = [
+          twofctl.overlays.default
+          (final: prev: {
+            go-mockery = nixpkgs-mockery.legacyPackages.${system}.go-mockery;
+          })
+        ];
       };
       user = {
         name = "eric";
