@@ -49,7 +49,7 @@
     # polarity = "dark";
 
     enable = true;
-    targets.vscode.enable = true;
+    targets.vscode.enable = false;
     targets.waybar.enable = false;
     targets.k9s.enable = true;
 
@@ -203,10 +203,10 @@
 
   services.hyprpaper = {
     settings.preload = [
-      "~/Wallpapers/2f-ai-mountains.png"
+      "~/Wallpapers/Why_2F_300dpi.jpg"
     ];
     settings.wallpaper = [
-      ",~/Wallpapers/2f-ai-mountains.png"
+      ",~/Wallpapers/Why_2F_300dpi.jpg"
     ];
   };
 
