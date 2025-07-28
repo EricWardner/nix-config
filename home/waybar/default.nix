@@ -54,6 +54,7 @@
             "class<kitty>" = "";
             "class<code>" = "󰨞";
             "class<slack>" = "";
+            "title<.* Gather .*>" = "󱁅";
             "title<(.*) - (.*) - Visual Studio Code>" = "󰨞 $2";
           };
         };
