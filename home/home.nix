@@ -8,6 +8,7 @@
 {
   imports = [
     ./waybar
+    ./tools/oath.nix
   ];
 
   xdg.mimeApps.defaultApplications = {
