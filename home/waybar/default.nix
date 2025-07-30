@@ -9,8 +9,8 @@
         position = "top";
         height = 30;
         spacing = 5;
-        margin-left = 2;
-        margin-right = 2;
+        margin-left = 8;
+        margin-right = 8;
         margin-top = 2;
         modules-left = [
           "custom/launcher"
