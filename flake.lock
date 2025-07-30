@@ -1183,16 +1183,15 @@
         "treefmt": "treefmt"
       },
       "locked": {
-        "lastModified": 1753031858,
+        "lastModified": 1753391577,
         "narHash": "sha256-V41zXJ18c17iLqHsIns1hvzh6xGvwdi7sqdKT9waUA4=",
-        "owner": "ericwardner",
+        "owner": "tonybutt",
         "repo": "modules",
-        "rev": "5fb31b8ebfe72d4319bc074ca87750a40c6ddfb1",
+        "rev": "fcca1b4981fac9d19bacccef62c109b201e2be38",
         "type": "github"
       },
       "original": {
-        "owner": "ericwardner",
-        "ref": "remove-hyprland-render_ahead",
+        "owner": "tonybutt",
         "repo": "modules",
         "type": "github"
       }
