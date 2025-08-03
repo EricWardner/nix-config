@@ -44,15 +44,9 @@
   services.logind = {
     lidSwitch = "suspend";
     lidSwitchDocked = "suspend"; # or "ignore" if you want it to stay awake when docked
+    lidSwitchExternalPower = "suspend"; # or "ignore" if you want it to stay awake when on external powe
 
     extraConfig = ''
-      # Suspend after 20 minutes of inactivity
-      IdleAction=suspend
-      IdleActionSec=20min
-
-      # Handle lid switch when on external power
-      HandleLidSwitchExternalPower=suspend
-
       # Short press = suspend, long press = poweroff
       HandlePowerKey=suspend
       PowerKeyIgnoreInhibited=no

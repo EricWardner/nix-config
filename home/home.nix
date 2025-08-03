@@ -223,8 +223,8 @@
       listener = [
         {
           timeout = 150; # 2.5min - dim the screen
-          on-timeout = "brightnessctl -s set 10";
-          on-resume = "brightnessctl -r";
+          on-timeout = "${pkgs.brightnessctl} -s set 10";
+          on-resume = "${pkgs.brightnessctl} -r";
         }
         {
           timeout = 300; # 5 minutes - lock the screen
@@ -233,7 +233,7 @@
         {
           timeout = 600; # 10 minutes - turn off displays
           on-timeout = "hyprctl dispatch dpms off";
-          on-resume = "hyprctl dispatch dpms on && brightnessctl -r";
+          on-resume = "hyprctl dispatch dpms on && ${pkgs.brightnessctl} -r";
         }
         {
           timeout = 1200; # 20 minutes - suspend system
