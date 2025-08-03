@@ -1183,15 +1183,16 @@
         "treefmt": "treefmt"
       },
       "locked": {
-        "lastModified": 1753391577,
-        "narHash": "sha256-V41zXJ18c17iLqHsIns1hvzh6xGvwdi7sqdKT9waUA4=",
-        "owner": "tonybutt",
+        "lastModified": 1754247045,
+        "narHash": "sha256-HhTtcvG7ko6lerz3ukXV61pnsXecsKDyG3q1Sozs7g4=",
+        "owner": "ericwardner",
         "repo": "modules",
-        "rev": "fcca1b4981fac9d19bacccef62c109b201e2be38",
+        "rev": "18c4d8586e54d3e4929741d18c2c82832b54247b",
         "type": "github"
       },
       "original": {
-        "owner": "tonybutt",
+        "owner": "ericwardner",
+        "ref": "add-xps-speaker-equalizer",
         "repo": "modules",
         "type": "github"
       }

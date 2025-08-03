@@ -25,8 +25,8 @@
     stylix.url = "github:danth/stylix";
 
     # SecondFront Modules and Projects
-    # secondfront.url = "github:ericwardner/modules/remove-hyprland-render_ahead";
-    secondfront.url = "github:tonybutt/modules";
+    secondfront.url = "github:ericwardner/modules/add-xps-speaker-equalizer";
+    # secondfront.url = "github:tonybutt/modules";
     twofctl = {
       type = "gitlab";
       host = "code.il2.gamewarden.io";
