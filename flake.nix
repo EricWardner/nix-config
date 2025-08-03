@@ -18,6 +18,8 @@
 
     hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
 
+    font-patcher.url = "github:ericwardner/font-patcher";
+
     # San Francisco Fonts | Apple Fonts
     apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
     apple-fonts.inputs.nixpkgs.follows = "nixpkgs";
@@ -26,7 +28,6 @@
 
     # SecondFront Modules and Projects
     secondfront.url = "github:ericwardner/modules/add-xps-speaker-equalizer";
-    # secondfront.url = "github:tonybutt/modules";
     twofctl = {
       type = "gitlab";
       host = "code.il2.gamewarden.io";
@@ -53,6 +54,7 @@
       nixos-hardware,
       secondfront,
       twofctl,
+      font-patcher,
       ...
     }@inputs:
     let
@@ -90,13 +92,11 @@
             secondfront.nixosModules.secondfront
           ];
         };
-        # Minimal Installation ISO.
         iso = nixpkgs.lib.nixosSystem {
           inherit pkgs system;
           specialArgs = {
             inherit user;
           };
-
           modules = [
             ./hosts/iso/configuration.nix
           ];

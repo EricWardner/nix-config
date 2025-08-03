@@ -5,6 +5,13 @@
   config,
   ...
 }:
+let
+  cascadia-code-gw = inputs.font-patcher.lib.${pkgs.system}.patchFont {
+    baseFont = pkgs.cascadia-code;
+    svgGlyph = ./themes/uni2AF8_GW.svg;
+    unicodePoint = "0x276F"; # U+276F is the Unicode point for HEAVY RIGHT-POINTING ANGLE QUOTATION MARK ORNAMENT
+  };
+in
 {
   imports = [
     ./waybar
@@ -64,7 +71,7 @@
 
     fonts = {
       monospace = lib.mkForce {
-        package = pkgs.cascadia-code;
+        package = cascadia-code-gw;
         name = "Cascadia Code NF";
       };
 
@@ -157,6 +164,7 @@
     # Image editing
     gimp
     inkscape
+    fontforge-gtk
 
     # YubiKey (yubikey-manager provided)
     yubioath-flutter
@@ -300,7 +308,7 @@
           font_family = "SFProText Nerd Font";
           font_weight_inactive = "Normal"; # Lighter weight
           font_weight_active = "Bold"; # Heavy weight
-          height = 14;
+          height = 15;
           render_titles = true;
           scrolling = true;
           text_color = "rgba(000000dd)"; # Slightly more opaque
