@@ -32,7 +32,6 @@
       host = "code.il2.gamewarden.io";
       owner = "gamewarden%2Fplatform";
       repo = "2fctl";
-      ref = "gomod2nix-generate-20250720";
     };
   };
   nixConfig = {
