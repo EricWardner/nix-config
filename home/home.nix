@@ -11,6 +11,11 @@ let
     svgGlyph = ./themes/uni2AF8_GW.svg;
     unicodePoint = "0x276F"; # U+276F is the Unicode point for HEAVY RIGHT-POINTING ANGLE QUOTATION MARK ORNAMENT
   };
+  sf-pro-nerd-gather = inputs.font-patcher.lib.${pkgs.system}.patchFont {
+    baseFont = inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd;
+    svgGlyph = ./themes/uniF1045_Gather.svg;
+    unicodePoint = "0xF1045";
+  };
 in
 {
   imports = [
@@ -76,12 +81,12 @@ in
       };
 
       serif = lib.mkForce {
-        package = inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd;
+        package = sf-pro-nerd-gather;
         name = "SFProText Nerd Font";
       };
 
       sansSerif = lib.mkForce {
-        package = inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd;
+        package = sf-pro-nerd-gather;
         name = "SFProText Nerd Font";
       };
 
@@ -94,7 +99,6 @@ in
   };
 
   home.packages = with pkgs; [
-    inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd
     inputs.apple-fonts.packages.${pkgs.system}.sf-mono-nerd
 
     twofctl
