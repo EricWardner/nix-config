@@ -108,7 +108,7 @@
         };
 
         clock = {
-          format = "{:%a %d %b  %H:%M %p %Z}";
+          format = "{:%a %d %b  %I:%M %p %Z}";
           timezones = [
             "America/New_York"
             "Etc/UTC"
