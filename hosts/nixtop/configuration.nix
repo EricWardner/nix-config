@@ -46,15 +46,12 @@
     lidSwitchDocked = "suspend"; # or "ignore" if you want it to stay awake when docked
     lidSwitchExternalPower = "suspend"; # or "ignore" if you want it to stay awake when on external powe
 
-    extraConfig = ''
-      # Short press = suspend, long press = poweroff
-      HandlePowerKey=suspend
-      PowerKeyIgnoreInhibited=no
-
-      # Long press duration (default is 2s, you can adjust)
-      HoldoffTimeoutSec=2s
-      HandlePowerKeyLongPress=poweroff      
-    '';
+    settings.Login = {
+      HandlePowerKey="suspend";
+      PowerKeyIgnoreInhibited="no";
+      HoldoffTimeoutSec="2s";
+      HandlePowerKeyLongPress="poweroff";      
+    };
   };
 
   # Basic power management
