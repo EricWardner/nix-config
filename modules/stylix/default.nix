@@ -2,6 +2,7 @@
   pkgs,
   config,
   lib,
+  inputs,
   ...
 }:
 let
@@ -41,18 +42,18 @@ in
       enable = true;
       fonts =
         let
-          font = {
-            package = pkgs.open-sans;
-            name = "Open Sans";
+          sfPro = {
+            package = inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd;
+            name = "SFProText Nerd Font";
           };
           mono = {
-            package = pkgs.nerd-fonts.fira-mono;
-            name = "FiraMono Nerd Font Mono";
+            package = pkgs.nerd-fonts.caskaydia-cove;
+            name = "CaskaydiaCove Nerd Font";
           };
         in
         {
-          serif = font;
-          sansSerif = font;
+          serif = sfPro;
+          sansSerif = sfPro;
           monospace = mono;
           emoji = {
             package = pkgs.nerd-fonts.symbols-only;
@@ -60,8 +61,9 @@ in
           };
 
           sizes = {
-            desktop = 14;
-            popups = 10;
+            desktop = 13;
+            applications = 13;
+            popups = 11;
           };
         };
       image = cfg.wallpaper;
