@@ -22,6 +22,7 @@
   };
   modules = {
     ai.claude-cognitive.enable = false;
+    editors.vscode.enable = true;
   };
   home.packages = with pkgs; [
     mpv
