@@ -63,8 +63,8 @@
         };
         personal = {
           email = "ewardner22@gmail.com";
-          signingKey = "~/.ssh/id_ed25519_personal.pub";
-          githubUsername = "ericwardner";
+          signingKey = "~/.ssh/id_ed25519_sk.pub";
+          githubUsername = "EricWardner";
         };
       };
       treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
