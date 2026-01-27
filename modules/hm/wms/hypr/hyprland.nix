@@ -32,7 +32,7 @@ let
   obs = "${pkgs.obs-studio}/bin/obs";
   slack = "${pkgs.slack}/bin/slack";
   signal = "${pkgs.signal-desktop}/bin/signal-desktop";
-  brave = "${pkgs.brave}/bin/brave";
+  chrome = "${pkgs.google-chrome}/bin/google-chrome-stable";
   wfRecorderToggle = "wf-recorder-toggle";
 in
 {
@@ -523,7 +523,7 @@ in
             "[workspace special:obs silent] ${obs} --startvirtualcam"
             "[workspace special:chat silent] ${slack}"
             "[workspace special:chat silent] ${signal}"
-            "[workspace special:browser silent] ${brave}"
+            "[workspace special:browser silent] ${chrome}"
           ];
         };
     };

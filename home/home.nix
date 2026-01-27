@@ -46,7 +46,7 @@
         -libfile ${pkgs.opensc}/lib/opensc-pkcs11.so
     '')
     (pkgs.writeShellScriptBin "launch-webapp" ''
-      exec ${pkgs.brave}/bin/brave --app="$1" "''${@:2}"
+      exec ${pkgs.google-chrome}/bin/google-chrome-stable --app="$1" "''${@:2}"
     '')
     (pkgs.writeShellScriptBin "system-menu" ''
       choice=$(printf "󰌾  Lock\n󰤄  Sleep\n  Reboot\n󰐥  Shutdown\n󰗽  Logout" | ${pkgs.fuzzel}/bin/fuzzel --dmenu -p "System: ")
@@ -66,18 +66,12 @@
       scrollback_lines = 100000;
       copy_on_select = "clipboard";
     };
-    brave = {
+    google-chrome = {
       enable = true;
-      package = pkgs.brave;
-      extensions = [
-        { id = "cjpalhdlnbpafiamejdnhcphjbkeiagm"; } # ublock origin
-        { id = "nngceckbapebfimnlniiiahkandclblb"; } # bitwarden
-        { id = "pkehgijcmpdhfbdbbnkijodmdjhbjlgp"; } # privacy badger
-        { id = "damfoaielhjgnodobkkikiaiikkklejb"; } # Gather Meetings
-      ];
+      package = pkgs.google-chrome;
     };
     zsh.sessionVariables = {
-      BROWSER = "brave";
+      BROWSER = "google-chrome-stable";
       EDITOR = "vim";
     };
   };

@@ -23,9 +23,9 @@
       mimeApps = {
         enable = true;
         defaultApplications = {
-          "x-scheme-handler/https" = [ "brave-browser.desktop" ];
-          "x-scheme-handler/http" = [ "brave-browser.desktop" ];
-          "text/html" = [ "brave-browser.desktop" ];
+          "x-scheme-handler/https" = [ "google-chrome.desktop" ];
+          "x-scheme-handler/http" = [ "google-chrome.desktop" ];
+          "text/html" = [ "google-chrome.desktop" ];
         };
       };
     };
