@@ -48,7 +48,7 @@ in
             check_color = "rgb(${colors.base0B})";
             fail_color = "rgb(${colors.base08})";
 
-            font_family = "JetBrainsMono Nerd Font";
+            font_family = "sans-serif";
             placeholder_text = "Enter Password";
             fail_text = "<i>$FAIL ($ATTEMPTS)</i>";
 
@@ -64,7 +64,7 @@ in
             text = ''cmd[update:1000] echo "$(date +"%H:%M")"'';
             color = "rgb(${colors.base05})";
             font_size = 120;
-            font_family = "JetBrainsMono Nerd Font";
+            font_family = "sans-serif";
             position = "0, 200";
             halign = "center";
             valign = "center";
@@ -75,7 +75,7 @@ in
             text = ''cmd[update:1000] echo "$(date +"%A, %d %B")"'';
             color = "rgb(${colors.base04})";
             font_size = 24;
-            font_family = "JetBrainsMono Nerd Font";
+            font_family = "sans-serif";
             position = "0, 100";
             halign = "center";
             valign = "center";
