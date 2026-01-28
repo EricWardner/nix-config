@@ -147,7 +147,7 @@ in
             format = "{capacity}% {icon}";
             format-discharging = "{icon}";
             format-charging = "{icon}";
-            format-plugged = "🔌";
+            format-plugged = "󰚥";
             format-icons = {
               charging = [
                 "󰢜"
