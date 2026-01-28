@@ -24,55 +24,57 @@ in
           reload_style_on_change = true;
           layer = "top";
           position = "top";
-          spacing = 0;
-          height = 26;
+          spacing = 4;
+          height = 32;
+          margin-left = 8;
+          margin-right = 8;
+          margin-top = 4;
 
           modules-left = [
             "custom/nix"
             "hyprland/workspaces"
           ];
           modules-center = [
+            "hyprland/window"
             "clock"
           ];
           modules-right = [
             "group/tray-expander"
             "custom/lock"
+            "temperature"
             "bluetooth"
             "network"
             "pulseaudio"
+            "backlight"
             "cpu"
+            "memory"
             "battery"
           ];
 
           "hyprland/workspaces" = {
             on-click = "activate";
             show-special = true;
-            format = "{icon}";
-            format-icons = {
-              default = "";
-              "1" = "1";
-              "2" = "2";
-              "3" = "3";
-              "4" = "4";
-              "5" = "5";
-              "6" = "6";
-              "7" = "7";
-              "8" = "8";
-              "9" = "9";
-              "10" = "0";
-              active = "";
-              "spotify" = "<span color='#${colors.base0B}'>󰓇</span>";
-              "obs" = "<span color='#${colors.base08}'></span>";
-              "chat" = "<span color='#${colors.base0C}'>󰭹</span>";
-              "browser" = "<span color='#${colors.base09}'></span>";
-              "monitor" = "<span color='#${colors.base0D}'>󱌣</span>";
+            all-outputs = false;
+            format = "{name} {windows}";
+            format-window-separator = " ";
+            window-rewrite-default = "";
+            window-rewrite = {
+              "class<google-chrome>" = "";
+              "class<firefox>" = "";
+              "class<kitty>" = "󰆍";
+              "class<code>" = "󰨞";
+              "class<slack>" = "󰒱";
+              "class<spotify>" = "󰓇";
+              "title<.* Gather .*>" = "󱁅";
+              "title<(.*) - (.*) - Visual Studio Code>" = "󰨞 $2";
             };
-            persistent-workspaces = {
-              "1" = [ ];
-              "2" = [ ];
-              "3" = [ ];
-              "4" = [ ];
-              "5" = [ ];
+          };
+
+          "hyprland/window" = {
+            format = "{class}";
+            max-length = 20;
+            rewrite = {
+              "^(?!.*\\S).*" = "Desktop";
             };
           };
 
@@ -84,7 +86,7 @@ in
           };
 
           "custom/lock" = {
-            format = "";
+            format = "";
             on-click = "loginctl lock-session && ${pkgs.hyprlock}/bin/hyprlock";
             tooltip = false;
           };
@@ -108,33 +110,74 @@ in
 
           tray = {
             icon-size = 12;
-            spacing = 17;
+            spacing = 16;
           };
 
           cpu = {
             interval = 5;
-            format = "󰍛";
+            format = "";
+            format-alt = "  {usage}%";
             on-click = "${pkgs.kitty}/bin/kitty -e ${pkgs.btop}/bin/btop";
           };
 
+          memory = {
+            format = "";
+            format-alt = "  {}%";
+          };
+
+          temperature = {
+            critical-threshold = 80;
+            format-critical = "{icon} {temperatureC}°C";
+            format = "{icon}";
+            format-alt = "{icon} {temperatureC}°C";
+            format-icons = [
+              ""
+              ""
+              ""
+              ""
+              ""
+            ];
+          };
+
+          backlight = {
+            format = "{icon}";
+            format-alt = "{icon} {percent}%";
+            format-icons = [
+              "󰃚"
+              "󰃛"
+              "󰃜"
+              "󰃝"
+              "󰃞"
+              "󰃟"
+              "󰃠"
+            ];
+            tooltip-format = "Backlight: {percent}%";
+          };
+
           clock = {
-            format = "{:L%A %H:%M}";
+            format = "{:%a %d %b  %I:%M %p}";
             format-alt = "{:L%d %B W%V %Y}";
-            tooltip = false;
+            tooltip-format = "<tt>{calendar}</tt>";
+            calendar = {
+              mode = "month";
+              on-scroll = 1;
+              format = {
+                today = "<span color='#${colors.base0B}'><b><u>{}</u></b></span>";
+              };
+            };
           };
 
           network = {
             format-icons = [
-              "󰢜"
-              "󰢟"
-              "󰢝"
-              "󰢞"
-              "󰢘"
+              "󰤟"
+              "󰤢"
+              "󰤥"
+              "󰤨"
             ];
             format = "{icon}";
             format-wifi = "{icon}";
             format-ethernet = "󰌘";
-            format-disconnected = "󰢘";
+            format-disconnected = "󰌙";
             tooltip-format-wifi = "{essid} ({frequency} GHz)\n↓{bandwidthDownBytes}  ↑{bandwidthUpBytes}";
             tooltip-format-ethernet = "↓{bandwidthDownBytes}  ↑{bandwidthUpBytes}";
             tooltip-format-disconnected = "Disconnected";
@@ -144,61 +187,51 @@ in
           };
 
           battery = {
-            format = "{capacity}% {icon}";
+            format = "{icon} {capacity}%";
             format-discharging = "{icon}";
-            format-charging = "{icon}";
-            format-plugged = "󰚥";
-            format-icons = {
-              charging = [
-                "󰢜"
-                "󰢟"
-                "󰢝"
-                "󰢞"
-                "󰢘"
-                "󰂆"
-                "󰂇"
-                "󰂈"
-                "󰢜"
-              ];
-              default = [
-                "󰂎"
-                "󰂏"
-                "󰂐"
-                "󰂑"
-                "󰂒"
-                "󰂓"
-                "󰂔"
-                "󰂕"
-                "󰂖"
-                "󰂗"
-              ];
-            };
-            format-full = "󰢜";
-            tooltip-format-discharging = "{power:>1.0f}W ⬇ {capacity}%";
-            tooltip-format-charging = "{power:>1.0f}W ⬆ {capacity}%";
+            format-charging = "󰂄 {capacity}%";
+            format-plugged = " {capacity}%";
+            format-alt = "{icon} {time}";
+            format-icons = [
+              "󰢜"
+              "󰂆"
+              "󰂇"
+              "󰂈"
+              "󰢝"
+              "󰂉"
+              "󰢞"
+              "󰂊"
+              "󰂋"
+              "󰂅"
+            ];
+            format-full = "󱟢";
+            tooltip-format = "{power}W {timeTo}";
             interval = 5;
             states = {
-              warning = 20;
-              critical = 10;
+              warning = 30;
+              critical = 15;
             };
           };
 
           bluetooth = {
             format = "󰂯";
-            format-disabled = "󰂰";
+            format-disabled = "󰂲";
             format-connected = "󰂱";
-            format-no-controller = "";
+            format-no-controller = "󰂲";
             tooltip-format = "Devices connected: {num_connections}";
             on-click = "${pkgs.blueman}/bin/blueman-manager";
           };
 
           pulseaudio = {
             format = "{icon}";
+            format-alt = "{icon}  {volume}% {format_source}";
             on-click = "${pkgs.pavucontrol}/bin/pavucontrol";
             on-click-right = "${pkgs.pamixer}/bin/pamixer -t";
             tooltip-format = "Playing at {volume}%";
             scroll-step = 5;
-            format-muted = "󰖁";
+            format-muted = "󰝟";
+            format-source = " {volume}%";
+            format-source-muted = "󰝟";
             format-icons = {
               default = [
                 "󰕿"
