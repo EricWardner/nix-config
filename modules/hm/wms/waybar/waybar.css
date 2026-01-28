@@ -60,6 +60,8 @@ window#waybar {
 #battery,
 #pulseaudio,
 #backlight,
+#bluetooth,
+#network,
 #custom-nix {
   min-width: 12px;
   margin: 0 8px;
@@ -67,14 +69,6 @@ window#waybar {
 
 #tray {
   margin-right: 16px;
-}
-
-#bluetooth {
-  margin-right: 16px;
-}
-
-#network {
-  margin-right: 12px;
 }
 
 #custom-expand-icon {

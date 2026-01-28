@@ -360,6 +360,7 @@ in
             "match:class ^(dropdown)$, size 800 400"
             "match:class ^(dropdown)$, center on"
             "match:class ^(dropdown)$, animation slide"
+            "match:class ^(pavucontrol)$, float on"
           ];
 
           # Tiling bindings (Omarchy + personal vim keys)

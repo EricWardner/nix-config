@@ -190,7 +190,7 @@ in
             format = "{icon} {capacity}%";
             format-discharging = "{icon}";
             format-charging = "󰂄 {capacity}%";
-            format-plugged = " {capacity}%";
+            format-plugged = "󰚥 {capacity}%";
             format-alt = "{icon} {time}";
             format-icons = [
               "󰢜"
