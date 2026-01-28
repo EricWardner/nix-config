@@ -47,8 +47,8 @@ in
             name = "SFProText Nerd Font";
           };
           mono = {
-            package = pkgs.nerd-fonts.caskaydia-cove;
-            name = "CaskaydiaCove Nerd Font";
+            package = pkgs.cascadia-code;
+            name = "Cascadia Code NF";
           };
         in
         {
