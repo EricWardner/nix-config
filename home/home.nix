@@ -77,8 +77,8 @@
   };
   gtk = {
     iconTheme = {
-      package = pkgs.colloid-icon-theme;
-      name = "Colloid";
+      package = pkgs.papirus-icon-theme;
+      name = "Papirus-Dark";
     };
   };
 }
