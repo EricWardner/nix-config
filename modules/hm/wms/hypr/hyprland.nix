@@ -429,7 +429,6 @@ in
             "$mainMod, Z, togglespecialworkspace, spotify"
             "$mainMod, C, togglespecialworkspace, chat"
             "$mainMod, M, togglespecialworkspace, monitor"
-            ""
             # TAB between workspaces
             "$mainMod, TAB, workspace, previous"
             "$mainMod SHIFT, TAB, workspace, e-1"

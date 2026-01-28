@@ -81,6 +81,18 @@ window#waybar {
   margin-right: 20px;
 }
 
+#custom-lock {
+  padding: 0 8px;
+  margin: 0 4px;
+  border-radius: 4px;
+  background-color: @base02;
+  transition: all 0.2s ease;
+}
+
+#custom-lock:hover {
+  background-color: @base03;
+}
+
 tooltip {
   padding: 4px;
   background: @background;
