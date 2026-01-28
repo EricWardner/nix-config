@@ -67,8 +67,9 @@ in
 
           sizes = {
             desktop = 10;
-            applications = 12;
-            popups = 11;
+            applications = 11;
+            popups = 10;
+            terminal = 12;
           };
         };
       image = cfg.wallpaper;

@@ -69,9 +69,6 @@
     google-chrome = {
       enable = true;
       package = pkgs.google-chrome;
-      commandLineArgs = [
-        "--force-device-scale-factor=0.9"
-      ];
     };
     zsh.sessionVariables = {
       BROWSER = "google-chrome-stable";

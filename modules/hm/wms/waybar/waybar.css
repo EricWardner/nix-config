@@ -64,7 +64,7 @@ window#waybar {
 #network,
 #custom-nix {
   min-width: 12px;
-  margin: 0 8px;
+  margin: 0 4px;
 }
 
 #tray {
