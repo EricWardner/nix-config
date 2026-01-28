@@ -62,7 +62,6 @@
   ];
 
   programs = {
-    obs-studio.enable = true;
     kitty.settings = {
       scrollback_lines = 100000;
       copy_on_select = "clipboard";

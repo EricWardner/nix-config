@@ -14,7 +14,6 @@
     grub = false;
     peripherals = {
       enable = true;
-      obs.enable = true;
       scarlettRite.enable = true;
     };
   };

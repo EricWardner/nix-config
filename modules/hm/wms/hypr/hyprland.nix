@@ -28,10 +28,7 @@ let
   playerctl = "${pkgs.playerctl}/bin/playerctl";
   btop = "${pkgs.btop}/bin/btop";
   hyprlock = "${pkgs.hyprlock}/bin/hyprlock";
-  spotify = "${pkgs.spotify}/bin/spotify";
-  obs = "${pkgs.obs-studio}/bin/obs";
   slack = "${pkgs.slack}/bin/slack";
-  signal = "${pkgs.signal-desktop}/bin/signal-desktop";
   chrome = "${pkgs.google-chrome}/bin/google-chrome-stable";
   wfRecorderToggle = "wf-recorder-toggle";
 in
@@ -432,7 +429,7 @@ in
             "$mainMod, Z, togglespecialworkspace, spotify"
             "$mainMod, C, togglespecialworkspace, chat"
             "$mainMod, M, togglespecialworkspace, monitor"
-            "$mainMod, O, togglespecialworkspace, obs"
+            ""
             # TAB between workspaces
             "$mainMod, TAB, workspace, previous"
             "$mainMod SHIFT, TAB, workspace, e-1"
@@ -519,10 +516,7 @@ in
           exec-once = [
             "hyprpaper"
             "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service"
-            "[workspace special:spotify silent] ${spotify}"
-            "[workspace special:obs silent] ${obs} --startvirtualcam"
             "[workspace special:chat silent] ${slack}"
-            "[workspace special:chat silent] ${signal}"
             "[workspace special:browser silent] ${chrome}"
           ];
         };
