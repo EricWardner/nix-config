@@ -42,8 +42,13 @@ in
       enable = true;
       fonts =
         let
+          sf-pro-nerd-patched = inputs.font-patcher.lib.${pkgs.stdenv.hostPlatform.system}.patchFont {
+            baseFont = inputs.apple-fonts.packages.${pkgs.stdenv.hostPlatform.system}.sf-pro-nerd;
+            svgGlyph = ./assets/uniF1045_Gather.svg;
+            unicodePoint = "0xF1045";
+          };
           sfPro = {
-            package = inputs.apple-fonts.packages.${pkgs.stdenv.hostPlatform.system}.sf-pro-nerd;
+            package = sf-pro-nerd-patched;
             name = "SFProText Nerd Font";
           };
           mono = {

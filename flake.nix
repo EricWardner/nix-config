@@ -13,6 +13,7 @@
       url = "github:Lyndeno/apple-fonts.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    font-patcher.url = "github:ericwardner/font-patcher";
     hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
     disko = {
       url = "github:nix-community/disko";
