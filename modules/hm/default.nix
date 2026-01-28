@@ -28,6 +28,11 @@
           "text/html" = [ "google-chrome.desktop" ];
         };
       };
+      desktopEntries."com.google.Chrome" = {
+        name = "Google Chrome (duplicate)";
+        noDisplay = true;
+        exec = "";
+      };
     };
     home = {
       username = user.username;
