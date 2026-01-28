@@ -8,7 +8,7 @@
 let
   cfg = config.modules.editors;
   inherit (lib) mkIf mkEnableOption;
-  pkgs-color-lsp = import inputs.nixpkgs-color-lsp { inherit (pkgs) system; };
+  pkgs-color-lsp = import inputs.nixpkgs-color-lsp { system = pkgs.stdenv.hostPlatform.system; };
 in
 {
   options.modules.editors.zed.enable = mkEnableOption "Enable Zed" // {

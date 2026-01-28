@@ -43,7 +43,7 @@ in
       fonts =
         let
           sfPro = {
-            package = inputs.apple-fonts.packages.${pkgs.system}.sf-pro-nerd;
+            package = inputs.apple-fonts.packages.${pkgs.stdenv.hostPlatform.system}.sf-pro-nerd;
             name = "SFProText Nerd Font";
           };
           mono = {
