@@ -66,7 +66,7 @@ in
               "class<slack>" = "󰒱";
               "class<spotify>" = "󰓇";
               "title<.* Gather .*>" = "󱁅";
-              "title<(.*) - (.*) - Visual Studio Code>" = "󰨞 $2";
+              "title<(.*) - (.*) - Visual Studio Code>" = "[󰨞 $2]";
             };
           };
 
