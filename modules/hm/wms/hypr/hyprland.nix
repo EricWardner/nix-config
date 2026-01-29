@@ -514,6 +514,7 @@ in
           ];
 
           exec-once = [
+            "nm-applet --indicator"
             "hyprpaper"
             "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service"
             "[workspace special:chat silent] ${slack}"

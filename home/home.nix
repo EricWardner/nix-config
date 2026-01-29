@@ -25,6 +25,7 @@
     editors.vscode.enable = true;
   };
   home.packages = with pkgs; [
+    networkmanagerapplet
     mpv
     gimp3
     unzip
@@ -76,9 +77,24 @@
     };
   };
   gtk = {
+    enable = true;
     iconTheme = {
       package = pkgs.papirus-icon-theme;
       name = "Papirus-Dark";
     };
   };
+
+  stylix.targets.gtk.extraCss = ''
+    /* Menu hover styling for GTK apps */
+    window > menu > menuitem:hover,
+    window > menu > menuitem:hover > check,
+    window > menu > menuitem:hover > box,
+    window > menu > menuitem:hover > box > *,
+    window > menu > menuitem:hover > label,
+    window > menu > menuitem:hover > label > *,
+    window > menu > menuitem:hover > arrow {
+      background-color: @theme_selected_bg_color;
+      color: @theme_selected_fg_color;
+    }
+  '';
 }

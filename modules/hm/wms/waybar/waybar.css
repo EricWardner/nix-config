@@ -71,6 +71,36 @@ window#waybar {
   margin-right: 16px;
 }
 
+#tray > widget:hover {
+  background-color: @base02;
+  border-radius: 4px;
+}
+
+/* nm-applet and tray menu styling */
+window > menu {
+  background: @background;
+}
+
+window > menu > menuitem:hover,
+window > menu > menuitem:hover > check,
+window > menu > menuitem:hover > box,
+window > menu > menuitem:hover > box > *,
+window > menu > menuitem:hover > label,
+window > menu > menuitem:hover > label > *,
+window > menu > menuitem:hover > arrow {
+  background-color: @base02;
+  color: @foreground;
+}
+
+#tray > .passive {
+  -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+  -gtk-icon-effect: highlight;
+  background-color: @base08;
+}
+
 #custom-expand-icon {
   margin-right: 20px;
 }
