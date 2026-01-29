@@ -77,6 +77,12 @@
     xdg.userDirs = {
       enable = true;
       createDirectories = true;
+      desktop = null;
+      documents = null;
+      music = null;
+      templates = null;
+      videos = null;
+      publicShare = null;
     };
     services.cliphist = {
       enable = true;
