@@ -313,7 +313,7 @@ in
               gaps_out = 0;
               text_color = lib.mkDefault (rgb colors.base05);
               text_color_inactive = "rgba(${colors.base04}90)";
-              "col.active" = lib.mkForce "rgba(${colors.base0B}bf)";
+              "col.active" = lib.mkForce "rgba(${colors.base0D}bf)";
               "col.inactive" = lib.mkForce "rgba(${colors.base03}80)";
               gradients = true;
               gradient_rounding = 0;
