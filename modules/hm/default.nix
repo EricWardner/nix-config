@@ -51,6 +51,8 @@
         vim
 
         # Shell Utils
+        gh
+        tmux
         tree
         jq
         yubikey-manager
