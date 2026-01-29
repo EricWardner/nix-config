@@ -183,7 +183,7 @@ in
             tooltip-format-disconnected = "Disconnected";
             interval = 3;
             spacing = 1;
-            on-click = "${pkgs.kitty}/bin/kitty -e ${pkgs.networkmanager}/bin/nmtui";
+            on-click = "${pkgs.networkmanagerapplet}/bin/nm-connection-editor";
           };
 
           battery = {
