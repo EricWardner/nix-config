@@ -1,6 +1,6 @@
 {
   modules = {
-    hyprpaper.wallpaper = "~/Wallpapers/Tiberius.png";
+    hyprpaper.wallpaper = "~/Downloads/AI_UKRAINE.png";
     hyprland.monitors = [
       {
         name = "eDP-1";
