@@ -38,7 +38,7 @@
     yubioath-flutter
     signal-desktop
     stern
-    ssm-session-manager-plugin
+    # ssm-session-manager-plugin # TODO: re-enable after nixpkgs fix lands
     pcsc-tools
     (pkgs.writeShellScriptBin "setup-browser-CAC" ''
       NSSDB="''${HOME}/.pki/nssdb"

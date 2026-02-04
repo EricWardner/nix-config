@@ -1,4 +1,4 @@
-{ pkgs, user, ... }:
+{ pkgs, ... }:
 {
   programs.k9s = {
     enable = true;
@@ -27,26 +27,27 @@
             ${pkgs.fluxcd}/bin/flux "$toggle" --context "$CONTEXT" "$RESOURCE" -n "$NAMESPACE" "$NAME"
           '';
         };
-        ssm = pkgs.writeShellApplication {
-          name = "ssm";
-          runtimeInputs = [ pkgs.ssm-session-manager-plugin ];
-          text = ''
-            NAME=$1
-            CONTEXT=$2
-            provider_id=$(${pkgs.kubectl}/bin/kubectl --context "$CONTEXT" get node "$NAME" -o jsonpath='{.spec.providerID}')
-            instance_id="''${provider_id##*/}"
-            az="''${provider_id%/*}"
-            az="''${az##*/}"
-            if [[ -z "$instance_id" || "$instance_id" == "None" ]]; then
-              echo "⚠️ Could not extract instance ID from providerID"
-              read -r -p "Press any key to continue..."
-              exit 1
-            fi
-            # shellcheck disable=SC1091
-            source /home/${user.username}/config/2fctl/credentials.sh
-            ${pkgs.awscli2}/bin/aws ssm start-session --target "$instance_id"
-          '';
-        };
+        # TODO: re-enable after nixpkgs ssm fix lands (PR #486268)
+        # ssm = pkgs.writeShellApplication {
+        #   name = "ssm";
+        #   runtimeInputs = [ pkgs.ssm-session-manager-plugin ];
+        #   text = ''
+        #     NAME=$1
+        #     CONTEXT=$2
+        #     provider_id=$(${pkgs.kubectl}/bin/kubectl --context "$CONTEXT" get node "$NAME" -o jsonpath='{.spec.providerID}')
+        #     instance_id="''${provider_id##*/}"
+        #     az="''${provider_id%/*}"
+        #     az="''${az##*/}"
+        #     if [[ -z "$instance_id" || "$instance_id" == "None" ]]; then
+        #       echo "⚠️ Could not extract instance ID from providerID"
+        #       read -r -p "Press any key to continue..."
+        #       exit 1
+        #     fi
+        #     # shellcheck disable=SC1091
+        #     source /home/${user.username}/config/2fctl/credentials.sh
+        #     ${pkgs.awscli2}/bin/aws ssm start-session --target "$instance_id"
+        #   '';
+        # };
         mkToggle = scope: resource: {
           shortCut = "Shift-T";
           description = "Suspend/Resume ${scope}";
@@ -91,18 +92,18 @@
           background = false;
           args = [ "$COL-IMAGE" ];
         };
-        ssm-shell = {
-          shortCut = "s";
-          confirm = false;
-          description = "Start SSM to EC2";
-          scopes = [ "nodes" ];
-          background = false;
-          command = "${ssm}/bin/ssm";
-          args = [
-            "$NAME"
-            "$CONTEXT"
-          ];
-        };
+        # ssm-shell = {
+        #   shortCut = "s";
+        #   confirm = false;
+        #   description = "Start SSM to EC2";
+        #   scopes = [ "nodes" ];
+        #   background = false;
+        #   command = "${ssm}/bin/ssm";
+        #   args = [
+        #     "$NAME"
+        #     "$CONTEXT"
+        #   ];
+        # };
         toggle-helmrelease = mkToggle "helmreleases" "hr";
         toggle-ks = mkToggle "kustomizations" "ks";
         reconcile-hr = mkReconcile "hr" "helmreleases" "";
