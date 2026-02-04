@@ -2,7 +2,7 @@
   description = "My personal flake";
   inputs = {
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-    nixpkgs.url = "nixpkgs/nixos-unstable";
+    nixpkgs.url = "nixpkgs/nixos-unstable-small";
     nixpkgs-color-lsp.url = "github:tonybutt/nixpkgs/color-lsp-init";
     home-manager = {
       url = "github:nix-community/home-manager";
