@@ -228,8 +228,8 @@ in
           general = {
             "col.active_border" = lib.mkDefault "${activeGradient}";
             "col.inactive_border" = lib.mkDefault "${inactiveGradient}";
-            gaps_in = 3;
-            gaps_out = 6;
+            gaps_in = 1;
+            gaps_out = 3;
             border_size = 1;
             resize_on_border = false;
             allow_tearing = false;
