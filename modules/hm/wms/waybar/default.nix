@@ -155,8 +155,11 @@ in
           };
 
           clock = {
-            format = "{:%a %d %b  %I:%M %p}";
-            format-alt = "{:L%d %B W%V %Y}";
+            format = "{:%a %d %b  %I:%M %p %Z}";
+            timezones = [
+              "America/New_York"
+              "Etc/UTC"
+            ];
             tooltip-format = "<tt>{calendar}</tt>";
             calendar = {
               mode = "month";
@@ -164,6 +167,9 @@ in
               format = {
                 today = "<span color='#${colors.base0B}'><b><u>{}</u></b></span>";
               };
+            };
+            actions = {
+              on-click-right = "tz_up";
             };
           };
 
