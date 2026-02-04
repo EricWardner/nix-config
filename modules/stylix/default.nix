@@ -39,6 +39,7 @@ in
   config = mkIf cfg.enable {
     stylix = {
       targets.gnome.enable = false;
+      targets.waybar.enable = false;
       enable = true;
       fonts =
         let
@@ -75,7 +76,7 @@ in
       image = cfg.wallpaper;
       base16Scheme = cfg.theme;
       opacity = {
-        terminal = 0.65;
+        terminal = 0.90;
       };
     };
   };

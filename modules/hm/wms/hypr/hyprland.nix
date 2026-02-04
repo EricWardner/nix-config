@@ -246,14 +246,18 @@ in
             };
 
             blur = {
-              enabled = false;
-              size = 2;
+              enabled = true;
+              size = 4;
               passes = 2;
               special = true;
-              brightness = 0.60;
-              contrast = 0.75;
+              xray = true;
+              popups = true;
             };
           };
+
+          layerrule = [
+            "blur on, ignore_alpha 0.5, match:namespace waybar"
+          ];
 
           # Omarchy animations
           animations = {
