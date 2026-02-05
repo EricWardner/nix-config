@@ -3,6 +3,7 @@
   inputs = {
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nixpkgs.url = "nixpkgs/nixos-unstable-small";
+    claude-code.url = "github:sadjow/claude-code-nix";
     nixpkgs-color-lsp.url = "github:tonybutt/nixpkgs/color-lsp-init";
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -29,9 +30,11 @@
   nixConfig = {
     extra-substituters = [
       "https://hyprland.cachix.org"
+      "https://claude-code.cachix.org"
     ];
     extra-trusted-public-keys = [
       "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+      "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
     ];
   };
 
@@ -47,6 +50,7 @@
       nur,
       treefmt-nix,
       pre-commit-hooks,
+      claude-code,
       ...
     }@inputs:
     let
@@ -56,6 +60,7 @@
         config.allowUnfree = true;
         overlays = [
           nur.overlays.default
+          claude-code.overlays.default
         ];
       };
       user = {
