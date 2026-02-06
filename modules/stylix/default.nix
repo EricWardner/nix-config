@@ -38,8 +38,6 @@ in
   };
   config = mkIf cfg.enable {
     stylix = {
-      targets.gnome.enable = false;
-      targets.waybar.enable = false;
       enable = true;
       fonts =
         let

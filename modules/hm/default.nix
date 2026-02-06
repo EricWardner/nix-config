@@ -16,6 +16,8 @@
     ../stylix
   ];
   config = {
+    stylix.targets.gnome.enable = false;
+    stylix.targets.waybar.enable = false;
     stylix.targets.hyprlock.enable = lib.mkForce false;
     stylix.targets.hyprpaper.enable = lib.mkForce false;
     xdg = {
