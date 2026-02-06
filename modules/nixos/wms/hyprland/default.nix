@@ -9,7 +9,7 @@ with lib;
 let
   cfg = config.modules.hyprland;
   tuigreet = "${pkgs.tuigreet}/bin/tuigreet";
-  session = "Hyprland";
+  session = "start-hyprland";
 in
 {
   options = {
