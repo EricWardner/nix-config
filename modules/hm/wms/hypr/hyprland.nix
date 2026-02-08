@@ -356,8 +356,6 @@ in
             "match:title ^(MainPicker)$, float on"
             "match:title ^(Sign in to Security Device)$, float on"
             "match:title ^(app.v2.gather.town is sharing)(.*)$, workspace 10"
-            "match:title ^()$, match:class ^(dev.zed.Zed)$, float on"
-            "match:class (dev.zed.Zed), opacity 0.85"
             "match:class signal, group on"
             "match:class Slack, group on"
             "match:class ^(dropdown)$, float on"

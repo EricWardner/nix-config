@@ -45,7 +45,6 @@ in
           rb = "nh os switch ${flakeDir}";
           rbh = "nh home switch ${flakeDir}";
           upd = "nh home switch ${flakeDir} --update";
-          zed = "zeditor";
           gct = "git commit";
         };
       historySubstringSearch.enable = true;

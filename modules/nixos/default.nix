@@ -47,6 +47,18 @@ in
           "nix-command"
           "flakes"
         ];
+        substituters = [
+          "https://hyprland.cachix.org"
+          "https://claude-code.cachix.org"
+        ];
+        trusted-substituters = [
+          "https://hyprland.cachix.org"
+          "https://claude-code.cachix.org"
+        ];
+        trusted-public-keys = [
+          "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+          "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
+        ];
       };
     };
 
