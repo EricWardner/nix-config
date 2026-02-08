@@ -341,9 +341,12 @@ in
             mouse_move_enables_dpms = true;
           };
 
-          # Special workspaces
+          # Workspace-monitor bindings
           workspace = [
             "special:monitor, on-created-empty: ${kitty} ${btop}"
+            "1, monitor:desc:GIGA-BYTE TECHNOLOGY CO. LTD. Gigabyte M32U 22181B002365, default:true"
+            "10, monitor:eDP-1, default:true"
+            "special:chat, monitor:eDP-1"
           ];
 
           # Omarchy window rules + personal rules (Hyprland 0.53+ syntax)
