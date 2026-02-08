@@ -56,7 +56,7 @@ in
           {
             timeout = cfg.screenOffTimeout;
             on-timeout = "hyprctl dispatch dpms off";
-            on-resume = "hyprctl dispatch dpms on";
+            on-resume = "hyprctl dispatch dpms on && brightnessctl -r";
           }
           # Suspend
           {

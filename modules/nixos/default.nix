@@ -156,10 +156,6 @@ in
 
     powerManagement.enable = true;
 
-    systemd.sleep.extraConfig = ''
-      HibernateDelaySec=30m
-    '';
-
     services = {
       upower.enable = true;
       devmon.enable = true;
