@@ -17,6 +17,10 @@
       scarlettRite.enable = true;
     };
   };
+  boot.resumeDevice = "/dev/mapper/crypted";
+  # Get offset with: sudo btrfs inspect-internal map-swapfile -r /.swapvol/swapfile
+  boot.kernelParams = [ "resume_offset=533760" ];
+
   services.fwupd.enable = true;
   fonts.packages = [
     pkgs.nerd-fonts.jetbrains-mono

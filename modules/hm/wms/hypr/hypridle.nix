@@ -61,7 +61,7 @@ in
           # Suspend
           {
             timeout = cfg.suspendTimeout;
-            on-timeout = "systemctl suspend";
+            on-timeout = "systemctl suspend-then-hibernate";
           }
         ];
       };

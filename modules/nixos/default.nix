@@ -156,6 +156,10 @@ in
 
     powerManagement.enable = true;
 
+    systemd.sleep.extraConfig = ''
+      HibernateDelaySec=30m
+    '';
+
     services = {
       upower.enable = true;
       devmon.enable = true;
@@ -167,12 +171,12 @@ in
       pcscd.enable = true;
       gnome.gnome-keyring.enable = true;
 
-      logind = {
-        lidSwitch = "suspend";
-        lidSwitchDocked = "suspend";
-        lidSwitchExternalPower = "suspend";
-        powerKey = "suspend";
-        powerKeyLongPress = "poweroff";
+      logind.settings.Login = {
+        HandleLidSwitch = "suspend-then-hibernate";
+        HandleLidSwitchDocked = "suspend-then-hibernate";
+        HandleLidSwitchExternalPower = "suspend-then-hibernate";
+        HandlePowerKey = "suspend-then-hibernate";
+        HandlePowerKeyLongPress = "poweroff";
       };
     };
 
