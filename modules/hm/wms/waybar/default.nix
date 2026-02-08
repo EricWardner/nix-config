@@ -199,16 +199,16 @@ in
             format-plugged = "󰚥 {capacity}%";
             format-alt = "{icon} {time}";
             format-icons = [
-              "󰢜"
-              "󰂆"
-              "󰂇"
-              "󰂈"
-              "󰢝"
-              "󰂉"
-              "󰢞"
-              "󰂊"
-              "󰂋"
-              "󰂅"
+              "󰁺"
+              "󰁻"
+              "󰁼"
+              "󰁽"
+              "󰁾"
+              "󰁿"
+              "󰂀"
+              "󰂁"
+              "󰂂"
+              "󰁹"
             ];
             format-full = "󱟢";
             tooltip-format = "{power}W {timeTo}";
