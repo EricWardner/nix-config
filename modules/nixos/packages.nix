@@ -20,11 +20,20 @@ in
     environment.systemPackages =
       with pkgs;
       [
-        kitty
         pavucontrol
         git
         vim
         unityhub
+        e2fsprogs
+        tcpdump
+        ltrace
+        strace
+        pciutils
+        usbutils
+        psmisc
+        procfd
+        nmap
+        dnsutils
       ]
       ++ cfg.extraDefaultPackages;
   };
