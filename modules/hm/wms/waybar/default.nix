@@ -116,13 +116,13 @@ in
           cpu = {
             interval = 5;
             format = "";
-            format-alt = "  {usage}%";
-            on-click = "${pkgs.kitty}/bin/kitty -e ${pkgs.btop}/bin/btop";
+            format-alt = " {usage}%";
+            on-click-right = "${pkgs.kitty}/bin/kitty -e ${pkgs.btop}/bin/btop";
           };
 
           memory = {
             format = "";
-            format-alt = "  {}%";
+            format-alt = " {}%";
           };
 
           temperature = {
@@ -193,11 +193,10 @@ in
           };
 
           battery = {
-            format = "{icon} {capacity}%";
-            format-discharging = "{icon}";
+            format = "{icon}";
             format-charging = "󰂄 {capacity}%";
             format-plugged = "󰚥 {capacity}%";
-            format-alt = "{icon} {time}";
+            format-alt = "{icon} {capacity}%";
             format-icons = [
               "󰁺"
               "󰁻"
