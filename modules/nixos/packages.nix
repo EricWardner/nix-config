@@ -34,6 +34,7 @@ in
         procfd
         nmap
         dnsutils
+        file
       ]
       ++ cfg.extraDefaultPackages;
   };
