@@ -154,6 +154,8 @@ in
       xfconf.enable = true;
     };
 
+    powerManagement.enable = true;
+
     services = {
       upower.enable = true;
       devmon.enable = true;
@@ -164,6 +166,14 @@ in
       blueman.enable = true;
       pcscd.enable = true;
       gnome.gnome-keyring.enable = true;
+
+      logind = {
+        lidSwitch = "suspend";
+        lidSwitchDocked = "suspend";
+        lidSwitchExternalPower = "suspend";
+        powerKey = "suspend";
+        powerKeyLongPress = "poweroff";
+      };
     };
 
     time.timeZone = cfg.timeZone;

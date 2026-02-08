@@ -8,6 +8,11 @@ in
     enable = mkEnableOption "Enable hypridle" // {
       default = true;
     };
+    dimTimeout = mkOption {
+      type = types.int;
+      default = 150;
+      description = "Seconds before dimming screen";
+    };
     lockTimeout = mkOption {
       type = types.int;
       default = 300;
@@ -15,8 +20,13 @@ in
     };
     screenOffTimeout = mkOption {
       type = types.int;
-      default = 330;
+      default = 600;
       description = "Seconds before turning off screen";
+    };
+    suspendTimeout = mkOption {
+      type = types.int;
+      default = 1200;
+      description = "Seconds before suspending system";
     };
   };
 
@@ -31,6 +41,12 @@ in
         };
 
         listener = [
+          # Dim screen
+          {
+            timeout = cfg.dimTimeout;
+            on-timeout = "brightnessctl -s set 10";
+            on-resume = "brightnessctl -r";
+          }
           # Lock screen
           {
             timeout = cfg.lockTimeout;
@@ -41,6 +57,11 @@ in
             timeout = cfg.screenOffTimeout;
             on-timeout = "hyprctl dispatch dpms off";
             on-resume = "hyprctl dispatch dpms on";
+          }
+          # Suspend
+          {
+            timeout = cfg.suspendTimeout;
+            on-timeout = "systemctl suspend";
           }
         ];
       };
