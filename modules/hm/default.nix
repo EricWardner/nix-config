@@ -58,6 +58,7 @@
         tree
         jq
         yubikey-manager
+        outfieldr
 
         # Clipboard
         grim
