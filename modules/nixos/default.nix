@@ -162,6 +162,7 @@ in
     '';
 
     services = {
+      tlp.enable = true;
       upower.enable = true;
       devmon.enable = true;
       gvfs.enable = true;
