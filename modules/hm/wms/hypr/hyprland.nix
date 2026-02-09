@@ -523,7 +523,8 @@ in
             "hyprpaper"
             "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service"
             "[workspace special:chat silent] ${slack}"
-            "[workspace special:browser silent] ${chrome}"
+            "[workspace 1 silent] ${kitty}"
+            "[workspace 1 silent] ${chrome}"
           ];
         };
     };
