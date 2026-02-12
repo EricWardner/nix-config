@@ -230,7 +230,7 @@ in
             "col.inactive_border" = lib.mkDefault "${inactiveGradient}";
             gaps_in = 1;
             gaps_out = 3;
-            border_size = 1;
+            border_size = 2;
             resize_on_border = false;
             allow_tearing = false;
             layout = "dwindle";
