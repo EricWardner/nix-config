@@ -40,6 +40,7 @@
     stern
     ssm-session-manager-plugin
     pcsc-tools
+    (callPackage ../packages/vibetunnel { })
     (pkgs.writeShellScriptBin "setup-browser-CAC" ''
       NSSDB="''${HOME}/.pki/nssdb"
       mkdir -p ''${NSSDB}
