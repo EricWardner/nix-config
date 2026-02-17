@@ -9,10 +9,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     stylix.url = "github:danth/stylix";
-    apple-fonts = {
-      url = "github:Lyndeno/apple-fonts.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
     font-patcher.url = "github:ericwardner/font-patcher";
     hyprland.url = "github:hyprwm/Hyprland";
     disko = {
