@@ -40,7 +40,51 @@
     stern
     ssm-session-manager-plugin
     pcsc-tools
+    qrencode
     (callPackage ../packages/vibetunnel { })
+    (
+      let
+        vibetunnel = callPackage ../packages/vibetunnel { };
+      in
+      pkgs.writeShellScriptBin "vtgo" ''
+        # Check if vibetunnel is already running
+        if ${pkgs.coreutils}/bin/ss -tlnp 2>/dev/null | grep -q ':4020 '; then
+          echo "vibetunnel already running on port 4020, just starting tunnel..."
+        else
+          rm -rf ~/.vibetunnel/control/sessions
+          ${vibetunnel}/bin/vibetunnel "$@" &
+          VT_PID=$!
+          sleep 1
+        fi
+
+        ${pkgs.cloudflared}/bin/cloudflared tunnel --url http://localhost:4020 2>&1 | tee /tmp/cloudflared.log &
+        CF_PID=$!
+
+        # Wait for the URL to appear
+        for i in $(seq 1 20); do
+          URL=$(grep -oP 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log 2>/dev/null | head -1)
+          if [ -n "$URL" ]; then
+            echo ""
+            ${pkgs.qrencode}/bin/qrencode -t ANSIUTF8 "$URL"
+            echo ""
+            echo "$URL"
+            echo ""
+            echo "Press Ctrl+C to stop"
+            break
+          fi
+          sleep 1
+        done
+
+        [ -z "$URL" ] && echo "Timed out waiting for tunnel URL"
+
+        cleanup() {
+          kill $CF_PID 2>/dev/null; wait $CF_PID 2>/dev/null
+          [ -n "''${VT_PID:-}" ] && kill $VT_PID 2>/dev/null && wait $VT_PID 2>/dev/null
+        }
+        trap cleanup EXIT INT TERM
+        wait
+      ''
+    )
     (pkgs.writeShellScriptBin "setup-browser-CAC" ''
       NSSDB="''${HOME}/.pki/nssdb"
       mkdir -p ''${NSSDB}

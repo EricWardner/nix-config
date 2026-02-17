@@ -51,7 +51,8 @@ buildNpmPackage rec {
     # bin/vibetunnel which require()'s it (fails due to require.main guard)
     rm $out/bin/vibetunnel
     makeWrapper ${nodejs_22}/bin/node $out/bin/vibetunnel \
-      --add-flags "$vtdir/dist/vibetunnel-cli"
+      --add-flags "$vtdir/dist/vibetunnel-cli" \
+      --set BUILD_PUBLIC_PATH "$vtdir/public"
     makeWrapper $out/bin/vibetunnel $out/bin/vt \
       --add-flags "fwd"
   '';
