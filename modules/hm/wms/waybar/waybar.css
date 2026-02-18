@@ -2,7 +2,7 @@
 @define-color background @base00;
 
 * {
-  background-color: @background;
+  background-color: transparent;
   color: @foreground;
 
   border: none;
