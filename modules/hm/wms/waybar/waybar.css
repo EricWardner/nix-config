@@ -1,9 +1,6 @@
-@define-color foreground @base05;
-@define-color background @base00;
-
 * {
   background-color: transparent;
-  color: @foreground;
+  color: @base05;
 
   border: none;
   border-radius: 0;
@@ -34,7 +31,7 @@ window#waybar {
   padding: 0 8px;
   margin: 0 4px;
   min-width: 8px;
-  color: @foreground;
+  color: @base05;
   background-color: transparent;
   border: none;
   border-top: 4px solid transparent;
@@ -49,7 +46,7 @@ window#waybar {
 #workspaces button.focused,
 #workspaces button.visible,
 #workspaces button.active {
-  border-bottom: 4px solid @foreground;
+  border-bottom: 4px solid @base05;
 }
 
 #window {
@@ -84,7 +81,7 @@ window#waybar {
 
 /* nm-applet and tray menu styling */
 window > menu {
-  background: @background;
+  background: @base00;
 }
 
 window > menu > menuitem:hover,
@@ -95,7 +92,7 @@ window > menu > menuitem:hover > label,
 window > menu > menuitem:hover > label > *,
 window > menu > menuitem:hover > arrow {
   background-color: @base02;
-  color: @foreground;
+  color: @base05;
 }
 
 #tray > .passive {
@@ -133,7 +130,7 @@ tooltip {
 }
 
 tooltip label {
-  color: @foreground;
+  color: @base05;
 }
 
 #clock {
@@ -149,20 +146,20 @@ tooltip label {
 @keyframes blink {
   to {
     background-color: @base08;
-    color: @background;
+    color: @base00;
   }
 }
 
 #battery.warning:not(.charging) {
   background-color: @base0A;
-  color: @background;
+  color: @base00;
   border-radius: 4px;
   padding: 0 4px;
 }
 
 #battery.critical:not(.charging) {
   background-color: @base08;
-  color: @background;
+  color: @base00;
   border-radius: 4px;
   padding: 0 4px;
   animation-name: blink;
