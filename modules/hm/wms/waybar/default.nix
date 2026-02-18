@@ -88,7 +88,7 @@ in
           "custom/lock" = {
             format = "";
             on-click = "loginctl lock-session && ${pkgs.hyprlock}/bin/hyprlock";
-            tooltip = false;
+            tooltip-format = "Lock Screen";
           };
 
           "group/tray-expander" = {
