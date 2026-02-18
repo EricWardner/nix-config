@@ -62,8 +62,7 @@ window#waybar {
 #pulseaudio,
 #backlight,
 #bluetooth,
-#network,
-#custom-nix {
+#network {
   min-width: 12px;
   margin: 0 8px;
 }
