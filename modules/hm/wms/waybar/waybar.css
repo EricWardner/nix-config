@@ -37,6 +37,7 @@ window#waybar {
   color: @foreground;
   background-color: transparent;
   border: none;
+  border-top: 4px solid transparent;
   border-bottom: 4px solid transparent;
   transition: all 0.3s ease;
 }
@@ -65,6 +66,11 @@ window#waybar {
 #network {
   min-width: 12px;
   margin: 0 8px;
+}
+
+#custom-nix {
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
 }
 
 #tray {
