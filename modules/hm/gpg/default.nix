@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   user,
   ...
 }:
@@ -15,6 +16,17 @@ in
     };
   };
   config = mkIf cfg.enable {
+    home.packages = [ pkgs.yubikey-touch-detector ];
+
+    systemd.user.services.yubikey-touch-detector = {
+      Unit.Description = "YubiKey touch detector";
+      Service = {
+        ExecStart = "${pkgs.yubikey-touch-detector}/bin/yubikey-touch-detector --libnotify";
+        Restart = "on-failure";
+      };
+      Install.WantedBy = [ "default.target" ];
+    };
+
     services.gpg-agent = {
       enable = true;
       enableScDaemon = true;
