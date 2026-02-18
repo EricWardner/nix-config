@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   inherit (lib) mkIf;
 in
@@ -14,6 +19,7 @@ in
         "default-timeout" = 0;
         anchor = "center";
         layer = "overlay";
+        on-notify = "exec pw-play ${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/dialog-warning.oga";
       };
     };
   };
