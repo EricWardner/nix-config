@@ -116,10 +116,11 @@
       enable = true;
       package = pkgs.google-chrome;
     };
-    zsh.sessionVariables = {
-      BROWSER = "google-chrome-stable";
-      EDITOR = "vim";
-    };
+  };
+  home.sessionVariables = {
+    BROWSER = "google-chrome-stable";
+    EDITOR = "vim";
+    SOPS_AGE_SSH_PRIVATE_KEY_FILE = "$HOME/.ssh/id_ed25519_sops";
   };
   gtk = {
     enable = true;
