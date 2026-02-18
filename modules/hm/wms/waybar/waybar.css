@@ -73,7 +73,7 @@ window#waybar {
 }
 
 #tray > widget:hover {
-  background-color: @base02;
+  background-color: transparent;
   border-radius: 4px;
 }
 
