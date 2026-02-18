@@ -110,12 +110,14 @@ window > menu > menuitem:hover > arrow {
   padding: 0 8px;
   margin: 0 4px;
   border-radius: 4px;
-  background-color: @base02;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.3);
   transition: all 0.2s ease;
 }
 
 #custom-lock:hover {
-  background-color: @base03;
+  background-color: rgba(255, 255, 255, 0.25);
 }
 
 tooltip {
