@@ -66,8 +66,7 @@ window#waybar {
 }
 
 #custom-nix {
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
+  font-size: 20px;
 }
 
 #tray {
