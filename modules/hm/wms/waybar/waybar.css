@@ -45,7 +45,7 @@ window#waybar {
 
 #workspaces button.focused,
 #workspaces button.visible,
-#workspaces button.active {
+#workspaces button.available {
   border-bottom: 4px solid @base05;
 }
 
@@ -178,6 +178,21 @@ tooltip label {
 
 #pulseaudio.muted {
   color: @base03;
+}
+
+#custom-webcam {
+  margin: 0 4px;
+}
+
+#custom-webcam.muted {
+  color: @base03;
+}
+
+#custom-webcam.in-use {
+  color: @base00;
+  background-color: @base0B;
+  border-radius: 4px;
+  padding: 0 4px;
 }
 
 .hidden {

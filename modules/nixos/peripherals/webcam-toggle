@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ACTION="${1:-toggle}"
+USB_IDS="${2:-0c45:6d50 046d:0946}"
+
+find_sysfs_paths() {
+  local vid pid
+  for id in $USB_IDS; do
+    vid="${id%%:*}"
+    pid="${id##*:}"
+    for devpath in /sys/bus/usb/devices/*/idVendor; do
+      dir="$(dirname "$devpath")"
+      if [[ -f "$dir/idVendor" && -f "$dir/idProduct" && -f "$dir/authorized" ]] \
+         && [[ "$(cat "$dir/idVendor")" == "$vid" ]] \
+         && [[ "$(cat "$dir/idProduct")" == "$pid" ]]; then
+        echo "$dir"
+      fi
+    done
+  done
+}
+
+paths=$(find_sysfs_paths)
+
+if [[ -z "$paths" ]]; then
+  echo "No matching cameras found"
+  exit 0
+fi
+
+case "$ACTION" in
+  on)
+    for p in $paths; do echo 1 > "$p/authorized"; done
+    echo "Cameras authorized"
+    ;;
+  off)
+    for p in $paths; do echo 0 > "$p/authorized"; done
+    echo "Cameras deauthorized"
+    ;;
+  toggle)
+    # If any camera is authorized, deauthorize all; otherwise authorize all
+    any_on=0
+    for p in $paths; do
+      if [[ "$(cat "$p/authorized")" == "1" ]]; then
+        any_on=1
+        break
+      fi
+    done
+    if [[ "$any_on" == "1" ]]; then
+      for p in $paths; do echo 0 > "$p/authorized"; done
+      echo "Cameras deauthorized"
+    else
+      for p in $paths; do echo 1 > "$p/authorized"; done
+      echo "Cameras authorized"
+    fi
+    ;;
+  status)
+    for p in $paths; do
+      name="unknown"
+      [[ -f "$p/product" ]] && name="$(cat "$p/product")"
+      auth="$(cat "$p/authorized")"
+      if [[ "$auth" == "1" ]]; then
+        echo "$name: authorized"
+      else
+        echo "$name: deauthorized"
+      fi
+    done
+    ;;
+  *)
+    echo "Usage: webcam-toggle [on|off|toggle|status] [vendor:product ...]"
+    exit 1
+    ;;
+esac

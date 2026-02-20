@@ -41,6 +41,8 @@
     ssm-session-manager-plugin
     pcsc-tools
     qrencode
+    v4l-utils
+    cameractrls
     (callPackage ../packages/vibetunnel { })
     (
       let
