@@ -365,7 +365,8 @@ in
             "match:class ^(dropdown)$, size 800 400"
             "match:class ^(dropdown)$, center on"
             "match:class ^(dropdown)$, animation slide"
-            "match:class ^(pavucontrol)$, float on"
+            "match:class ^(org.pulseaudio.pavucontrol|.blueman-manager-wrapped|hu.irl.cameractrls|nm-connection-editor|btop)$, float on"
+            "match:class ^(org.pulseaudio.pavucontrol|.blueman-manager-wrapped|hu.irl.cameractrls|nm-connection-editor|btop)$, move (monitor_w-window_w-10) 40"
           ];
 
           # Tiling bindings (Omarchy + personal vim keys)

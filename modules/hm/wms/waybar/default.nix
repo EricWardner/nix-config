@@ -86,14 +86,14 @@ in
           modules-right = [
             "group/tray-expander"
             "custom/lock"
-            "custom/webcam"
-            "temperature"
-            "bluetooth"
             "network"
+            "bluetooth"
+            "custom/webcam"
             "pulseaudio"
-            "backlight"
             "cpu"
             "memory"
+            "temperature"
+            "backlight"
             "battery"
           ];
 
@@ -143,6 +143,7 @@ in
             interval = 2;
             signal = 10;
             on-click = "${pkgs.cameractrls-gtk4}/bin/cameractrlsgtk4";
+            on-click-middle = "${webcamToggle}";
             on-click-right = "${webcamToggle}";
           };
 
@@ -172,7 +173,7 @@ in
             interval = 5;
             format = "";
             format-alt = " {usage}%";
-            on-click-right = "${pkgs.kitty}/bin/kitty -e ${pkgs.btop}/bin/btop";
+            on-click-right = "${pkgs.kitty}/bin/kitty --class btop -e ${pkgs.btop}/bin/btop";
           };
 
           memory = {
@@ -285,8 +286,8 @@ in
           pulseaudio = {
             format = "{icon}";
             format-alt = "{icon}  {volume}% {format_source}";
-            on-click = "${pkgs.pavucontrol}/bin/pavucontrol";
-            on-click-right = "${pkgs.pamixer}/bin/pamixer -t";
+            on-click-middle = "${pkgs.pamixer}/bin/pamixer -t";
+            on-click-right = "${pkgs.pavucontrol}/bin/pavucontrol";
             tooltip-format = "Playing at {volume}%";
             scroll-step = 5;
             format-muted = "󰝟";
