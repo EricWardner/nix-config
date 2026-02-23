@@ -40,7 +40,7 @@ in
             valign = "center";
 
             outline_thickness = 4;
-            rounding = 0;
+            rounding = 16;
 
             outer_color = "rgb(${colors.base0D})";
             inner_color = "rgb(${colors.base00})";
