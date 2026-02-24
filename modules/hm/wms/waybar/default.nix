@@ -146,9 +146,9 @@ in
           "custom/webcam" = {
             exec = "${webcamStatus}";
             return-type = "json";
-            interval = 2;
+            interval = 1;
             signal = 10;
-            on-click = "${pkgs.cameractrls-gtk4}/bin/cameractrlsgtk4";
+            on-click = "${pkgs.cameractrls-gtk4}/bin/cameractrlsgtk4 &";
             on-click-middle = "${webcamToggle}";
             on-click-right = "${webcamToggle}";
           };
