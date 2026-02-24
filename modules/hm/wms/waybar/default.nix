@@ -15,36 +15,42 @@ let
   '';
 
   webcamStatus = pkgs.writeShellScript "webcam-status" ''
-    USB_IDS="0c45:6d50 046d:0946"
+    STATE_FILE="/tmp/webcam-usb-paths"
     found=0
     any_on=0
     in_use=0
-    for id in $USB_IDS; do
-      vid="''${id%%:*}"
-      pid="''${id##*:}"
-      for devpath in /sys/bus/usb/devices/*/idVendor; do
-        dir="$(dirname "$devpath")"
-        if [ -f "$dir/idVendor" ] && [ -f "$dir/idProduct" ] && [ -f "$dir/authorized" ] \
-           && [ "$(cat "$dir/idVendor")" = "$vid" ] \
-           && [ "$(cat "$dir/idProduct")" = "$pid" ]; then
-          found=1
-          if [ "$(cat "$dir/authorized")" = "1" ]; then
-            any_on=1
-            # Check if any video device under this USB device is open by a process
-            for vdir in "$dir"/*/video4linux/video*; do
-              if [ -d "$vdir" ]; then
-                vdev="/dev/$(basename "$vdir")"
-                if [ -e "$vdev" ] && ${pkgs.psmisc}/bin/fuser "$vdev" >/dev/null 2>&1; then
-                  in_use=1
-                fi
-              fi
-            done
-          fi
+    for vdir in /sys/class/video4linux/video*; do
+      [ -d "$vdir" ] || continue
+      real="$(readlink -f "$vdir/device")"
+      dir="$real"
+      while [ "$dir" != "/" ]; do
+        if [ -f "$dir/authorized" ] && [ -f "$dir/idVendor" ]; then
+          break
         fi
+        dir="$(dirname "$dir")"
       done
+      [ "$dir" = "/" ] && continue
+      found=1
+      if [ "$(cat "$dir/authorized")" = "1" ]; then
+        any_on=1
+        vdev="/dev/$(basename "$vdir")"
+        if [ -e "$vdev" ] && ${pkgs.psmisc}/bin/fuser "$vdev" >/dev/null 2>&1; then
+          in_use=1
+        fi
+      fi
     done
+    # Check state file for deauthorized cameras (video4linux entries disappear when deauthorized)
+    if [ "$found" = "0" ] && [ -f "$STATE_FILE" ]; then
+      while IFS= read -r p; do
+        [ -f "$p/authorized" ] || continue
+        found=1
+        if [ "$(cat "$p/authorized")" = "1" ]; then
+          any_on=1
+        fi
+      done < "$STATE_FILE"
+    fi
     if [ "$found" = "0" ]; then
-      echo '{"text": "󰖠", "tooltip": "No cameras found", "class": "disconnected"}'
+      echo '{"text": "󱜷", "tooltip": "No cameras found", "class": "disconnected"}'
     elif [ "$any_on" = "0" ]; then
       echo '{"text": "󱜷", "tooltip": "Webcam muted", "class": "muted"}'
     elif [ "$in_use" = "1" ]; then

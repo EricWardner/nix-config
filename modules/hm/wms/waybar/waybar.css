@@ -184,7 +184,8 @@ tooltip label {
   margin: 0 4px;
 }
 
-#custom-webcam.muted {
+#custom-webcam.muted,
+#custom-webcam.disconnected {
   color: @base03;
 }
 

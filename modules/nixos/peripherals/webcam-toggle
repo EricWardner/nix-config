@@ -2,42 +2,50 @@
 set -euo pipefail
 
 ACTION="${1:-toggle}"
-USB_IDS="${2:-0c45:6d50 046d:0946}"
+STATE_FILE="/tmp/webcam-usb-paths"
 
-find_sysfs_paths() {
-  local vid pid
-  for id in $USB_IDS; do
-    vid="${id%%:*}"
-    pid="${id##*:}"
-    for devpath in /sys/bus/usb/devices/*/idVendor; do
-      dir="$(dirname "$devpath")"
-      if [[ -f "$dir/idVendor" && -f "$dir/idProduct" && -f "$dir/authorized" ]] \
-         && [[ "$(cat "$dir/idVendor")" == "$vid" ]] \
-         && [[ "$(cat "$dir/idProduct")" == "$pid" ]]; then
-        echo "$dir"
+find_webcam_usb_dirs() {
+  declare -A seen
+  for vdir in /sys/class/video4linux/video*; do
+    [ -d "$vdir" ] || continue
+    real="$(readlink -f "$vdir/device")"
+    dir="$real"
+    while [ "$dir" != "/" ]; do
+      if [ -f "$dir/authorized" ] && [ -f "$dir/idVendor" ]; then
+        if [[ -z "${seen[$dir]+x}" ]]; then
+          seen[$dir]=1
+          echo "$dir"
+        fi
+        break
       fi
+      dir="$(dirname "$dir")"
     done
   done
 }
 
-paths=$(find_sysfs_paths)
+# Get paths from live detection, falling back to saved state
+paths=$(find_webcam_usb_dirs)
+if [[ -z "$paths" && -f "$STATE_FILE" ]]; then
+  paths=$(cat "$STATE_FILE")
+fi
 
 if [[ -z "$paths" ]]; then
-  echo "No matching cameras found"
+  echo "No cameras found"
   exit 0
 fi
 
 case "$ACTION" in
   on)
     for p in $paths; do echo 1 > "$p/authorized"; done
+    rm -f "$STATE_FILE"
     echo "Cameras authorized"
     ;;
   off)
+    echo "$paths" > "$STATE_FILE" && chmod 644 "$STATE_FILE"
     for p in $paths; do echo 0 > "$p/authorized"; done
     echo "Cameras deauthorized"
     ;;
   toggle)
-    # If any camera is authorized, deauthorize all; otherwise authorize all
     any_on=0
     for p in $paths; do
       if [[ "$(cat "$p/authorized")" == "1" ]]; then
@@ -46,10 +54,12 @@ case "$ACTION" in
       fi
     done
     if [[ "$any_on" == "1" ]]; then
+      echo "$paths" > "$STATE_FILE" && chmod 644 "$STATE_FILE"
       for p in $paths; do echo 0 > "$p/authorized"; done
       echo "Cameras deauthorized"
     else
       for p in $paths; do echo 1 > "$p/authorized"; done
+      rm -f "$STATE_FILE"
       echo "Cameras authorized"
     fi
     ;;
@@ -66,7 +76,7 @@ case "$ACTION" in
     done
     ;;
   *)
-    echo "Usage: webcam-toggle [on|off|toggle|status] [vendor:product ...]"
+    echo "Usage: webcam-toggle [on|off|toggle|status]"
     exit 1
     ;;
 esac
