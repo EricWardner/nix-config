@@ -91,7 +91,6 @@ in
           ];
           modules-right = [
             "group/tray-expander"
-            "custom/lock"
             "network"
             "bluetooth"
             "custom/webcam"
