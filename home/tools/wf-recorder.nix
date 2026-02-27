@@ -5,8 +5,14 @@ let
 
     runtimeInputs = with pkgs; [
       wf-recorder
+      ffmpeg
       procps
       libnotify
+      jq
+      hyprland
+      slurp
+      bc
+      mpv
     ];
 
     text = builtins.readFile ./wf-recorder;

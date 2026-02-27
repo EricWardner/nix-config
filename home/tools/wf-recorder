@@ -1,10 +1,60 @@
-pgrep -x "wf-recorder" && pkill -INT -x wf-recorder && exit 0 && notify-send -h string:wf-recorder:record -t 1000 "Stopped Recording" "<span color='#90a4f4' font='26px'><i><b>3</b></i></span>"
+# Toggle: if wf-recorder is running, stop it
+if pgrep -x wf-recorder > /dev/null; then
+  pkill -INT -x wf-recorder
+  exit 0
+fi
+
+# Also kill any stale slurp
+pkill -x slurp 2>/dev/null || true
+
+raw_geometry=$(slurp) || exit 1
+
+# Parse slurp output "X,Y WxH"
+size="${raw_geometry##* }"
+crop_w="${size%%x*}"
+crop_h="${size##*x}"
+
+pos="${raw_geometry%% *}"
+gx="${pos%%,*}"
+gy="${pos##*,}"
+
+# Find which monitor contains the selection and get its offset + scale
+monitor_json=$(hyprctl monitors -j | jq --argjson gx "$gx" --argjson gy "$gy" \
+  'map(select(.x <= $gx and .y <= $gy and ($gx < .x + .width) and ($gy < .y + .height))) | .[0]')
+
+active_monitor=$(echo "$monitor_json" | jq -r '.name')
+monitor_x=$(echo "$monitor_json" | jq -r '.x')
+monitor_y=$(echo "$monitor_json" | jq -r '.y')
+scale=$(echo "$monitor_json" | jq -r '.scale')
+
+# Convert logical coords to physical for ffmpeg crop
+rel_x=$(echo "($gx - $monitor_x) * $scale" | bc | cut -d. -f1)
+rel_y=$(echo "($gy - $monitor_y) * $scale" | bc | cut -d. -f1)
+phys_w=$(echo "$crop_w * $scale" | bc | cut -d. -f1)
+phys_h=$(echo "$crop_h * $scale" | bc | cut -d. -f1)
+
 notify-send -h string:wf-recorder:record -t 1000 "Recording in:" "<span color='#90a4f4' font='26px'><i><b>3</b></i></span>"
 sleep 1
 notify-send -h string:wf-recorder:record -t 1000 "Recording in:" "<span color='#90a4f4' font='26px'><i><b>2</b></i></span>"
 sleep 1
 notify-send -h string:wf-recorder:record -t 950 "Recording in:" "<span color='#90a4f4' font='26px'><i><b>1</b></i></span>"
 sleep 1
-dateTime=$(date +%m-%d-%Y-%H:%M:%S)
-activeOutput=$(hyprctl monitors -j | jq -r '.[] | select(.focused==true) | .name')
-wf-recorder --output "$activeOutput" --bframes max_b_frames -f "$HOME/Videos/$dateTime.mp4"
+
+dateTime=$(date +%m-%d-%Y-%H-%M-%S)
+mp4File="$HOME/Videos/$dateTime.mp4"
+gifFile="$HOME/Videos/$dateTime.gif"
+
+# Record the full monitor
+wf-recorder --output "$active_monitor" -r 60 -f "$mp4File" || true
+
+# Crop + convert to GIF
+notify-send -h string:wf-recorder:record -t 10000 "Converting to GIF..." "This may take a moment"
+if [ -f "$mp4File" ]; then
+  ffmpeg -i "$mp4File" \
+    -vf "crop=${phys_w}:${phys_h}:${rel_x}:${rel_y},fps=60,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse=dither=sierra2_4a" \
+    -loop 0 "$gifFile" \
+    && notify-send -t 3000 "GIF Saved" "$gifFile" \
+    && mpv --loop --title="GIF Preview" "$gifFile" &
+else
+  notify-send -t 3000 "Recording Failed" "No video file was created"
+fi
