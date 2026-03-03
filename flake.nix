@@ -11,7 +11,6 @@
     stylix.url = "github:danth/stylix";
     apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
     font-patcher.url = "github:ericwardner/font-patcher";
-    hyprland.url = "github:hyprwm/Hyprland";
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -28,7 +27,6 @@
       nixpkgs,
       stylix,
       home-manager,
-      hyprland,
       disko,
       nixos-hardware,
       treefmt-nix,
@@ -98,7 +96,7 @@
             nixpkgs.lib.nixosSystem {
               inherit pkgs system;
               specialArgs = {
-                inherit user inputs hyprland;
+                inherit user inputs;
               };
               modules = hardwareModules ++ [
                 ./hosts/${hostname}/configuration.nix
