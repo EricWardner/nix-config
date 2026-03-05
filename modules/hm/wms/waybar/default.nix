@@ -113,6 +113,7 @@ in
               "class<google-chrome>" = "";
               "class<firefox>" = "";
               "class<kitty>" = "󰆍";
+              "class<com.mitchellh.ghostty>" = "󰆍";
               "class<code>" = "󰨞";
               "class<slack>" = "󰒱";
               "class<spotify>" = "󰓇";
@@ -178,7 +179,7 @@ in
             interval = 5;
             format = "";
             format-alt = " {usage}%";
-            on-click-right = "${pkgs.kitty}/bin/kitty --class btop -e ${pkgs.btop}/bin/btop";
+            on-click-right = "${pkgs.ghostty}/bin/ghostty --class=btop -e ${pkgs.btop}/bin/btop";
           };
 
           memory = {

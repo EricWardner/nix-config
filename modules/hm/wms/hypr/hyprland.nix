@@ -15,7 +15,7 @@ let
   inherit (builtins) map toString;
 
   # Binary paths
-  kitty = "${pkgs.kitty}/bin/kitty";
+  ghostty = "${pkgs.ghostty}/bin/ghostty";
   thunar = "${pkgs.thunar}/bin/thunar";
   fuzzel = "${pkgs.fuzzel}/bin/fuzzel";
   cliphist = "${pkgs.cliphist}/bin/cliphist";
@@ -343,7 +343,7 @@ in
 
           # Workspace-monitor bindings
           workspace = [
-            "special:monitor, on-created-empty: ${kitty} ${btop}"
+            "special:monitor, on-created-empty: ${ghostty} -e ${btop}"
             "1, monitor:desc:GIGA-BYTE TECHNOLOGY CO. LTD. Gigabyte M32U 22181B002365, default:true"
             "10, monitor:eDP-1, default:true"
             "special:chat, monitor:eDP-1"
@@ -383,7 +383,7 @@ in
             "$mainMod CTRL, F, fullscreenstate, 0 2"
             "$mainMod ALT, F, fullscreen, 1"
             # Applications
-            "$mainMod, Return, exec, ${kitty}"
+            "$mainMod, Return, exec, ${ghostty}"
             "$mainMod, E, exec, ${thunar}"
             "$mainMod, SPACE, exec, ${fuzzel}"
             "$mainMod, Y, exec, oath 19125157"
@@ -526,7 +526,7 @@ in
             "hyprpaper"
             "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service"
             "[workspace special:chat silent] ${slack}"
-            "[workspace 1 silent] ${kitty}"
+            "[workspace 1 silent] ${ghostty}"
             "[workspace 1 silent] ${chrome}"
           ];
         };
