@@ -49,12 +49,15 @@ in
         ];
         substituters = [
           "https://claude-code.cachix.org"
+          "https://ghostty.cachix.org"
         ];
         trusted-substituters = [
           "https://claude-code.cachix.org"
+          "https://ghostty.cachix.org"
         ];
         trusted-public-keys = [
           "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
+          "ghostty.cachix.org-1:QB389yTa6gTyneehvqG58y0WnHjQOqgnA+wBnpWWxns="
         ];
       };
     };
