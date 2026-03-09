@@ -20,7 +20,7 @@ in
       default = true;
     };
     modules.themes.theme = mkOption {
-      type = types.str or types.path;
+      type = types.either types.str types.path;
       default = "${pkgs.base16-schemes}/share/themes/material-darker.yaml";
       example = ''
         ./assets/themes/grail.yaml
