@@ -4,9 +4,9 @@
   lib,
   ...
 }:
-with lib;
 let
-  cfg = config.secondfront.hyprland.waybar;
+  inherit (lib) mkIf mkEnableOption;
+  cfg = config.modules.hyprland.waybar;
   inherit (config.lib.stylix) colors;
 
   webcamToggle = pkgs.writeShellScript "webcam-toggle" ''
@@ -62,7 +62,7 @@ let
 in
 {
   options = {
-    secondfront.hyprland.waybar.enable = mkEnableOption "Enable waybar" // {
+    modules.hyprland.waybar.enable = mkEnableOption "Enable waybar" // {
       default = true;
     };
   };
