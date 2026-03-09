@@ -1,7 +1,6 @@
 {
   pkgs,
   lib,
-  user,
   ...
 }:
 {
@@ -37,8 +36,6 @@
       };
     };
     home = {
-      username = user.username;
-      homeDirectory = "/home/${user.username}";
       packages = with pkgs; [
         # DevOpts
         awscli2
@@ -50,7 +47,6 @@
         kustomize
         istioctl
         cilium-cli
-        vim
 
         # Shell Utils
         gh
@@ -77,7 +73,6 @@
         source = ../stylix/assets/walls;
         target = "Wallpapers/Wallpapers/..";
       };
-      stateVersion = "25.05";
     };
     xdg.userDirs = {
       enable = true;
