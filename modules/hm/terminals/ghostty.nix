@@ -14,9 +14,6 @@ in
       enable = true;
       enableZshIntegration = true;
       settings = {
-        font-family = lib.mkForce [
-          "Cascadia Code NF"
-        ];
         font-codepoint-map = [
           # ── Nerd Font PUA gaps (only ranges NOT in Cascadia Code NF) ──
           "U+E7C6-U+E8EF=Symbols Nerd Font Mono"
