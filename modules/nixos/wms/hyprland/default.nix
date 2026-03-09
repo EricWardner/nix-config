@@ -32,10 +32,6 @@ in
           };
         };
       };
-      xserver = {
-        enable = true;
-        xkb.layout = "us";
-      };
     };
     systemd.services.greetd.serviceConfig = {
       Type = "idle";
