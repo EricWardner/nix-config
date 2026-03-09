@@ -5,8 +5,8 @@
   user,
   ...
 }:
-with lib;
 let
+  inherit (lib) mkIf mkEnableOption;
   cfg = config.modules.hyprland;
   tuigreet = "${pkgs.tuigreet}/bin/tuigreet";
   session = "start-hyprland";
@@ -55,15 +55,9 @@ in
       enable = true;
       config.common.default = [ "hyprland" ];
     };
-    hardware = {
-      nvidia = {
-        open = true;
-        powerManagement.enable = true;
-      };
-      graphics = {
-        enable = true;
-        enable32Bit = true;
-      };
+    hardware.graphics = {
+      enable = true;
+      enable32Bit = true;
     };
     environment.sessionVariables = {
       NIXOS_OZONE_WL = "1";

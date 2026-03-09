@@ -5,8 +5,13 @@
   user,
   ...
 }:
-with lib;
 let
+  inherit (lib)
+    mkIf
+    mkOption
+    mkEnableOption
+    types
+    ;
   cfg = config.modules;
 in
 {
