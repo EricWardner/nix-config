@@ -88,7 +88,6 @@ in
         enable = true;
       };
       networkmanager.enable = true;
-      wireless.enable = true;
     };
 
     hardware = {
