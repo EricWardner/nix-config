@@ -127,6 +127,7 @@ in
             max-length = 20;
             rewrite = {
               "^(?!.*\\S).*" = "Desktop";
+              "com\\.mitchellh\\.ghostty" = "Ghostty";
             };
           };
 
