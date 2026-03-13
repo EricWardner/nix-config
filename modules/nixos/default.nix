@@ -17,6 +17,7 @@ in
 {
   imports = [
     ./packages.nix
+    ./power-profiles.nix
     ./wms
     ./peripherals
     ./users

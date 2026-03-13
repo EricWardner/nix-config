@@ -18,6 +18,7 @@
   boot.kernelParams = [ "resume_offset=533760" ];
 
   services.tlp.enable = lib.mkForce false;
+  modules.powerProfiles.autoSwitch = true;
   services.fwupd.enable = true;
   fonts.packages = [
     pkgs.nerd-fonts.jetbrains-mono
