@@ -93,6 +93,11 @@
                 nixos-hardware.nixosModules.common-gpu-intel
               ];
             };
+            framework = {
+              hardwareModules = [
+                nixos-hardware.nixosModules.framework-amd-ai-300-series
+              ];
+            };
           };
           mkSystem =
             hostname:
