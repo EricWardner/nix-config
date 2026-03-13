@@ -147,7 +147,8 @@
             };
         in
         {
-          "${user.username}" = mkHome "tiberius"; # default
+          "${user.username}@tiberius" = mkHome "tiberius";
+          "${user.username}@framework" = mkHome "framework";
         };
     };
 }

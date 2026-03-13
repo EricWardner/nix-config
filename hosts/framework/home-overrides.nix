@@ -5,6 +5,7 @@
       {
         name = "eDP-1";
         enabled = true;
+        scale = "2";
       }
       {
         name = "desc:GIGA-BYTE TECHNOLOGY CO. LTD. Gigabyte M32U 22181B002365";
