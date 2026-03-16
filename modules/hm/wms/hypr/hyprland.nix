@@ -237,12 +237,13 @@ in
           };
 
           decoration = {
-            rounding = 0;
+            rounding = 12;
 
             shadow = {
-              enabled = false;
-              range = 2;
-              render_power = 3;
+              enabled = true;
+              range = 8;
+              render_power = 2;
+              color = lib.mkForce "rgba(00000040)";
             };
 
             blur = {
