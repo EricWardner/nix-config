@@ -12,6 +12,11 @@ in
     services.mako.enable = true;
     services.mako.settings = {
       "default-timeout" = 5000;
+      border-radius = 12;
+      padding = "12";
+      margin = "12";
+      anchor = "top-right";
+      border-size = 2;
 
       "app-name=yubikey-touch-detector" = {
         "icon-path" = "${config.home.homeDirectory}/.nix-profile/share/icons/hicolor";

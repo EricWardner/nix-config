@@ -228,8 +228,8 @@ in
           general = {
             "col.active_border" = lib.mkDefault "${activeGradient}";
             "col.inactive_border" = lib.mkDefault "${inactiveGradient}";
-            gaps_in = 1;
-            gaps_out = 3;
+            gaps_in = 4;
+            gaps_out = 8;
             border_size = 2;
             resize_on_border = false;
             allow_tearing = false;
@@ -286,7 +286,7 @@ in
               "layersOut, 1, 1.5, linear, fade"
               "fadeLayersIn, 1, 1.79, almostLinear"
               "fadeLayersOut, 1, 1.39, almostLinear"
-              "workspaces, 0, 0, easeOutQuint"
+              "workspaces, 1, 4, easeOutQuint, slide"
             ];
           };
 
