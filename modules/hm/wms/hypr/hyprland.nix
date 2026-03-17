@@ -441,9 +441,7 @@ in
             "$mainMod SHIFT, 0, movetoworkspacesilent, 10"
             # Special workspaces
             "$mainMod, B, togglespecialworkspace, browser"
-            "$mainMod, Z, togglespecialworkspace, spotify"
             "$mainMod, C, togglespecialworkspace, chat"
-            "$mainMod, M, togglespecialworkspace, monitor"
             # TAB between workspaces
             "$mainMod, TAB, workspace, previous"
             "$mainMod SHIFT, TAB, workspace, e-1"

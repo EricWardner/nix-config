@@ -32,7 +32,6 @@
     claude-code
     pavucontrol
     openssl
-    spotify
     libnotify
     yubioath-flutter
     signal-desktop
