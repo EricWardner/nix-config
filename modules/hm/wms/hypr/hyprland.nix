@@ -326,11 +326,25 @@ in
             };
           };
 
-          gestures = {
-            workspace_swipe_invert = false;
-            workspace_swipe_distance = 200;
-            workspace_swipe_forever = true;
-          };
+          # Native gesture support (Hyprland 0.46+)
+          # Syntax: gesture = fingers, direction, action, options
+          gesture = [
+            # 3-finger horizontal swipe to switch workspaces (1:1 animation)
+            "3, horizontal, workspace"
+            # 3-finger swipe up — toggle special monitor workspace
+            "3, up, special, monitor"
+            # 3-finger swipe down — toggle floating
+            "3, down, float"
+            # 4-finger horizontal swipe to move window to adjacent workspace
+            "4, left, dispatcher, movetoworkspacesilent, e-1"
+            "4, right, dispatcher, movetoworkspacesilent, e+1"
+            # 4-finger swipe up — fullscreen
+            "4, up, fullscreen"
+            # 4-finger swipe down — close window
+            "4, down, close"
+            # Pinch to zoom cursor
+            "2, pinch, cursorZoom, 2"
+          ];
 
           misc = {
             disable_hyprland_logo = true;
