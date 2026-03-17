@@ -335,8 +335,6 @@ in
             "3, down, float"
             # 4-finger swipe up — fullscreen
             "4, up, fullscreen"
-            # Pinch to zoom cursor
-            "2, pinch, cursorZoom, 2"
           ];
 
           misc = {
