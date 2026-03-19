@@ -160,6 +160,7 @@ in
               "class<slack>" = "󰒱";
               "class<spotify>" = "󰓇";
               "title<.* Gather .*>" = "󱁅";
+              "class<.*gather.*>" = "󱁅";
               "title<(.*) - (.*) - Visual Studio Code>" = "[󰨞 $2]";
             };
           };

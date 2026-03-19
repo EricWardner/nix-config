@@ -530,6 +530,7 @@ in
             "hyprpaper"
             "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service"
             "[workspace special:chat silent] ${slack}"
+            "[workspace special:chat silent] launch-webapp https://app.v2.gather.town/app/grail-41d17977-d077-48a5-835a-7eb7cb97cbff"
             "[workspace 1 silent] ${ghostty}"
             "[workspace 1 silent] ${chrome}"
           ];
