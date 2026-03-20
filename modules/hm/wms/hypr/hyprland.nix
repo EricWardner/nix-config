@@ -367,6 +367,8 @@ in
             "match:title ^(app.v2.gather.town is sharing)(.*)$, workspace 10"
             "match:class signal, group on"
             "match:class Slack, group on"
+            "match:class .*gather.*, workspace special:chat"
+            "match:class .*gather.*, group on"
             "match:class ^(dropdown)$, float on"
             "match:class ^(dropdown)$, size 800 400"
             "match:class ^(dropdown)$, center on"
