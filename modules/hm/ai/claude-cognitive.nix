@@ -17,78 +17,16 @@ let
     owner = "GMaN1911";
     repo = "claude-cognitive";
     rev = "main";
-    sha256 = "1pli7np432pzx2f1sasq369xlhjm3f1lpwllv4v8c080ngizqq0z";
+    sha256 = "sha256-2/cKcDexmJdQzHrN77BTigOTfaPCsyqWl6QwlC9UgsY=";
   };
 
-  settingsConfig = {
-    permissions = {
-      allow = [
-        "Bash(echo:*)"
-        "Bash(cat:*)"
-        "Bash(head:*)"
-        "Bash(printf:*)"
-        "Bash(grep:*)"
-        "Bash(nix fmt:*)"
-        "Bash(nh os build:*)"
-        "Bash(nh os switch:*)"
-        "Bash(nh home build:*)"
-        "Bash(nh home switch:*)"
-        "Bash(git status:*)"
-        "Bash(git diff:*)"
-        "Bash(git log:*)"
-        "Bash(git add:*)"
-        "Bash(git commit:*)"
-        "Bash(git restore:*)"
-        "WebFetch(domain:raw.githubusercontent.com)"
-        "mcp__figma__get_design_context"
-        "mcp__figma__get_screenshot"
-      ];
-    };
-    hooks = {
-      UserPromptSubmit = [
-        {
-          hooks = [
-            {
-              type = "command";
-              command = "python3 ~/.claude/scripts/context-router-v2.py";
-            }
-            {
-              type = "command";
-              command = "python3 ~/.claude/scripts/pool-auto-update.py";
-            }
-          ];
-        }
-      ];
-      SessionStart = [
-        {
-          hooks = [
-            {
-              type = "command";
-              command = "python3 ~/.claude/scripts/pool-loader.py";
-            }
-          ];
-        }
-      ];
-      Stop = [
-        {
-          hooks = [
-            {
-              type = "command";
-              command = "python3 ~/.claude/scripts/pool-extractor.py";
-            }
-          ];
-        }
-      ];
-    };
-  };
-
-  settingsJson = pkgs.writeText "claude-settings.json" (builtins.toJSON settingsConfig);
+  pythonWithDeps = pkgs.python3.withPackages (ps: [ ps.pyyaml ]);
 
   claude-cognitive-init = pkgs.writeShellApplication {
     name = "claude-cognitive-init";
     text = builtins.readFile ./claude-cognitive-init.sh;
   };
-  pythonWithDeps = pkgs.python3.withPackages (ps: [ ps.pyyaml ]);
+
 in
 {
   options.modules.ai.claude-cognitive = {
@@ -111,23 +49,77 @@ in
       CLAUDE_INSTANCE = cfg.instanceId;
     };
 
-    # Keep cognitive templates as symlinks (only used by init script)
+    # Cognitive templates (used by init script)
     home.file.".claude-cognitive" = {
       source = claude-cognitive-src;
       recursive = true;
     };
 
-    # Copy files instead of symlinking so Claude can read them
-    home.activation.claude-cognitive-files = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run mkdir -p "$HOME/.claude/scripts"
+    # Scripts as symlinks into the Nix store
+    home.file.".claude/scripts" = {
+      source = "${claude-cognitive-src}/scripts";
+      recursive = true;
+    };
 
-      # Copy scripts (dereference symlinks, force overwrite)
-      run cp -rLf "${claude-cognitive-src}/scripts/." "$HOME/.claude/scripts/"
-      run chmod -R u+w "$HOME/.claude/scripts"
-
-      # Copy settings.json
-      run cp -Lf "${settingsJson}" "$HOME/.claude/settings.json"
-      run chmod u+w "$HOME/.claude/settings.json"
-    '';
+    # Contribute permissions and hooks to shared settings
+    modules.ai.claude-settings = {
+      permissions.allow = [
+        "Bash(echo:*)"
+        "Bash(cat:*)"
+        "Bash(head:*)"
+        "Bash(printf:*)"
+        "Bash(grep:*)"
+        "Bash(nix fmt:*)"
+        "Bash(nh os build:*)"
+        "Bash(nh os switch:*)"
+        "Bash(nh home build:*)"
+        "Bash(nh home switch:*)"
+        "Bash(git status:*)"
+        "Bash(git diff:*)"
+        "Bash(git log:*)"
+        "Bash(git add:*)"
+        "Bash(git commit:*)"
+        "Bash(git restore:*)"
+        "WebFetch(domain:raw.githubusercontent.com)"
+        "mcp__figma__get_design_context"
+        "mcp__figma__get_screenshot"
+      ];
+      hooks = {
+        UserPromptSubmit = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${pythonWithDeps}/bin/python3 ~/.claude/scripts/context-router-v2.py";
+              }
+              {
+                type = "command";
+                command = "${pythonWithDeps}/bin/python3 ~/.claude/scripts/pool-auto-update.py";
+              }
+            ];
+          }
+        ];
+        SessionStart = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${pythonWithDeps}/bin/python3 ~/.claude/scripts/pool-loader.py";
+              }
+            ];
+          }
+        ];
+        Stop = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${pythonWithDeps}/bin/python3 ~/.claude/scripts/pool-extractor.py";
+              }
+            ];
+          }
+        ];
+      };
+    };
   };
 }

@@ -22,6 +22,8 @@
   };
   modules = {
     ai.claude-cognitive.enable = false;
+    ai.superpowers.enable = true;
+    ai.team-skills.enable = true;
     editors.vscode.enable = true;
   };
   home.packages = with pkgs; [

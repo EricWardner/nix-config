@@ -21,6 +21,11 @@
       url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    team-claude-skills.url = "git+ssh://git@github.com/tiberius-grail/team-claude-skills";
+    superpowers = {
+      url = "github:obra/superpowers";
+      flake = false;
+    };
   };
   outputs =
     {
