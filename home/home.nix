@@ -22,7 +22,7 @@
   };
   modules = {
     ai.claude-cognitive.enable = false;
-    ai.superpowers.enable = true;
+    ai.superpowers.enable = false;
     ai.team-skills.enable = true;
     editors.vscode.enable = true;
   };
