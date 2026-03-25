@@ -83,7 +83,6 @@
       documents = null;
       music = null;
       templates = null;
-      videos = true;
       publicShare = null;
     };
     services.cliphist = {
