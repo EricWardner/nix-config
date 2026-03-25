@@ -76,12 +76,14 @@
     };
     xdg.userDirs = {
       enable = true;
+      setSessionVariables = true;
+
       createDirectories = true;
       desktop = null;
       documents = null;
       music = null;
       templates = null;
-      videos = null;
+      videos = true;
       publicShare = null;
     };
     services.cliphist = {
