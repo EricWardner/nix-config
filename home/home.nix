@@ -36,7 +36,6 @@
     openssl
     libnotify
     yubioath-flutter
-    signal-desktop
     stern
     ssm-session-manager-plugin
     pcsc-tools
