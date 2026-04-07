@@ -27,6 +27,7 @@
           "x-scheme-handler/https" = [ "google-chrome.desktop" ];
           "x-scheme-handler/http" = [ "google-chrome.desktop" ];
           "text/html" = [ "google-chrome.desktop" ];
+          "inode/directory" = [ "thunar.desktop" ];
         };
       };
       desktopEntries."com.google.Chrome" = {

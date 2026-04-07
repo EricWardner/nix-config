@@ -46,6 +46,7 @@ in
           rbh = "nh home switch ${flakeDir}";
           upd = "nh home switch ${flakeDir} --update";
           gct = "git commit";
+          open = "xdg-open";
         };
       historySubstringSearch.enable = true;
       oh-my-zsh = {
