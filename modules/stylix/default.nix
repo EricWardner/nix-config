@@ -48,7 +48,7 @@ in
           };
           sfPro = {
             package = sf-pro-nerd-patched;
-            name = "SFProText Nerd Font";
+            name = "SFPro Nerd Font";
           };
           mono = {
             package = pkgs.cascadia-code;

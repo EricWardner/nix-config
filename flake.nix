@@ -2,7 +2,7 @@
   description = "My personal flake";
   inputs = {
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-    nixpkgs.url = "nixpkgs/nixos-unstable-small";
+    nixpkgs.url = "nixpkgs/nixos-unstable";
     claude-code.url = "github:sadjow/claude-code-nix";
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -15,7 +15,6 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    ghostty.url = "github:ghostty-org/ghostty";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
@@ -47,9 +46,6 @@
         config.allowUnfree = true;
         overlays = [
           claude-code.overlays.default
-          (_final: _prev: {
-            ghostty = inputs.ghostty.packages.${system}.default;
-          })
         ];
       };
       user = {

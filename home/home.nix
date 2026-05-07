@@ -30,6 +30,7 @@
     networkmanagerapplet
     mpv
     gimp3
+    brave
     unzip
     claude-code
     pavucontrol
@@ -41,6 +42,13 @@
     pcsc-tools
     v4l-utils
     cameractrls
+    (wrapOBS {
+      plugins = with obs-studio-plugins; [
+        wlrobs
+        obs-pipewire-audio-capture
+        obs-backgroundremoval
+      ];
+    })
     (pkgs.writeShellScriptBin "setup-browser-CAC" ''
       NSSDB="''${HOME}/.pki/nssdb"
       mkdir -p ''${NSSDB}

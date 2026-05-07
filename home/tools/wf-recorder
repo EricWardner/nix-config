@@ -45,7 +45,7 @@ mp4File="$HOME/Videos/$dateTime.mp4"
 gifFile="$HOME/Videos/$dateTime.gif"
 
 # Record the full monitor
-wf-recorder --output "$active_monitor" -r 60 -f "$mp4File" || true
+wf-recorder --output "$active_monitor" -r 60 -x yuv420p -f "$mp4File" || true
 
 # Crop + convert to GIF
 notify-send -h string:wf-recorder:record -t 10000 "Converting to GIF..." "This may take a moment"
