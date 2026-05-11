@@ -58,6 +58,7 @@ window#waybar {
 #temperature,
 #battery,
 #pulseaudio,
+#custom-volume,
 #backlight,
 #bluetooth,
 #network {
@@ -176,7 +177,8 @@ tooltip label {
   color: @base08;
 }
 
-#pulseaudio.muted {
+#pulseaudio.muted,
+#custom-volume.muted {
   color: @base03;
 }
 

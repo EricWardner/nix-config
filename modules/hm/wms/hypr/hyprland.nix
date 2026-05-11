@@ -505,9 +505,9 @@ in
 
           # Media keys (repeat on hold)
           bindel = [
-            ", XF86AudioRaiseVolume, exec, ${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%+"
-            ", XF86AudioLowerVolume, exec, ${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-"
-            ", XF86AudioMute, exec, ${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle"
+            ", XF86AudioRaiseVolume, exec, volume-action up"
+            ", XF86AudioLowerVolume, exec, volume-action down"
+            ", XF86AudioMute, exec, volume-action mute"
             ", XF86AudioMicMute, exec, ${wpctl} set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
             ", XF86MonBrightnessUp, exec, ${brightnessctl} set 5%+"
             ", XF86MonBrightnessDown, exec, ${brightnessctl} set 5%-"

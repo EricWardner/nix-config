@@ -14,6 +14,62 @@ let
     ${pkgs.procps}/bin/pkill -RTMIN+10 waybar
   '';
 
+  volumeAction = pkgs.writeShellApplication {
+    name = "volume-action";
+    runtimeInputs = with pkgs; [
+      wireplumber
+      procps
+      coreutils
+    ];
+    text = ''
+      case "''${1:-}" in
+        up)    wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+ ;;
+        down)  wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- ;;
+        mute)  wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle ;;
+        flash) ;;
+        *)     echo "usage: volume-action {up|down|mute|flash}" >&2; exit 1 ;;
+      esac
+      touch /tmp/waybar-volume-flash
+      pkill -RTMIN+11 waybar || true
+    '';
+  };
+
+  volumeStatus = pkgs.writeShellScript "volume-status" ''
+    FLAG_FILE="/tmp/waybar-volume-flash"
+    RAW=$(${pkgs.wireplumber}/bin/wpctl get-volume @DEFAULT_AUDIO_SINK@)
+    VOLUME=$(echo "$RAW" | ${pkgs.gawk}/bin/awk '{print int($2 * 100)}')
+
+    if echo "$RAW" | ${pkgs.gnugrep}/bin/grep -q MUTED; then
+      ICON="󰝟"
+      CLASS="muted"
+    elif [ "$VOLUME" -lt 33 ]; then
+      ICON="󰕿"
+      CLASS=""
+    elif [ "$VOLUME" -lt 67 ]; then
+      ICON="󰖀"
+      CLASS=""
+    else
+      ICON="󰕾"
+      CLASS=""
+    fi
+
+    SHOW_PCT=0
+    if [ -f "$FLAG_FILE" ]; then
+      NOW=$(${pkgs.coreutils}/bin/date +%s)
+      MTIME=$(${pkgs.coreutils}/bin/stat -c %Y "$FLAG_FILE")
+      AGE=$((NOW - MTIME))
+      [ "$AGE" -lt 2 ] && SHOW_PCT=1
+    fi
+
+    if [ "$SHOW_PCT" = "1" ]; then
+      TEXT="$ICON  $VOLUME%"
+    else
+      TEXT="$ICON"
+    fi
+
+    ${pkgs.coreutils}/bin/printf '{"text": "%s", "tooltip": "Volume: %d%%", "class": "%s"}\n' "$TEXT" "$VOLUME" "$CLASS"
+  '';
+
   webcamStatus = pkgs.writeShellScript "webcam-status" ''
     STATE_FILE="/tmp/webcam-usb-paths"
     found=0
@@ -108,6 +164,7 @@ in
     };
   };
   config = mkIf cfg.enable {
+    home.packages = [ volumeAction ];
     programs.waybar = {
       enable = true;
       systemd.enable = true;
@@ -136,7 +193,7 @@ in
             "network"
             "bluetooth"
             "custom/webcam"
-            "pulseaudio"
+            "custom/volume"
             "cpu"
             "memory"
             "temperature"
@@ -339,23 +396,16 @@ in
             on-click = "${pkgs.blueman}/bin/blueman-manager";
           };
 
-          pulseaudio = {
-            format = "{icon}";
-            format-alt = "{icon}  {volume}% {format_source}";
-            on-click-middle = "${pkgs.pamixer}/bin/pamixer -t";
+          "custom/volume" = {
+            exec = "${volumeStatus}";
+            return-type = "json";
+            interval = 1;
+            signal = 11;
+            on-click = "${volumeAction}/bin/volume-action flash";
+            on-click-middle = "${volumeAction}/bin/volume-action mute";
             on-click-right = "${pkgs.pavucontrol}/bin/pavucontrol";
-            tooltip-format = "Playing at {volume}%";
-            scroll-step = 5;
-            format-muted = "󰝟";
-            format-source = " {volume}%";
-            format-source-muted = "󰝟";
-            format-icons = {
-              default = [
-                "󰕿"
-                "󰖀"
-                "󰕾"
-              ];
-            };
+            on-scroll-up = "${volumeAction}/bin/volume-action up";
+            on-scroll-down = "${volumeAction}/bin/volume-action down";
           };
         };
       };
