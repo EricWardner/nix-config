@@ -291,7 +291,6 @@ in
           };
 
           dwindle = {
-            pseudotile = true;
             preserve_split = true;
             force_split = 2; # Always split on the right
           };
@@ -303,8 +302,6 @@ in
           group = {
             "col.border_active" = lib.mkDefault "${activeGradient}";
             "col.border_inactive" = lib.mkDefault "${inactiveGradient}";
-            "col.border_locked_active" = lib.mkDefault "-1";
-            "col.border_locked_inactive" = lib.mkDefault "-1";
 
             groupbar = {
               font_size = 12;
@@ -384,7 +381,7 @@ in
             # Close windows
             "$mainMod, Q, killactive,"
             # Control tiling
-            "$mainMod, S, togglesplit,"
+            "$mainMod, S, layoutmsg, togglesplit"
             "$mainMod, P, pseudo,"
             "$mainMod, F, togglefloating,"
             ",F11,fullscreen"

@@ -30,6 +30,8 @@ in
         strace
         pciutils
         usbutils
+        iw
+        ethtool
         psmisc
         procfd
         nmap
