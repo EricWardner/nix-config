@@ -29,5 +29,9 @@
     keyboard.zsa.enable = true;
   };
 
+  boot.extraModprobeConfig = ''
+    options cfg80211 ieee80211_regdom=US
+  '';
+
   system.stateVersion = "25.05";
 }
