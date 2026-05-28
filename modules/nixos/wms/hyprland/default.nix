@@ -49,7 +49,11 @@ in
     };
     xdg.portal = {
       enable = true;
-      config.common.default = [ "hyprland" ];
+      extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+      config.common.default = [
+        "hyprland"
+        "gtk"
+      ];
     };
     hardware.graphics = {
       enable = true;
