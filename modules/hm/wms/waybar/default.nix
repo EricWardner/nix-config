@@ -34,6 +34,127 @@ let
     '';
   };
 
+  # Push-to-talk: toggle PTT mode by clicking the waybar module; hold the talk
+  # key (Right Alt, bound in hyprland) to un-mute while PTT mode is armed.
+  #   /tmp/ptt-mode exists  => PTT mode armed (mic defaults to muted)
+  # Three visible states: normal-on, ptt-muted (armed, silent), ptt-active (talking).
+  micAction = pkgs.writeShellApplication {
+    name = "mic-action";
+    runtimeInputs = with pkgs; [
+      wireplumber
+      procps
+      coreutils
+    ];
+    text = ''
+      SRC="@DEFAULT_AUDIO_SOURCE@"
+      MODE_FILE="/tmp/ptt-mode"
+      refresh() { pkill -RTMIN+12 waybar || true; }
+
+      case "''${1:-}" in
+        toggle-mode)
+          if [ -f "$MODE_FILE" ]; then
+            rm -f "$MODE_FILE"
+            wpctl set-mute "$SRC" 0   # leaving PTT -> mic live
+          else
+            touch "$MODE_FILE"
+            wpctl set-mute "$SRC" 1   # entering PTT -> mic muted until you talk
+          fi
+          ;;
+        talk-start)
+          [ -f "$MODE_FILE" ] || exit 0
+          wpctl set-mute "$SRC" 0
+          ;;
+        talk-end)
+          [ -f "$MODE_FILE" ] || exit 0
+          wpctl set-mute "$SRC" 1
+          ;;
+        mute)
+          wpctl set-mute "$SRC" toggle
+          ;;
+        *)
+          echo "usage: mic-action {toggle-mode|talk-start|talk-end|mute}" >&2
+          exit 1
+          ;;
+      esac
+      refresh
+    '';
+  };
+
+  # Hold-to-talk key bindings for the triggerhappy daemon. Read raw evdev so
+  # the modifier-key *release* is seen (Hyprland's bindr can't do this for
+  # modifiers — #3453). value 1 = press, 0 = release. mic-action self-guards
+  # on /tmp/ptt-mode, so these no-op unless PTT mode is armed from waybar.
+  pttTriggers = pkgs.writeText "ptt-triggers.conf" ''
+    KEY_RIGHTALT 1 ${micAction}/bin/mic-action talk-start
+    KEY_RIGHTALT 0 ${micAction}/bin/mic-action talk-end
+  '';
+
+  # Bridge: on input hotplug, resync triggerhappy's watched device set so a
+  # keyboard plugged in after thd started still drives push-to-talk.
+  pttHotplug = pkgs.writeShellApplication {
+    name = "ptt-hotplug";
+    runtimeInputs = with pkgs; [
+      systemd # udevadm
+      triggerhappy
+      coreutils
+    ];
+    text = ''
+      SOCK="''${XDG_RUNTIME_DIR}/triggerhappy.socket"
+      # wait for the daemon to create its control socket
+      for _ in $(seq 1 100); do [ -S "$SOCK" ] && break; sleep 0.1; done
+
+      resync() {
+        th-cmd --socket "$SOCK" --clear || true
+        # shellcheck disable=SC2086
+        th-cmd --socket "$SOCK" --add /dev/input/event* || true
+      }
+
+      # pick up anything that appeared during startup, then follow udev
+      resync
+      udevadm monitor --udev --subsystem-match=input | while read -r line; do
+        case "$line" in
+          *" add "* | *" remove "*) resync ;;
+        esac
+      done
+    '';
+  };
+
+  micStatus = pkgs.writeShellScript "mic-status" ''
+    SRC="@DEFAULT_AUDIO_SOURCE@"
+    MODE_FILE="/tmp/ptt-mode"
+    RAW=$(${pkgs.wireplumber}/bin/wpctl get-volume "$SRC" 2>/dev/null)
+
+    if echo "$RAW" | ${pkgs.gnugrep}/bin/grep -q MUTED; then
+      MUTED=1
+    else
+      MUTED=0
+    fi
+
+    if [ -f "$MODE_FILE" ]; then
+      if [ "$MUTED" = "1" ]; then
+        ICON="󰍭"
+        CLASS="ptt-muted"
+        TOOLTIP="Push-to-talk armed — hold Right Alt to talk"
+      else
+        ICON="󰍬"
+        CLASS="ptt-active"
+        TOOLTIP="Push-to-talk — talking"
+      fi
+    else
+      if [ "$MUTED" = "1" ]; then
+        ICON="󰍭"
+        CLASS="muted"
+        TOOLTIP="Mic muted (left-click for push-to-talk)"
+      else
+        ICON="󰍬"
+        CLASS="on"
+        TOOLTIP="Mic live (left-click for push-to-talk)"
+      fi
+    fi
+
+    ${pkgs.coreutils}/bin/printf '{"text": "%s", "tooltip": "%s", "class": "%s"}\n' "$ICON" "$TOOLTIP" "$CLASS"
+  '';
+
   volumeStatus = pkgs.writeShellScript "volume-status" ''
     FLAG_FILE="/tmp/waybar-volume-flash"
     RAW=$(${pkgs.wireplumber}/bin/wpctl get-volume @DEFAULT_AUDIO_SINK@)
@@ -164,10 +285,58 @@ in
     };
   };
   config = mkIf cfg.enable {
-    home.packages = [ volumeAction ];
+    home.packages = [
+      volumeAction
+      micAction
+    ];
+
+    # Push-to-talk: triggerhappy reads /dev/input directly and drives the mic
+    # on Right Alt press/release. User service (you're in the `input` group),
+    # so it can both read evdev and reach your PipeWire session. Hotplugged
+    # keyboards are handled by the push-to-talk-hotplug bridge below.
+    systemd.user.services.push-to-talk = {
+      Unit = {
+        Description = "Push-to-talk (hold Right Alt) — triggerhappy evdev daemon";
+        After = [ "graphical-session.target" ];
+        PartOf = [ "graphical-session.target" ];
+      };
+      Service = {
+        # --socket lets the hotplug helper (below) add keyboards plugged in
+        # after startup. %t = $XDG_RUNTIME_DIR.
+        ExecStart = "${pkgs.triggerhappy}/bin/thd --triggers ${pttTriggers} --socket %t/triggerhappy.socket --deviceglob /dev/input/event*";
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
+      Install.WantedBy = [ "graphical-session.target" ];
+    };
+
+    # thd only opens devices matching --deviceglob at startup, so a keyboard
+    # plugged in later isn't watched. This bridge watches udev for input
+    # add/remove and resyncs the daemon's device set over its control socket.
+    # Runs as the user (in the `input` group), so no root/udev rule needed.
+    systemd.user.services.push-to-talk-hotplug = {
+      Unit = {
+        Description = "Push-to-talk: sync hotplugged keyboards into triggerhappy";
+        After = [ "push-to-talk.service" ];
+        Requires = [ "push-to-talk.service" ];
+        PartOf = [ "push-to-talk.service" ];
+      };
+      Service = {
+        ExecStart = "${pttHotplug}/bin/ptt-hotplug";
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
+      Install.WantedBy = [ "graphical-session.target" ];
+    };
     programs.waybar = {
       enable = true;
-      systemd.enable = true;
+      # Launched from Hyprland (see exec-once), NOT as a systemd --user service.
+      # A systemd user service runs in the separate user@.service "manager"
+      # session; with kernel.yama.ptrace_scope=1 that session can't read the fds
+      # of apps in the graphical login session, so the webcam "in-use" detection
+      # (fuser on /dev/video*) goes blind to Chrome/etc. Running waybar inside the
+      # Hyprland login session (seat0) restores that visibility.
+      systemd.enable = false;
       settings = {
         mainBar = {
           reload_style_on_change = true;
@@ -193,6 +362,7 @@ in
             "network"
             "bluetooth"
             "custom/webcam"
+            "custom/mic"
             "custom/volume"
             "cpu"
             "memory"
@@ -394,6 +564,18 @@ in
             format-no-controller = "󰂲";
             tooltip-format = "Devices connected: {num_connections}";
             on-click = "${pkgs.blueman}/bin/blueman-manager";
+          };
+
+          "custom/mic" = {
+            exec = "${micStatus}";
+            return-type = "json";
+            interval = 2;
+            signal = 12;
+            on-click = "${micAction}/bin/mic-action toggle-mode";
+            on-click-middle = "${micAction}/bin/mic-action mute";
+            on-click-right = "${pkgs.pavucontrol}/bin/pavucontrol";
+            on-scroll-up = "${micAction}/bin/mic-action mute";
+            on-scroll-down = "${micAction}/bin/mic-action mute";
           };
 
           "custom/volume" = {

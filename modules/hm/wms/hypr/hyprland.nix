@@ -24,10 +24,10 @@ let
   grim = "${pkgs.grim}/bin/grim";
   slurp = "${pkgs.slurp}/bin/slurp";
   swappy = "${pkgs.swappy}/bin/swappy";
-  wpctl = "${pkgs.wireplumber}/bin/wpctl";
   playerctl = "${pkgs.playerctl}/bin/playerctl";
   btop = "${pkgs.btop}/bin/btop";
   hyprlock = "${pkgs.hyprlock}/bin/hyprlock";
+  waybar = "${pkgs.waybar}/bin/waybar";
   slack = "${pkgs.slack}/bin/slack";
   chrome = "${pkgs.google-chrome}/bin/google-chrome-stable";
   wfRecorderToggle = "wf-recorder-toggle";
@@ -505,7 +505,7 @@ in
             ", XF86AudioRaiseVolume, exec, volume-action up"
             ", XF86AudioLowerVolume, exec, volume-action down"
             ", XF86AudioMute, exec, volume-action mute"
-            ", XF86AudioMicMute, exec, ${wpctl} set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
+            ", XF86AudioMicMute, exec, mic-action mute"
             ", XF86MonBrightnessUp, exec, ${brightnessctl} set 5%+"
             ", XF86MonBrightnessDown, exec, ${brightnessctl} set 5%-"
           ];
@@ -525,6 +525,10 @@ in
           ];
 
           exec-once = [
+            # Run waybar inside the Hyprland login session (seat0) rather than as
+            # a systemd --user service, so its webcam fuser check can see other
+            # apps' camera usage (see waybar systemd.enable comment).
+            "${waybar}"
             "nm-applet --indicator"
             "hyprpaper"
             "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service"

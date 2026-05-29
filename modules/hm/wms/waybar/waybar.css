@@ -59,6 +59,7 @@ window#waybar {
 #battery,
 #pulseaudio,
 #custom-volume,
+#custom-mic,
 #backlight,
 #bluetooth,
 #network {
@@ -180,6 +181,32 @@ tooltip label {
 #pulseaudio.muted,
 #custom-volume.muted {
   color: @base03;
+}
+
+/* Microphone / push-to-talk states */
+#custom-mic.on {
+  color: @base05;
+}
+
+/* Plain mute (not in PTT mode) */
+#custom-mic.muted {
+  color: @base03;
+}
+
+/* PTT armed but silent — visible "hot mic is off" cue */
+#custom-mic.ptt-muted {
+  color: @base00;
+  background-color: @base08;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+/* PTT active — talking */
+#custom-mic.ptt-active {
+  color: @base00;
+  background-color: @base0B;
+  border-radius: 4px;
+  padding: 0 4px;
 }
 
 #custom-webcam {
