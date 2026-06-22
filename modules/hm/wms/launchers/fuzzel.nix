@@ -11,7 +11,7 @@
         inner-pad = 4; # 4 * 1.25 = 5
         line-height = 20; # 20 * 1.25 = 25
         icon-theme = "Papirus-Dark";
-        font = lib.mkForce "SFPro Nerd Font:size=13";
+        font = lib.mkForce "SFProText Nerd Font:size=13";
       };
       border = {
         width = 4; # 4 * 1.25 = 5 (was 1 → 1.25 fractional)

@@ -27,10 +27,45 @@ let
   playerctl = "${pkgs.playerctl}/bin/playerctl";
   btop = "${pkgs.btop}/bin/btop";
   hyprlock = "${pkgs.hyprlock}/bin/hyprlock";
-  waybar = "${pkgs.waybar}/bin/waybar";
   slack = "${pkgs.slack}/bin/slack";
   chrome = "${pkgs.google-chrome}/bin/google-chrome-stable";
   wfRecorderToggle = "wf-recorder-toggle";
+
+  # Supervise waybar inside the Hyprland/seat0 session (NOT systemd), so its
+  # webcam fuser check still sees other apps (see programs.waybar.systemd note).
+  # waybar exits when an output is removed and exec-once never re-runs it, so
+  # unplugging a monitor otherwise kills the bar for good. This loop respawns it
+  # on exit and restarts it on monitor hotplug so bars rebuild on the current
+  # outputs.
+  waybarSupervisor = pkgs.writeShellApplication {
+    name = "waybar-supervisor";
+    runtimeInputs = with pkgs; [
+      waybar
+      socat
+      procps
+      coreutils
+    ];
+    text = ''
+      SOCK="''${XDG_RUNTIME_DIR}/hypr/''${HYPRLAND_INSTANCE_SIGNATURE}/.socket2.sock"
+
+      # On monitor add/remove, kill waybar so the supervise loop relaunches it
+      # and rebuilds bars on the current set of outputs.
+      (
+        for _ in $(seq 1 100); do [ -S "$SOCK" ] && break; sleep 0.1; done
+        socat -U - "UNIX-CONNECT:$SOCK" 2>/dev/null | while read -r line; do
+          case "$line" in
+            monitoradded*|monitorremoved*) pkill -x waybar || true ;;
+          esac
+        done
+      ) &
+
+      # Relaunch waybar whenever it exits (it can crash when an output is removed).
+      while true; do
+        waybar || true
+        sleep 1
+      done
+    '';
+  };
 in
 {
   options = {
@@ -527,11 +562,12 @@ in
           exec-once = [
             # Run waybar inside the Hyprland login session (seat0) rather than as
             # a systemd --user service, so its webcam fuser check can see other
-            # apps' camera usage (see waybar systemd.enable comment).
-            "${waybar}"
+            # apps' camera usage (see waybar systemd.enable comment). Wrapped in a
+            # supervisor that respawns it on crash and on monitor hotplug, so the
+            # bar survives unplugging an external monitor.
+            "${waybarSupervisor}/bin/waybar-supervisor"
             "nm-applet --indicator"
             "hyprpaper"
-            "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service"
             "[workspace special:chat silent] launch-webapp https://app.v2.gather.town/app/grail-41d17977-d077-48a5-835a-7eb7cb97cbff"
             "[workspace special:chat silent] ${slack}"
             "[workspace 1 silent] ${ghostty}"

@@ -48,7 +48,10 @@ in
           };
           sfPro = {
             package = sf-pro-nerd-patched;
-            name = "SFPro Nerd Font";
+            # SF Pro Text is Apple's optical variant hinted for small UI sizes
+            # (vs the variable "SFPro"/Display family, tuned for large headings).
+            # Both ship in sf-pro-nerd and the Gather glyph patch covers Text too.
+            name = "SFProText Nerd Font";
           };
           mono = {
             package = pkgs.cascadia-code;
