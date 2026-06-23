@@ -175,6 +175,10 @@ in
   config = mkIf cfg.enable {
     wayland.windowManager.hyprland = {
       enable = true;
+      # Keep the legacy hyprlang config generator. The HM default flips to "lua"
+      # at stateVersion 26.05; our settings are written for hyprlang, so pin it
+      # explicitly rather than silently migrating.
+      configType = "hyprlang";
       package = null;
       portalPackage = null;
       xwayland.enable = true;
