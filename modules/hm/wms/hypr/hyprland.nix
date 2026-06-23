@@ -33,10 +33,10 @@ let
 
   # Supervise waybar inside the Hyprland/seat0 session (NOT systemd), so its
   # webcam fuser check still sees other apps (see programs.waybar.systemd note).
-  # waybar exits when an output is removed and exec-once never re-runs it, so
-  # unplugging a monitor otherwise kills the bar for good. This loop respawns it
-  # on exit and restarts it on monitor hotplug so bars rebuild on the current
-  # outputs.
+  # On monitor hotplug waybar can crash, or leave the surviving output's bar
+  # blank; either way exec-once never re-runs it, so unplugging a monitor kills
+  # the bar for good. This loop respawns it on exit and restarts it on monitor
+  # hotplug so bars rebuild on the current outputs.
   waybarSupervisor = pkgs.writeShellApplication {
     name = "waybar-supervisor";
     runtimeInputs = with pkgs; [
@@ -48,20 +48,35 @@ let
     text = ''
       SOCK="''${XDG_RUNTIME_DIR}/hypr/''${HYPRLAND_INSTANCE_SIGNATURE}/.socket2.sock"
 
-      # On monitor add/remove, kill waybar so the supervise loop relaunches it
-      # and rebuilds bars on the current set of outputs.
+      # We kill waybar by PID, not by name: Nix wraps the binary, so the running
+      # process's comm is ".waybar-wrapped", and "pkill -x waybar" matches
+      # nothing. The supervise loop writes the live waybar PID here for the
+      # event listener to signal.
+      PIDFILE="$(mktemp)"
+      # shellcheck disable=SC2064
+      trap "rm -f '$PIDFILE'" EXIT
+
+      # On monitor add/remove, kill the current waybar so the supervise loop
+      # relaunches it and rebuilds bars on the current set of outputs. This is
+      # the safety net for the case where a hotplug leaves a surviving bar blank
+      # instead of crashing waybar outright.
       (
         for _ in $(seq 1 100); do [ -S "$SOCK" ] && break; sleep 0.1; done
         socat -U - "UNIX-CONNECT:$SOCK" 2>/dev/null | while read -r line; do
           case "$line" in
-            monitoradded*|monitorremoved*) pkill -x waybar || true ;;
+            monitoradded*|monitorremoved*)
+              p="$(cat "$PIDFILE" 2>/dev/null || true)"
+              [ -n "$p" ] && kill "$p" 2>/dev/null || true
+              ;;
           esac
         done
       ) &
 
-      # Relaunch waybar whenever it exits (it can crash when an output is removed).
+      # Relaunch waybar whenever it exits (on crash, or when we kill it above).
       while true; do
-        waybar || true
+        waybar &
+        echo $! > "$PIDFILE"
+        wait $! || true
         sleep 1
       done
     '';
