@@ -14,6 +14,29 @@ let
     ${pkgs.procps}/bin/pkill -RTMIN+10 waybar
   '';
 
+  # waybar doesn't rebuild its bars when the set of outputs changes, so on a
+  # monitor hotplug we restart the waybar user service. Listens to Hyprland's
+  # event socket; systemd keeps this watcher alive (Restart=always).
+  waybarMonitorWatch = pkgs.writeShellApplication {
+    name = "waybar-monitor-watch";
+    runtimeInputs = with pkgs; [
+      socat
+      systemd
+      coreutils
+    ];
+    text = ''
+      SOCK="''${XDG_RUNTIME_DIR}/hypr/''${HYPRLAND_INSTANCE_SIGNATURE}/.socket2.sock"
+      for _ in $(seq 1 100); do [ -S "$SOCK" ] && break; sleep 0.1; done
+      socat -U - "UNIX-CONNECT:$SOCK" | while read -r line; do
+        case "$line" in
+          monitoradded*|monitorremoved*)
+            systemctl --user restart waybar.service || true
+            ;;
+        esac
+      done
+    '';
+  };
+
   volumeAction = pkgs.writeShellApplication {
     name = "volume-action";
     runtimeInputs = with pkgs; [
@@ -290,6 +313,49 @@ in
       micAction
     ];
 
+    # waybar runs as a systemd --user service so the session manager keeps it
+    # alive no matter how it dies (Restart=always recovers from crashes and the
+    # silent disappearances that defeated the old exec-once supervisor). The
+    # start-rate limit is disabled so a burst of monitor hotplugs (each triggers
+    # a restart below) can never push the unit into a failed state where it
+    # stays gone.
+    systemd.user.services.waybar = {
+      Unit = {
+        Description = "waybar";
+        After = [ "graphical-session.target" ];
+        PartOf = [ "graphical-session.target" ];
+        StartLimitIntervalSec = 0;
+      };
+      Service = {
+        ExecStart = "${pkgs.waybar}/bin/waybar";
+        ExecReload = "${pkgs.coreutils}/bin/kill -SIGUSR2 $MAINPID";
+        Restart = "always";
+        RestartSec = 1;
+      };
+      Install.WantedBy = [ "graphical-session.target" ];
+    };
+
+    # Restart waybar on monitor add/remove so its bars rebuild on the current
+    # outputs. systemd keeps this watcher alive too (Restart=always), so unlike
+    # the old supervisor there is no single launched-once process that, once
+    # dead, stays dead.
+    systemd.user.services.waybar-monitor-watch = {
+      Unit = {
+        Description = "Restart waybar on Hyprland monitor hotplug";
+        After = [
+          "graphical-session.target"
+          "waybar.service"
+        ];
+        PartOf = [ "graphical-session.target" ];
+      };
+      Service = {
+        ExecStart = "${waybarMonitorWatch}/bin/waybar-monitor-watch";
+        Restart = "always";
+        RestartSec = 1;
+      };
+      Install.WantedBy = [ "graphical-session.target" ];
+    };
+
     # Push-to-talk: triggerhappy reads /dev/input directly and drives the mic
     # on Right Alt press/release. User service (you're in the `input` group),
     # so it can both read evdev and reach your PipeWire session. Hotplugged
@@ -330,12 +396,15 @@ in
     };
     programs.waybar = {
       enable = true;
-      # Launched from Hyprland (see exec-once), NOT as a systemd --user service.
-      # A systemd user service runs in the separate user@.service "manager"
-      # session; with kernel.yama.ptrace_scope=1 that session can't read the fds
-      # of apps in the graphical login session, so the webcam "in-use" detection
-      # (fuser on /dev/video*) goes blind to Chrome/etc. Running waybar inside the
-      # Hyprland login session (seat0) restores that visibility.
+      # We define the waybar systemd user service ourselves below (Restart=always
+      # + a monitor-hotplug watcher) instead of using the module's unit, so this
+      # only writes the config/style. An earlier comment here claimed waybar had
+      # to run inside the seat0 login session (not systemd) or its webcam fuser
+      # check would go blind under kernel.yama.ptrace_scope=1 -- verified false:
+      # ptrace_scope gates PTRACE_ATTACH, not the /proc/<pid>/fd readlink fuser
+      # uses for same-uid processes, so fuser works fine from the user@.service
+      # session. Running under systemd is what makes the bar reliably recover
+      # from crashes and monitor hotplug.
       systemd.enable = false;
       settings = {
         mainBar = {
