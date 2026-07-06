@@ -50,10 +50,14 @@ in
     xdg.portal = {
       enable = true;
       extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
-      config.common.default = [
-        "hyprland"
-        "gtk"
-      ];
+      config.common = {
+        default = [
+          "hyprland"
+          "gtk"
+        ];
+        # gtk is only here for the file chooser; hyprland handles ScreenCast et al.
+        "org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
+      };
     };
     hardware.graphics = {
       enable = true;

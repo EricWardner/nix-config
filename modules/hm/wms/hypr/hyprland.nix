@@ -533,10 +533,15 @@ in
             # supervises them, so it is no longer launched from here.
             "nm-applet --indicator"
             "hyprpaper"
-            "[workspace special:chat silent] launch-webapp https://app.v2.gather.town/app/grail-41d17977-d077-48a5-835a-7eb7cb97cbff"
             "[workspace special:chat silent] ${slack}"
             "[workspace 1 silent] ${ghostty}"
-            "[workspace 1 silent] ${chrome}"
+            # Chromium probes xdg-desktop-portal once at startup; if it wins the
+            # race against the portal coming up, it disables ScreenCast +
+            # FileChooser for the whole session (screen share drops to
+            # window/tab-only, upload dialogs never appear). Import the session
+            # env, restart the portal, THEN launch anything Chromium-based via
+            # `hyprctl dispatch exec` so it always sees a ready portal.
+            "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service && hyprctl dispatch exec '[workspace special:chat silent] launch-webapp https://app.v2.gather.town/app/grail-41d17977-d077-48a5-835a-7eb7cb97cbff' && hyprctl dispatch exec '[workspace 1 silent] ${chrome}'"
           ];
         };
     };

@@ -53,6 +53,24 @@ in
     }
     (mkIf cfg.webcam.enable {
       environment.systemPackages = [ webcamToggle ];
+
+      # waybar's webcam "in-use" check runs `fuser /dev/videoN` to find which
+      # process holds the camera. waybar runs as a systemd --user service (for
+      # crash recovery + monitor hotplug), and from that unprivileged
+      # user-manager context fuser cannot read the fds/maps of the browser
+      # processes that actually hold the device (they live in the seat0 login
+      # session; ptrace_may_access denies the cross-context /proc read). The
+      # result: the green highlight never triggered. A capability-only wrapper
+      # (no setuid) gives fuser CAP_SYS_PTRACE so the check works from any
+      # context. Scoped to the `video` group to limit the fd-inspection reach.
+      security.wrappers.webcam-fuser = {
+        source = "${pkgs.psmisc}/bin/fuser";
+        owner = "root";
+        group = "video";
+        permissions = "0750";
+        capabilities = "cap_sys_ptrace+ep";
+      };
+
       security.sudo.extraRules = [
         {
           users = [ user.username ];

@@ -234,7 +234,10 @@ let
       if [ "$(cat "$dir/authorized")" = "1" ]; then
         any_on=1
         vdev="/dev/$(basename "$vdir")"
-        if [ -e "$vdev" ] && ${pkgs.psmisc}/bin/fuser "$vdev" >/dev/null 2>&1; then
+        # Capability wrapper (cap_sys_ptrace): plain fuser run from waybar's
+        # systemd --user context can't read the browser's fds/maps to see it
+        # holding the device. See security.wrappers.webcam-fuser in peripherals.
+        if [ -e "$vdev" ] && /run/wrappers/bin/webcam-fuser "$vdev" >/dev/null 2>&1; then
           in_use=1
         fi
       fi
@@ -398,13 +401,17 @@ in
       enable = true;
       # We define the waybar systemd user service ourselves below (Restart=always
       # + a monitor-hotplug watcher) instead of using the module's unit, so this
-      # only writes the config/style. An earlier comment here claimed waybar had
-      # to run inside the seat0 login session (not systemd) or its webcam fuser
-      # check would go blind under kernel.yama.ptrace_scope=1 -- verified false:
-      # ptrace_scope gates PTRACE_ATTACH, not the /proc/<pid>/fd readlink fuser
-      # uses for same-uid processes, so fuser works fine from the user@.service
-      # session. Running under systemd is what makes the bar reliably recover
-      # from crashes and monitor hotplug.
+      # only writes the config/style. Running under systemd is what makes the bar
+      # reliably recover from crashes and monitor hotplug.
+      #
+      # Caveat that bit us: from the unprivileged user@.service context, the
+      # webcam "in-use" fuser check CANNOT read the fds/maps of browser
+      # processes holding the camera -- those live in the seat0 login session
+      # and ptrace_may_access denies the cross-context /proc read (returns
+      # "available" forever, so the green highlight never fired). The earlier
+      # "verified false" claim here was wrong. Fix: webcam-status calls a
+      # cap_sys_ptrace wrapper (security.wrappers.webcam-fuser) instead of plain
+      # fuser, which works from any context without giving up the systemd unit.
       systemd.enable = false;
       settings = {
         mainBar = {
