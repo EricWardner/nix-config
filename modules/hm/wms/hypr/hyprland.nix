@@ -397,8 +397,7 @@ in
             "$mainMod, Y, exec, oath 19125157"
             "$mainMod, V, exec, ${cliphist} list | ${fuzzel} --dmenu | ${cliphist} decode | ${wl-copy}"
             # Web apps
-            "$mainMod SHIFT, A, exec, launch-webapp https://chatgpt.com"
-            "$mainMod SHIFT, G, exec, launch-webapp https://app.v2.gather.town/app/grail-41d17977-d077-48a5-835a-7eb7cb97cbff"
+            "$mainMod SHIFT, G, exec, launch-webapp https://app.gather.town/app/V383EJ8uFnnNFtez/Grail"
             # Move focus with vim keys
             "$mainMod, h, movefocus, l"
             "$mainMod, l, movefocus, r"
@@ -542,7 +541,7 @@ in
             # window/tab-only, upload dialogs never appear). Import the session
             # env, restart the portal, THEN launch anything Chromium-based via
             # `hyprctl dispatch exec` so it always sees a ready portal.
-            "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service && hyprctl dispatch exec '[workspace special:chat silent] launch-webapp https://app.v2.gather.town/app/grail-41d17977-d077-48a5-835a-7eb7cb97cbff' && hyprctl dispatch exec '[workspace 1 silent] ${chrome}'"
+            "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service && hyprctl dispatch exec '[workspace special:chat silent] launch-webapp https://app.gather.town/app/V383EJ8uFnnNFtez/Grail' && hyprctl dispatch exec '[workspace 1 silent] ${chrome}'"
           ];
         };
     };
