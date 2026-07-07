@@ -85,9 +85,6 @@
       treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
     in
     {
-      homeModules = {
-        claude-cognitive = import ./modules/hm/ai/claude-cognitive.nix;
-      };
       formatter.${system} = treefmtEval.config.build.wrapper;
       checks.${system} = {
         pre-commit-check = pkgs.callPackage ./pre-commit.nix {

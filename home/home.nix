@@ -21,7 +21,6 @@
     cursor.size = 24;
   };
   modules = {
-    ai.claude-cognitive.enable = false;
     ai.superpowers.enable = false;
     ai.team-skills.enable = true;
     editors.vscode.enable = true;
