@@ -1,26 +1,46 @@
 {
   description = "My personal flake";
   inputs = {
-    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    nixos-hardware = {
+      url = "github:NixOS/nixos-hardware/master";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # claude-code deliberately does NOT follow our nixpkgs: it is built
+    # against its own pin so its cachix cache stays hit.
     claude-code.url = "github:sadjow/claude-code-nix";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    stylix.url = "github:danth/stylix";
-    apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
-    font-patcher.url = "github:ericwardner/font-patcher";
+    stylix = {
+      url = "github:danth/stylix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    apple-fonts = {
+      url = "github:Lyndeno/apple-fonts.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    font-patcher = {
+      url = "github:ericwardner/font-patcher";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    treefmt-nix.url = "github:numtide/treefmt-nix";
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    team-claude-skills.url = "git+ssh://git@github.com/tiberius-grail/team-claude-skills";
+    team-claude-skills = {
+      url = "git+ssh://git@github.com/tiberius-grail/team-claude-skills";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     superpowers = {
       url = "github:obra/superpowers";
       flake = false;
