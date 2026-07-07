@@ -360,7 +360,7 @@ in
             "match:class .*, suppress_event maximize"
             "match:class ^$, match:title ^$, match:xwayland true, match:float true, match:fullscreen false, match:pin false, no_focus on"
             "match:class (Alacritty|kitty), scroll_touchpad 1.5"
-            "match:class com.mitchell.ghostty, scroll_touchpad 0.2"
+            "match:class com.mitchellh.ghostty, scroll_touchpad 0.2"
             # Personal window rules
             "match:title ^(MainPicker)$, float on"
             "match:title ^(Sign in to Security Device)$, float on"
@@ -531,8 +531,9 @@ in
             # waybar runs as a systemd --user service (Restart=always) plus a
             # hotplug watcher, both defined in modules/hm/wms/waybar. systemd
             # supervises them, so it is no longer launched from here.
+            # hyprpaper is started by its systemd user unit
+            # (services.hyprpaper.enable), not from here.
             "nm-applet --indicator"
-            "hyprpaper"
             "[workspace special:chat silent] ${slack}"
             "[workspace 1 silent] ${ghostty}"
             # Chromium probes xdg-desktop-portal once at startup; if it wins the

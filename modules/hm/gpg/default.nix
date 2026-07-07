@@ -2,7 +2,6 @@
   config,
   lib,
   pkgs,
-  user,
   ...
 }:
 let
@@ -55,10 +54,9 @@ in
       homedir = "${config.home.homeDirectory}/.gnupg";
 
       settings = {
-        # Default/trusted key ID to use (helpful with throw-keyids)
-        default-key = user.work.signingKey;
-        trusted-key = user.work.signingKey;
-
+        # NOTE: default-key/trusted-key expect an OpenPGP key ID or
+        # fingerprint; user.work.signingKey is an SSH pubkey path (for git
+        # SSH signing), which gpg rejects — so they are intentionally unset.
         keyserver = "hkps://keys.openpgp.org";
 
         # https://github.com/drduh/config/blob/master/gpg.conf

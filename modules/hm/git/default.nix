@@ -60,7 +60,7 @@ in
         commit.verbose = true;
         rerere.enabled = true;
         help.autocorrect = 10;
-        diff.histogram = "histogram";
+        diff.algorithm = "histogram";
         core.pager = "${pkgs.delta}/bin/delta";
       };
     };

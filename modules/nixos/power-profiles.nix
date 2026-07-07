@@ -59,9 +59,12 @@ in
   };
 
   config = mkIf cfg.autoSwitch {
-    # Trigger a profile check immediately on any power supply change
+    # Trigger a profile check immediately on any power supply change.
+    # SYSTEMD_WANTS only acts when a device unit first becomes active
+    # (systemd.device(5)), so it never fires on change events for
+    # already-active power supplies — start the service directly instead.
     services.udev.extraRules = ''
-      SUBSYSTEM=="power_supply", ACTION=="change", TAG+="systemd", ENV{SYSTEMD_WANTS}="power-profile-battery-check.service"
+      SUBSYSTEM=="power_supply", ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start --no-block power-profile-battery-check.service"
     '';
 
     # Poll battery percentage every minute for power-saver threshold

@@ -25,8 +25,20 @@ let
       coreutils
     ];
     text = ''
-      SOCK="''${XDG_RUNTIME_DIR}/hypr/''${HYPRLAND_INSTANCE_SIGNATURE}/.socket2.sock"
-      for _ in $(seq 1 100); do [ -S "$SOCK" ] && break; sleep 0.1; done
+      # HYPRLAND_INSTANCE_SIGNATURE isn't always imported into the systemd
+      # user environment (and set -u would kill us); fall back to discovering
+      # the instance dir under $XDG_RUNTIME_DIR/hypr.
+      SOCK=""
+      for _ in $(seq 1 100); do
+        if [ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+          SOCK="''${XDG_RUNTIME_DIR}/hypr/''${HYPRLAND_INSTANCE_SIGNATURE}/.socket2.sock"
+        else
+          SOCK=$(find "''${XDG_RUNTIME_DIR}/hypr" -maxdepth 2 -name .socket2.sock 2>/dev/null | head -n1) || true
+        fi
+        [ -S "$SOCK" ] && break
+        sleep 0.1
+      done
+      [ -S "$SOCK" ] || { echo "waybar-monitor-watch: no hyprland event socket found" >&2; exit 1; }
       socat -U - "UNIX-CONNECT:$SOCK" | while read -r line; do
         case "$line" in
           monitoradded*|monitorremoved*)
@@ -350,6 +362,7 @@ in
           "waybar.service"
         ];
         PartOf = [ "graphical-session.target" ];
+        StartLimitIntervalSec = 0;
       };
       Service = {
         ExecStart = "${waybarMonitorWatch}/bin/waybar-monitor-watch";
@@ -389,6 +402,7 @@ in
         After = [ "push-to-talk.service" ];
         Requires = [ "push-to-talk.service" ];
         PartOf = [ "push-to-talk.service" ];
+        StartLimitIntervalSec = 0;
       };
       Service = {
         ExecStart = "${pttHotplug}/bin/ptt-hotplug";

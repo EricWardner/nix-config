@@ -7,7 +7,7 @@
   ];
   dconf.settings = {
     "org/gnome/desktop/interface" = {
-      color_scheme = "prefer-dark";
+      color-scheme = "prefer-dark";
     };
     "org/virt-manager/virt-manager/connections" = {
       autoconnect = [ "qemu:///system" ];

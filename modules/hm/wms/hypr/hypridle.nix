@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 with lib;
 let
   cfg = config.modules.hypridle;
@@ -44,8 +49,8 @@ in
           # Dim screen
           {
             timeout = cfg.dimTimeout;
-            on-timeout = "brightnessctl -s set 10";
-            on-resume = "brightnessctl -r";
+            on-timeout = "${pkgs.brightnessctl}/bin/brightnessctl -s set 10%";
+            on-resume = "${pkgs.brightnessctl}/bin/brightnessctl -r";
           }
           # Lock screen
           {
@@ -56,7 +61,7 @@ in
           {
             timeout = cfg.screenOffTimeout;
             on-timeout = "hyprctl dispatch dpms off";
-            on-resume = "hyprctl dispatch dpms on && brightnessctl -r";
+            on-resume = "hyprctl dispatch dpms on && ${pkgs.brightnessctl}/bin/brightnessctl -r";
           }
           # Suspend
           {

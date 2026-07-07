@@ -112,7 +112,7 @@
         reconcile-oci = mkReconcile "source oci" "ocirepositories" "";
         reconcile-ks = mkReconcile "ks" "kustomizations" "";
         reconcile-ir = mkReconcile "image repository" "imagerepositories" "";
-        reconcile-iua = mkReconcile "image update" "imageupateautomations" "";
+        reconcile-iua = mkReconcile "image update" "imageupdateautomations" "";
       };
   };
 

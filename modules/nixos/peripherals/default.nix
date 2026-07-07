@@ -28,6 +28,9 @@ in
   config = mkIf cfg.enable (mkMerge [
     {
       boot = {
+        # snd_aloop is deliberately OBS-gated: it only exists to route the
+        # Scarlett through a loopback device for OBS, so with obs.enable off
+        # the scarlettRite option just sets the snd_usb_audio modprobe options.
         kernelModules = mkIf cfg.obs.enable (
           [ "v4l2loopback" ] ++ (if cfg.scarlettRite.enable then [ "snd_aloop" ] else [ ])
         );

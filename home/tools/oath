@@ -13,7 +13,9 @@ if [[ -z "$selected" ]]; then
 fi
 
 code=$(echo "$selected" | awk '{print $NF}') # The last field is the OTP code
-account=${selected//$code$///sed "s/ $code$//")} # Remove the OTP code from the end to get the account name
+# Remove the OTP code and padding from the end to get the account name
+account="${selected%"$code"}"
+account="${account%"${account##*[![:space:]]}"}"
 
 echo -n "$code" | wl-copy
 notify-send "OTP Copied" "The OTP code for \"$account\" has been copied to the clipboard."
