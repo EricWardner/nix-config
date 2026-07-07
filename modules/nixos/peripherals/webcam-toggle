@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# State lives in a root-owned dir: this script runs as root via a NOPASSWD
+# sudo rule, so it must never trust user-writable input (a planted /tmp state
+# file would turn the `echo > $p/authorized` writes into arbitrary root file
+# writes).
 ACTION="${1:-toggle}"
-STATE_FILE="/tmp/webcam-usb-paths"
+STATE_DIR="/run/webcam-toggle"
+STATE_FILE="$STATE_DIR/usb-paths"
 
 find_webcam_usb_dirs() {
   declare -A seen
@@ -23,10 +28,23 @@ find_webcam_usb_dirs() {
   done
 }
 
-# Get paths from live detection, falling back to saved state
+# Belt-and-braces for anything read back from state: only accept entries that
+# resolve to a real USB device dir under /sys/devices.
+validate_saved_paths() {
+  local p real
+  while IFS= read -r p; do
+    real="$(readlink -f "$p")" || continue
+    [[ "$real" == /sys/devices/* ]] || continue
+    [[ -f "$real/authorized" && -f "$real/idVendor" ]] || continue
+    echo "$real"
+  done
+}
+
+# Get paths from live detection, falling back to saved state (needed for `on`:
+# a deauthorized camera no longer appears under /sys/class/video4linux)
 paths=$(find_webcam_usb_dirs)
 if [[ -z "$paths" && -f "$STATE_FILE" ]]; then
-  paths=$(cat "$STATE_FILE")
+  paths=$(validate_saved_paths < "$STATE_FILE")
 fi
 
 if [[ -z "$paths" ]]; then
@@ -41,7 +59,8 @@ case "$ACTION" in
     echo "Cameras authorized"
     ;;
   off)
-    echo "$paths" > "$STATE_FILE" && chmod 644 "$STATE_FILE"
+    mkdir -p "$STATE_DIR"
+    echo "$paths" > "$STATE_FILE"
     for p in $paths; do echo 0 > "$p/authorized"; done
     echo "Cameras deauthorized"
     ;;
@@ -54,7 +73,8 @@ case "$ACTION" in
       fi
     done
     if [[ "$any_on" == "1" ]]; then
-      echo "$paths" > "$STATE_FILE" && chmod 644 "$STATE_FILE"
+      mkdir -p "$STATE_DIR"
+      echo "$paths" > "$STATE_FILE"
       for p in $paths; do echo 0 > "$p/authorized"; done
       echo "Cameras deauthorized"
     else
