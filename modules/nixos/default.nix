@@ -140,7 +140,14 @@ in
       nh = {
         enable = true;
         clean.enable = true;
-        clean.extraArgs = "--keep-since 4d --keep 3";
+        # --no-gcroots is load-bearing: without it, nh clean deletes any
+        # gcroot older than --keep-since, including home-manager's
+        # current-home root. Standalone HM generations are rooted ONLY by
+        # that link, so the next `nix store gc` sweeps the live home
+        # closure (2026-07-13 incident: all ~/.config/hypr symlinks went
+        # dangling after the weekly timer fired 4.5 days after the last
+        # `nh home switch`).
+        clean.extraArgs = "--keep-since 7d --keep 5 --no-gcroots";
         flake = "/home/${user.username}/nix-config";
       };
 
