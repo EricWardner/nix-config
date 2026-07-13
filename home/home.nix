@@ -20,6 +20,10 @@
     cursor.name = "BreezeX-RosePine-Linux";
     cursor.size = 24;
   };
+  # Stylix populates home.pointerCursor from stylix.cursor but doesn't set
+  # enable; home-manager deprecated inferring it. Drop once stylix does
+  # this itself.
+  home.pointerCursor.enable = true;
   modules = {
     ai.superpowers.enable = false;
     ai.team-skills.enable = true;
