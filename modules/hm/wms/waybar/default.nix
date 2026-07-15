@@ -38,7 +38,18 @@ let
         [ -S "$SOCK" ] && break
         sleep 0.1
       done
-      [ -S "$SOCK" ] || { echo "waybar-monitor-watch: no hyprland event socket found" >&2; exit 1; }
+      if [ ! -S "$SOCK" ]; then
+        # No Hyprland — under niri (parallel session experiment) there is no
+        # event socket to watch. waybar.service's Restart=always still covers
+        # crashes there; park so our own Restart=always doesn't loop us.
+        NIRI_SOCK="''${NIRI_SOCKET:-$(find "''${XDG_RUNTIME_DIR}" -maxdepth 1 -name 'niri*.sock' 2>/dev/null | head -n1)}"
+        if [ -S "$NIRI_SOCK" ]; then
+          echo "waybar-monitor-watch: niri session detected, idling" >&2
+          exec sleep infinity
+        fi
+        echo "waybar-monitor-watch: no hyprland event socket found" >&2
+        exit 1
+      fi
       socat -U - "UNIX-CONNECT:$SOCK" | while read -r line; do
         case "$line" in
           monitoradded*|monitorremoved*)
@@ -438,12 +449,17 @@ in
           margin-right = 8;
           margin-top = 4;
 
+          # Both hyprland/* and niri/* modules are listed; waybar disables the
+          # ones whose compositor isn't running (logs a warning, keeps going),
+          # so one config serves both sessions.
           modules-left = [
             "custom/nix"
             "hyprland/workspaces"
+            "niri/workspaces"
           ];
           modules-center = [
             "hyprland/window"
+            "niri/window"
             "clock"
           ];
           modules-right = [
@@ -484,6 +500,19 @@ in
 
           "hyprland/window" = {
             format = "{class}";
+            max-length = 20;
+            rewrite = {
+              "^(?!.*\\S).*" = "Desktop";
+              "com\\.mitchellh\\.ghostty" = "Ghostty";
+            };
+          };
+
+          "niri/workspaces" = {
+            format = "{value}";
+          };
+
+          "niri/window" = {
+            format = "{app_id}";
             max-length = 20;
             rewrite = {
               "^(?!.*\\S).*" = "Desktop";

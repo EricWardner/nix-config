@@ -10,6 +10,10 @@ let
   cfg = config.modules.hyprland;
   tuigreet = "${pkgs.tuigreet}/bin/tuigreet";
   session = "start-hyprland";
+  # All sessions registered via services.displayManager.sessionPackages
+  # (hyprland + niri) merged into one dir, so tuigreet can offer a picker
+  # (F3). --remember-user-session keeps the last choice per user.
+  sessionDirs = "${config.services.displayManager.sessionData.desktops}/share/wayland-sessions";
 in
 {
   options = {
@@ -27,7 +31,7 @@ in
             user = "${user.username}";
           };
           default_session = {
-            command = "${tuigreet} --greeting 'Welcome to NixOS!' --asterisks --time --remember --remember-user-session --cmd ${session}";
+            command = "${tuigreet} --greeting 'Welcome to NixOS!' --asterisks --time --remember --remember-user-session --sessions ${sessionDirs} --cmd ${session}";
             user = "greeter";
           };
         };
