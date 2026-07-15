@@ -7,24 +7,6 @@
 with lib;
 let
   cfg = config.modules.hypridle;
-  # hypridle itself is compositor-agnostic (ext-idle-notify), but display
-  # power is compositor-specific: hyprctl under Hyprland, niri msg under
-  # niri (parallel session experiment). NIRI_SOCKET only exists (as a live
-  # socket) inside a niri session.
-  dpmsAction = pkgs.writeShellApplication {
-    name = "dpms-action";
-    text = ''
-      if [ -S "''${NIRI_SOCKET:-}" ]; then
-        case "$1" in
-          on) ${pkgs.niri}/bin/niri msg action power-on-monitors ;;
-          off) ${pkgs.niri}/bin/niri msg action power-off-monitors ;;
-        esac
-      else
-        hyprctl dispatch dpms "$1"
-      fi
-    '';
-  };
-  dpms = "${dpmsAction}/bin/dpms-action";
 in
 {
   options.modules.hypridle = {
@@ -60,7 +42,7 @@ in
         general = {
           lock_cmd = "pidof hyprlock || hyprlock";
           before_sleep_cmd = "loginctl lock-session";
-          after_sleep_cmd = "${dpms} on";
+          after_sleep_cmd = "hyprctl dispatch dpms on";
         };
 
         listener = [
@@ -78,8 +60,8 @@ in
           # Screen off
           {
             timeout = cfg.screenOffTimeout;
-            on-timeout = "${dpms} off";
-            on-resume = "${dpms} on && ${pkgs.brightnessctl}/bin/brightnessctl -r";
+            on-timeout = "hyprctl dispatch dpms off";
+            on-resume = "hyprctl dispatch dpms on && ${pkgs.brightnessctl}/bin/brightnessctl -r";
           }
           # Suspend
           {
