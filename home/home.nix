@@ -33,6 +33,7 @@
     networkmanagerapplet
     mpv
     gimp3
+    inkscape
     brave
     unzip
     claude-code
