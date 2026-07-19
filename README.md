@@ -132,32 +132,3 @@ Boot from ISO, then:
 ```sh
 sudo run-install
 ```
-
----
-
-## Exported Modules
-
-### Claude Cognitive
-
-Home Manager module for [claude-cognitive](https://github.com/GMaN1911/claude-cognitive) - persistent working memory for Claude Code.
-
-**Add to your flake:**
-
-```nix
-inputs.abutt-nix-config.url = "github:abutt/nix-config";
-```
-
-**Enable in home configuration:**
-
-```nix
-modules = [
-  abutt-nix-config.homeModules.claude-cognitive
-  { modules.ai.claude-cognitive.enable = true; }
-];
-```
-
-**Initialize per-project:**
-
-```sh
-cd /path/to/project && claude-cognitive-init
-```

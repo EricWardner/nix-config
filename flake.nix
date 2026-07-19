@@ -41,10 +41,6 @@
       url = "git+ssh://git@github.com/tiberius-grail/team-claude-skills";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    superpowers = {
-      url = "github:obra/superpowers";
-      flake = false;
-    };
   };
   outputs =
     {

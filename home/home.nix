@@ -25,7 +25,6 @@
   # this itself.
   home.pointerCursor.enable = true;
   modules = {
-    ai.superpowers.enable = false;
     ai.team-skills.enable = true;
     editors.vscode.enable = true;
   };
