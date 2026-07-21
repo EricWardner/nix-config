@@ -70,41 +70,61 @@ let
   };
 
   # Push-to-talk: toggle PTT mode by clicking the waybar module; hold the talk
-  # key (Right Alt, bound in hyprland) to un-mute while PTT mode is armed.
+  # key (Right Alt, read from evdev by triggerhappy below) to un-mute while PTT
+  # mode is armed.
   #   /tmp/ptt-mode exists  => PTT mode armed (mic defaults to muted)
   # Three visible states: normal-on, ptt-muted (armed, silent), ptt-active (talking).
+  # Apps can pin their capture stream to a non-default source (Chrome does), so
+  # muting @DEFAULT_AUDIO_SOURCE@ alone leaves other mics hot — every action
+  # here operates on ALL capture sources.
   micAction = pkgs.writeShellApplication {
     name = "mic-action";
     runtimeInputs = with pkgs; [
       wireplumber
+      pipewire # pw-dump
+      jq
       procps
       coreutils
     ];
     text = ''
-      SRC="@DEFAULT_AUDIO_SOURCE@"
       MODE_FILE="/tmp/ptt-mode"
       refresh() { pkill -RTMIN+12 waybar || true; }
+
+      sources() {
+        pw-dump | jq '.[] | select(.info.props."media.class" // "" | startswith("Audio/Source")) | .id'
+      }
+      set_mute_all() {
+        mapfile -t ids < <(sources)
+        for id in "''${ids[@]}"; do wpctl set-mute "$id" "$1" || true; done
+      }
+      any_unmuted() {
+        mapfile -t ids < <(sources)
+        for id in "''${ids[@]}"; do
+          wpctl get-volume "$id" 2>/dev/null | grep -q MUTED || return 0
+        done
+        return 1
+      }
 
       case "''${1:-}" in
         toggle-mode)
           if [ -f "$MODE_FILE" ]; then
             rm -f "$MODE_FILE"
-            wpctl set-mute "$SRC" 0   # leaving PTT -> mic live
+            set_mute_all 0   # leaving PTT -> mics live
           else
             touch "$MODE_FILE"
-            wpctl set-mute "$SRC" 1   # entering PTT -> mic muted until you talk
+            set_mute_all 1   # entering PTT -> mics muted until you talk
           fi
           ;;
         talk-start)
           [ -f "$MODE_FILE" ] || exit 0
-          wpctl set-mute "$SRC" 0
+          set_mute_all 0
           ;;
         talk-end)
           [ -f "$MODE_FILE" ] || exit 0
-          wpctl set-mute "$SRC" 1
+          set_mute_all 1
           ;;
         mute)
-          wpctl set-mute "$SRC" toggle
+          if any_unmuted; then set_mute_all 1; else set_mute_all 0; fi
           ;;
         *)
           echo "usage: mic-action {toggle-mode|talk-start|talk-end|mute}" >&2
@@ -157,15 +177,14 @@ let
   };
 
   micStatus = pkgs.writeShellScript "mic-status" ''
-    SRC="@DEFAULT_AUDIO_SOURCE@"
     MODE_FILE="/tmp/ptt-mode"
-    RAW=$(${pkgs.wireplumber}/bin/wpctl get-volume "$SRC" 2>/dev/null)
 
-    if echo "$RAW" | ${pkgs.gnugrep}/bin/grep -q MUTED; then
-      MUTED=1
-    else
-      MUTED=0
-    fi
+    # "muted" only when EVERY capture source is muted — apps can pin their
+    # stream to a non-default source, so the default's state alone can lie.
+    MUTED=1
+    for id in $(${pkgs.pipewire}/bin/pw-dump | ${pkgs.jq}/bin/jq '.[] | select(.info.props."media.class" // "" | startswith("Audio/Source")) | .id'); do
+      ${pkgs.wireplumber}/bin/wpctl get-volume "$id" 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q MUTED || MUTED=0
+    done
 
     if [ -f "$MODE_FILE" ]; then
       if [ "$MUTED" = "1" ]; then
