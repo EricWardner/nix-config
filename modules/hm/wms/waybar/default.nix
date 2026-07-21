@@ -124,31 +124,33 @@ let
     KEY_RIGHTALT 0 ${micAction}/bin/mic-action talk-end
   '';
 
-  # Bridge: on input hotplug, resync triggerhappy's watched device set so a
-  # keyboard plugged in after thd started still drives push-to-talk.
+  # Bridge: on input hotplug, restart thd so it reopens the current device set
+  # and a keyboard plugged in after startup still drives push-to-talk. A fresh
+  # thd is the only resync that can't half-fail: the previous th-cmd
+  # --clear/--add socket dance left the daemon with leaked fds and an *empty*
+  # watch list when a device node vanished mid-resync (PTT silently dead,
+  # 2026-07), and read errors from disconnecting devices leak fds the same way.
   pttHotplug = pkgs.writeShellApplication {
     name = "ptt-hotplug";
     runtimeInputs = with pkgs; [
-      systemd # udevadm
-      triggerhappy
+      systemd # udevadm, systemctl
       coreutils
     ];
     text = ''
-      SOCK="''${XDG_RUNTIME_DIR}/triggerhappy.socket"
-      # wait for the daemon to create its control socket
-      for _ in $(seq 1 100); do [ -S "$SOCK" ] && break; sleep 0.1; done
+      # cover devices that appeared before the monitor below was listening
+      (
+        sleep 2
+        systemctl --user try-restart push-to-talk.service
+      ) &
 
-      resync() {
-        th-cmd --socket "$SOCK" --clear || true
-        # shellcheck disable=SC2086
-        th-cmd --socket "$SOCK" --add /dev/input/event* || true
-      }
-
-      # pick up anything that appeared during startup, then follow udev
-      resync
       udevadm monitor --udev --subsystem-match=input | while read -r line; do
         case "$line" in
-          *" add "* | *" remove "*) resync ;;
+          *" add "* | *" remove "*)
+            # one hotplug = a burst of udev events; settle, drain, restart once
+            sleep 1
+            while read -r -t 1 line; do :; done
+            systemctl --user restart push-to-talk.service
+            ;;
         esac
       done
     '';
@@ -381,11 +383,12 @@ in
         Description = "Push-to-talk (hold Right Alt) — triggerhappy evdev daemon";
         After = [ "graphical-session.target" ];
         PartOf = [ "graphical-session.target" ];
+        # the hotplug bridge restarts this unit on every input add/remove;
+        # never let a burst of restarts trip the start limit
+        StartLimitIntervalSec = 0;
       };
       Service = {
-        # --socket lets the hotplug helper (below) add keyboards plugged in
-        # after startup. %t = $XDG_RUNTIME_DIR.
-        ExecStart = "${pkgs.triggerhappy}/bin/thd --triggers ${pttTriggers} --socket %t/triggerhappy.socket --deviceglob /dev/input/event*";
+        ExecStart = "${pkgs.triggerhappy}/bin/thd --triggers ${pttTriggers} --deviceglob /dev/input/event*";
         Restart = "on-failure";
         RestartSec = 2;
       };
@@ -394,14 +397,16 @@ in
 
     # thd only opens devices matching --deviceglob at startup, so a keyboard
     # plugged in later isn't watched. This bridge watches udev for input
-    # add/remove and resyncs the daemon's device set over its control socket.
-    # Runs as the user (in the `input` group), so no root/udev rule needed.
+    # add/remove and bounces the daemon so it reopens the device set. Runs as
+    # the user (in the `input` group), so no root/udev rule needed. Wants (not
+    # Requires/PartOf) push-to-talk: the bridge restarts that unit, and a
+    # propagating dependency would take the bridge down with it mid-restart.
     systemd.user.services.push-to-talk-hotplug = {
       Unit = {
-        Description = "Push-to-talk: sync hotplugged keyboards into triggerhappy";
+        Description = "Push-to-talk: restart triggerhappy on input hotplug";
         After = [ "push-to-talk.service" ];
-        Requires = [ "push-to-talk.service" ];
-        PartOf = [ "push-to-talk.service" ];
+        Wants = [ "push-to-talk.service" ];
+        PartOf = [ "graphical-session.target" ];
         StartLimitIntervalSec = 0;
       };
       Service = {
