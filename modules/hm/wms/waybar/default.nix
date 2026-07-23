@@ -393,30 +393,33 @@ in
       Install.WantedBy = [ "graphical-session.target" ];
     };
 
-    # Push-to-talk: triggerhappy reads /dev/input directly and drives the mic
-    # on Right Alt press/release. User service (you're in the `input` group),
-    # so it can both read evdev and reach your PipeWire session. Hotplugged
-    # keyboards are handled by the push-to-talk-hotplug bridge below.
+    # Push-to-talk: triggerhappy reads evdev directly and drives the mic on
+    # Right Alt press/release. It watches keyd's virtual keyboard (stable
+    # by-id symlink, see modules/nixos/peripherals) rather than real hardware,
+    # so hotplugging the physical keyboard never changes its device set. User
+    # service (you're in the `input` group), so it can both read evdev and
+    # reach your PipeWire session.
     systemd.user.services.push-to-talk = {
       Unit = {
         Description = "Push-to-talk (hold Right Alt) — triggerhappy evdev daemon";
         After = [ "graphical-session.target" ];
         PartOf = [ "graphical-session.target" ];
-        # the hotplug bridge restarts this unit on every input add/remove;
+        # the hotplug bridge restarts this unit if keyd itself bounces;
         # never let a burst of restarts trip the start limit
         StartLimitIntervalSec = 0;
       };
       Service = {
-        ExecStart = "${pkgs.triggerhappy}/bin/thd --triggers ${pttTriggers} --deviceglob /dev/input/event*";
+        ExecStart = "${pkgs.triggerhappy}/bin/thd --triggers ${pttTriggers} --deviceglob /dev/input/by-id/keyd-virtual-keyboard-event-kbd";
         Restart = "on-failure";
         RestartSec = 2;
       };
       Install.WantedBy = [ "graphical-session.target" ];
     };
 
-    # thd only opens devices matching --deviceglob at startup, so a keyboard
-    # plugged in later isn't watched. This bridge watches udev for input
-    # add/remove and bounces the daemon so it reopens the device set. Runs as
+    # thd only opens its device at startup, so if keyd restarts (e.g. a
+    # rebuild) its virtual keyboard is recreated and thd is left watching a
+    # stale, now-dead device. This bridge watches udev for input add/remove
+    # and bounces the daemon so it reopens the (possibly new) device. Runs as
     # the user (in the `input` group), so no root/udev rule needed. Wants (not
     # Requires/PartOf) push-to-talk: the bridge restarts that unit, and a
     # propagating dependency would take the bridge down with it mid-restart.

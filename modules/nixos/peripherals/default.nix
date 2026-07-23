@@ -24,6 +24,7 @@ in
     modules.peripherals.webcam.enable = mkEnableOption "Enable webcam toggle" // {
       default = true;
     };
+    modules.peripherals.keyd.enable = mkEnableOption "Enable keyd input aggregation";
   };
   config = mkIf cfg.enable (mkMerge [
     {
@@ -85,6 +86,28 @@ in
           ];
         }
       ];
+    })
+    (mkIf cfg.keyd.enable {
+      # keyd grabs every keyboard — including hotplugged ones, its core
+      # competence — and re-emits events through one virtual device that is
+      # created at boot and outlives any hardware coming or going. The
+      # push-to-talk evdev listener (triggerhappy, HM waybar module) then
+      # always has a stable device to watch instead of chasing hardware
+      # hotplug; its restart-on-hotplug bridge remains only as a backstop
+      # (e.g. keyd itself restarting on a rebuild). Pure passthrough — no
+      # remapping — so Right Alt stays a real Alt everywhere.
+      services.keyd = {
+        enable = true;
+        keyboards.default.ids = [ "*" ];
+      };
+
+      # keyd's virtual keyboard is created fresh at every keyd start, so its
+      # /dev/input/eventN number isn't stable across boots. Give it a fixed
+      # by-id path so thd (waybar's push-to-talk daemon) can target it
+      # directly instead of globbing every input device.
+      services.udev.extraRules = ''
+        SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="keyd virtual keyboard", SYMLINK+="input/by-id/keyd-virtual-keyboard-event-kbd"
+      '';
     })
   ]);
 }

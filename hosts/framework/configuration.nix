@@ -19,6 +19,8 @@
 
   services.tlp.enable = lib.mkForce false;
   modules.powerProfiles.autoSwitch = true;
+  # stable virtual keyboard for push-to-talk (see modules/nixos/peripherals)
+  modules.peripherals.keyd.enable = true;
   services.fwupd.enable = true;
   fonts.packages = [
     pkgs.nerd-fonts.jetbrains-mono
