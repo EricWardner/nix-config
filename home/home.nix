@@ -31,6 +31,7 @@
   home.packages = with pkgs; [
     networkmanagerapplet
     mpv
+    stremio-linux-shell
     gimp3
     inkscape
     brave
