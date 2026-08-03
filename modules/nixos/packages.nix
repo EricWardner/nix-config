@@ -37,6 +37,7 @@ in
         nmap
         dnsutils
         file
+        ripgrep
       ]
       ++ cfg.extraDefaultPackages;
   };
