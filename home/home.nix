@@ -35,6 +35,7 @@
     gimp3
     inkscape
     brave
+    discord
     unzip
     claude-code
     pavucontrol
