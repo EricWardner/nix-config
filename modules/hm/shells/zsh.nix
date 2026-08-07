@@ -47,6 +47,7 @@ in
           upd = "nh home switch ${flakeDir} --update";
           gct = "git commit";
           open = "xdg-open";
+          nosleep = ''systemd-inhibit --what=sleep:idle:handle-lid-switch:handle-power-key --who="$USER" --why="no sleep" --mode=block sleep infinity'';
         };
       historySubstringSearch.enable = true;
       oh-my-zsh = {
