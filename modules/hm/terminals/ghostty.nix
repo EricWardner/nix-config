@@ -10,6 +10,25 @@ in
     };
   };
   config = mkIf cfg.ghostty.enable {
+    # Register Ghostty as the xfce/exo TerminalEmulator so Thunar's
+    # "Open Terminal Here" works
+    xdg.dataFile."xfce4/helpers/ghostty.desktop".text = ''
+      [Desktop Entry]
+      NoDisplay=true
+      Version=1.0
+      Encoding=UTF-8
+      Type=X-XFCE-Helper
+      Icon=com.mitchellh.ghostty
+      Name=Ghostty
+      X-XFCE-Binaries=ghostty
+      X-XFCE-Category=TerminalEmulator
+      X-XFCE-CommandsWithParameter=%B -e %s
+      X-XFCE-Commands=%B
+    '';
+    xdg.configFile."xfce4/helpers.rc".text = ''
+      TerminalEmulator=ghostty
+    '';
+
     programs.ghostty = {
       enable = true;
       enableZshIntegration = true;
