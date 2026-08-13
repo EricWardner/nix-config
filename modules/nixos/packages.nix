@@ -38,6 +38,7 @@ in
         dnsutils
         file
         ripgrep
+        wireguard-tools
       ]
       ++ cfg.extraDefaultPackages;
   };
