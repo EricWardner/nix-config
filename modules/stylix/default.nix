@@ -39,6 +39,13 @@ in
   config = mkIf cfg.enable {
     stylix = {
       enable = true;
+
+      # Stylix's chromium target writes a machine-wide managed policy
+      # (BrowserThemeColor -> /etc/opt/chrome/policies/managed/extra.json).
+      # That makes Chrome report "managed by your administrator" and locks the
+      # theme color across all profiles, so profiles cannot be themed apart.
+      targets.chromium.enable = false;
+
       fonts =
         let
           sf-pro-nerd-patched = inputs.font-patcher.lib.${pkgs.stdenv.hostPlatform.system}.patchFont {
