@@ -1,6 +1,7 @@
 {
   pkgs,
   config,
+  options,
   lib,
   inputs,
   ...
@@ -44,7 +45,11 @@ in
       # (BrowserThemeColor -> /etc/opt/chrome/policies/managed/extra.json).
       # That makes Chrome report "managed by your administrator" and locks the
       # theme color across all profiles, so profiles cannot be themed apart.
-      targets.chromium.enable = false;
+      # This module is shared by the NixOS and home-manager module sets, and
+      # stylix only defines a chromium target for NixOS, so guard on it.
+      targets = lib.optionalAttrs (options.stylix.targets ? chromium) {
+        chromium.enable = false;
+      };
 
       fonts =
         let
