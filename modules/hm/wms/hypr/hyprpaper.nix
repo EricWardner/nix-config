@@ -18,6 +18,8 @@ in
   config = mkIf cfg.enable {
     services.hyprpaper = {
       enable = true;
+      # Only under Hyprland: COSMIC manages its own wallpaper.
+      systemdTarget = "hyprland-session.target";
       settings = {
         splash = false;
         wallpaper = {

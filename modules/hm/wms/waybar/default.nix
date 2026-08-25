@@ -355,11 +355,15 @@ in
     # start-rate limit is disabled so a burst of monitor hotplugs (each triggers
     # a restart below) can never push the unit into a failed state where it
     # stays gone.
+    #
+    # Bound to hyprland-session.target (created by the HM hyprland module's
+    # systemd integration), NOT graphical-session.target: COSMIC starts the
+    # latter too, and waybar drawing over COSMIC's own panel is not a look.
     systemd.user.services.waybar = {
       Unit = {
         Description = "waybar";
-        After = [ "graphical-session.target" ];
-        PartOf = [ "graphical-session.target" ];
+        After = [ "hyprland-session.target" ];
+        PartOf = [ "hyprland-session.target" ];
         StartLimitIntervalSec = 0;
       };
       Service = {
@@ -368,7 +372,7 @@ in
         Restart = "always";
         RestartSec = 1;
       };
-      Install.WantedBy = [ "graphical-session.target" ];
+      Install.WantedBy = [ "hyprland-session.target" ];
     };
 
     # Restart waybar on monitor add/remove so its bars rebuild on the current
@@ -379,10 +383,10 @@ in
       Unit = {
         Description = "Restart waybar on Hyprland monitor hotplug";
         After = [
-          "graphical-session.target"
+          "hyprland-session.target"
           "waybar.service"
         ];
-        PartOf = [ "graphical-session.target" ];
+        PartOf = [ "hyprland-session.target" ];
         StartLimitIntervalSec = 0;
       };
       Service = {
@@ -390,7 +394,7 @@ in
         Restart = "always";
         RestartSec = 1;
       };
-      Install.WantedBy = [ "graphical-session.target" ];
+      Install.WantedBy = [ "hyprland-session.target" ];
     };
 
     # Push-to-talk: triggerhappy reads evdev directly and drives the mic on
@@ -398,7 +402,9 @@ in
     # by-id symlink, see modules/nixos/peripherals) rather than real hardware,
     # so hotplugging the physical keyboard never changes its device set. User
     # service (you're in the `input` group), so it can both read evdev and
-    # reach your PipeWire session.
+    # reach your PipeWire session. Stays on graphical-session.target (unlike
+    # waybar above): it's evdev + PipeWire with no compositor dependency, so
+    # PTT keeps working under COSMIC too.
     systemd.user.services.push-to-talk = {
       Unit = {
         Description = "Push-to-talk (hold Right Alt) — triggerhappy evdev daemon";
