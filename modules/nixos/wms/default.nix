@@ -1,5 +1,6 @@
 {
   imports = [
+    ./greeter
     ./hyprland
   ];
 }

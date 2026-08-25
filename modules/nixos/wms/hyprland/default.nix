@@ -2,14 +2,11 @@
   pkgs,
   config,
   lib,
-  user,
   ...
 }:
 let
   inherit (lib) mkIf mkEnableOption;
   cfg = config.modules.hyprland;
-  tuigreet = "${pkgs.tuigreet}/bin/tuigreet";
-  session = "start-hyprland";
 in
 {
   options = {
@@ -18,31 +15,8 @@ in
     };
   };
   config = mkIf cfg.enable {
-    services = {
-      greetd = {
-        enable = true;
-        settings = {
-          initial_session = {
-            command = "${session}";
-            user = "${user.username}";
-          };
-          default_session = {
-            command = "${tuigreet} --greeting 'Welcome to NixOS!' --asterisks --time --remember --remember-user-session --cmd ${session}";
-            user = "greeter";
-          };
-        };
-      };
-    };
-    systemd.services.greetd.serviceConfig = {
-      Type = "idle";
-      StandardInput = "tty";
-      StandardOutput = "tty";
-      StandardError = "journal"; # Without this errors will spam on screen
-      # Without these bootlogs will spam on screen
-      TTYReset = true;
-      TTYVHangup = true;
-      TTYVTDisallocate = true;
-    };
+    # The login greeter lives in ../greeter (shared with COSMIC); Hyprland's
+    # session file is picked up there via displayManager.sessionPackages.
     programs.hyprland = {
       enable = true;
       xwayland.enable = true;
