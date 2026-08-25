@@ -1,5 +1,6 @@
 {
   imports = [
+    ./gitnexus
     ./team-skills.nix
   ];
 

@@ -25,6 +25,7 @@
   # this itself.
   home.pointerCursor.enable = true;
   modules = {
+    ai.gitnexus.enable = true;
     ai.team-skills.enable = true;
     editors.vscode.enable = true;
   };
