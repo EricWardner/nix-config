@@ -72,7 +72,7 @@
         *Sleep*) systemctl suspend-then-hibernate ;;
         *Reboot*) systemctl reboot ;;
         *Shutdown*) systemctl poweroff ;;
-        *Logout*) hyprctl dispatch exit ;;
+        *Logout*) hyprctl dispatch 'hl.dsp.exit()' ;;
       esac
     '')
   ];

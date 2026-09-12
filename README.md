@@ -2,6 +2,9 @@
 
 Personal NixOS and Home Manager configuration flake.
 
+Hyprland uses Lua: see the [configuration and migration notes](modules/hm/wms/hypr/README.md)
+for file locations, validation, activation, and optional improvements.
+
 ## Usage
 
 ### Rebuild System

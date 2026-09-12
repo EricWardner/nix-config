@@ -26,10 +26,35 @@ let
   swappy = "${pkgs.swappy}/bin/swappy";
   playerctl = "${pkgs.playerctl}/bin/playerctl";
   btop = "${pkgs.btop}/bin/btop";
-  hyprlock = "${pkgs.hyprlock}/bin/hyprlock";
   slack = "${pkgs.slack}/bin/slack";
   chrome = "${pkgs.google-chrome}/bin/google-chrome-stable";
-  wfRecorderToggle = "wf-recorder-toggle";
+  toLua = lib.generators.toLua { };
+  commands = {
+    terminal = ghostty;
+    files = thunar;
+    launcher = fuzzel;
+    clipboard = "${cliphist} list | ${fuzzel} --dmenu | ${cliphist} decode | ${wl-copy}";
+    oath = "oath 19125157";
+    gather = "launch-webapp https://app.gather.town/app/V383EJ8uFnnNFtez/Grail";
+    lock = "${pkgs.systemd}/bin/loginctl lock-session";
+    keyboardBrighter = "${brightnessctl} -d '*::kbd_backlight' set +33%";
+    keyboardDimmer = "${brightnessctl} -d '*::kbd_backlight' set 33%-";
+    screenshot = ''${grim} -g "$(${slurp})" - | ${swappy} -f -'';
+    record = "wf-recorder-toggle";
+    volumeUp = "volume-action up";
+    volumeDown = "volume-action down";
+    volumeMute = "volume-action mute";
+    micMute = "mic-action mute";
+    brighter = "${brightnessctl} set 5%+";
+    dimmer = "${brightnessctl} set 5%-";
+    mediaNext = "${playerctl} next";
+    mediaPlayPause = "${playerctl} play-pause";
+    mediaPrevious = "${playerctl} previous";
+  };
+  launchOnWorkspace =
+    command: workspace:
+    "${pkgs.hyprland}/bin/hyprctl dispatch "
+    + lib.escapeShellArg "hl.dsp.exec_cmd(${toLua command}, ${toLua { inherit workspace; }})";
 in
 {
   options = {
@@ -41,8 +66,9 @@ in
         types.submodule {
           options = {
             transform = mkOption {
-              type = types.bool;
-              default = false;
+              type = types.ints.between 0 7;
+              default = 0;
+              description = "Monitor rotation/flip: 0 normal, 1–3 rotations, 4–7 flipped.";
             };
             name = mkOption {
               type = types.str;
@@ -69,12 +95,12 @@ in
                 }
               );
               default = "preferred";
-              example = "highres@highrr";
+              example = "highres";
               description = ''
                 Monitor resolution. Can be:
-                - "highres@highrr" - Highest resolution at highest refresh rate
+                - "highres" - Highest supported resolution
                 - "preferred" - Use monitor's preferred mode
-                - "auto" - Let Hyprland decide
+                - "highrr" - Highest supported refresh rate
                 - { width = 1920; height = 1080; refreshRate = 60; } - Explicit resolution
               '';
             };
@@ -94,7 +120,11 @@ in
             };
 
             scale = mkOption {
-              type = types.str;
+              type = types.oneOf [
+                types.str
+                types.ints.positive
+                types.positiveFloat
+              ];
               default = "1";
             };
             position = mkOption {
@@ -108,6 +138,7 @@ in
             workspace = mkOption {
               type = types.nullOr types.str;
               default = null;
+              description = "Default workspace to bind to this monitor.";
             };
           };
         }
@@ -124,23 +155,60 @@ in
   config = mkIf cfg.enable {
     wayland.windowManager.hyprland = {
       enable = true;
-      # Keep the legacy hyprlang config generator. The HM default flips to "lua"
-      # at stateVersion 26.05; our settings are written for hyprlang, so pin it
-      # explicitly rather than silently migrating.
-      configType = "hyprlang";
+      # Explicit because home.stateVersion predates Home Manager's Lua default.
+      configType = "lua";
       package = null;
       portalPackage = null;
       xwayland.enable = true;
       systemd = {
         enable = true;
         variables = [ "--all" ];
+        # Run only after HM imports the complete environment and starts the
+        # session target. Chromium caches portal availability on first launch.
+        # Setting this option replaces HM's default list, so keep its target
+        # stop/start commands before app startup.
+        extraCommands = [
+          "systemctl --user stop hyprland-session.target"
+          "systemctl --user start hyprland-session.target"
+          "systemctl --user restart xdg-desktop-portal.service"
+          (launchOnWorkspace slack "special:chat silent")
+          (launchOnWorkspace commands.gather "special:chat silent")
+          (launchOnWorkspace chrome "1 silent")
+        ];
       };
+      extraLuaFiles = {
+        bindings = ./lua/bindings.lua;
+        animations = ./lua/animations.lua;
+        rules = ./lua/rules.lua;
+        nix = {
+          autoLoad = false;
+          content =
+            "return "
+            + toLua {
+              mainMod = cfg.mainMod;
+              inherit commands;
+            };
+        };
+      };
+      extraConfig = ''
+        -- Waybar and hyprpaper are supervised by their systemd user services.
+        hl.on("hyprland.start", function()
+          hl.exec_cmd(${toLua "${pkgs.networkmanagerapplet}/bin/nm-applet --indicator"})
+          hl.exec_cmd(${toLua ghostty}, { workspace = "1 silent" })
+        end)
+      '';
       settings =
         let
           inherit (config.lib.stylix) colors;
           rgb = color: "rgb(${color})";
-          activeGradient = "${rgb colors.base0B} ${rgb colors.base0A} 45deg";
-          inactiveGradient = "${rgb colors.base00}";
+          activeGradient = {
+            colors = [
+              (rgb colors.base0B)
+              (rgb colors.base0A)
+            ];
+            angle = 45;
+          };
+          inactiveGradient = rgb colors.base00;
 
           # Helper function to build resolution string
           buildResolution =
@@ -154,396 +222,182 @@ in
                 toString (if m.refreshRate != null then m.refreshRate else 60)
               }"
             else
-              # String resolution (preferred, auto, highres@highrr, etc.)
+              # String resolution (preferred, highrr, highres, etc.)
               m.resolution;
         in
         {
-          "$mainMod" = cfg.mainMod;
-
-          # Omarchy environment variables
-          env = [
-            # Cursor size
-            "XCURSOR_SIZE,24"
-            "HYPRCURSOR_SIZE,24"
-            # Force all apps to use Wayland
-            "GDK_BACKEND,wayland,x11,*"
-            "QT_QPA_PLATFORM,wayland;xcb"
-            "QT_STYLE_OVERRIDE,kvantum"
-            "SDL_VIDEODRIVER,wayland"
-            "MOZ_ENABLE_WAYLAND,1"
-            "ELECTRON_OZONE_PLATFORM_HINT,wayland"
-            "OZONE_PLATFORM,wayland"
-            "XDG_SESSION_TYPE,wayland"
-            # Screen sharing support
-            "XDG_CURRENT_DESKTOP,Hyprland"
-            "XDG_SESSION_DESKTOP,Hyprland"
-            # XCompose file
-            "XCOMPOSEFILE,~/.XCompose"
-          ];
-
-          xwayland = {
-            force_zero_scaling = false;
-          };
-
-          cursor = {
-            no_hardware_cursors = true;
-            hide_on_key_press = true;
-          };
-
-          ecosystem = {
-            no_update_news = true;
-          };
-
-          # Omarchy input config
-          input = {
-            kb_layout = "us";
-            kb_options = "compose:caps";
-            repeat_rate = 40;
-            repeat_delay = 600;
-            numlock_by_default = true;
-            follow_mouse = 1;
-            sensitivity = 0;
-
-            touchpad = {
-              natural_scroll = true;
-              scroll_factor = 0.4;
-            };
-          };
+          env =
+            lib.mapAttrsToList
+              (name: value: {
+                _args = [
+                  name
+                  value
+                ];
+              })
+              {
+                XCURSOR_SIZE = "24";
+                HYPRCURSOR_SIZE = "24";
+                GDK_BACKEND = "wayland,x11,*";
+                QT_QPA_PLATFORM = "wayland;xcb";
+                QT_STYLE_OVERRIDE = "kvantum";
+                SDL_VIDEODRIVER = "wayland";
+                MOZ_ENABLE_WAYLAND = "1";
+                ELECTRON_OZONE_PLATFORM_HINT = "wayland";
+                OZONE_PLATFORM = "wayland";
+                XDG_SESSION_TYPE = "wayland";
+                XDG_CURRENT_DESKTOP = "Hyprland";
+                XDG_SESSION_DESKTOP = "Hyprland";
+                XCOMPOSEFILE = "${config.home.homeDirectory}/.XCompose";
+              };
 
           monitor =
-            (map (
-              m:
-              "${m.name},${
-                if m.enabled then
-                  if m.transform then
-                    "transform,${toString m.scale}"
-                  else
-                    "${buildResolution m},${m.position},${toString m.scale}"
-                else
-                  "disable"
-              }"
-            ) (cfg.monitors))
+            map (m: {
+              output = m.name;
+              disabled = !m.enabled;
+              mode = buildResolution m;
+              inherit (m) position scale transform;
+            }) cfg.monitors
             ++ [
-              ",preferred,auto,1"
+              {
+                output = "";
+                mode = "preferred";
+                position = "auto";
+                scale = 1;
+              }
             ];
 
-          # Omarchy look and feel
-          general = {
-            "col.active_border" = lib.mkDefault "${activeGradient}";
-            "col.inactive_border" = lib.mkDefault "${inactiveGradient}";
-            gaps_in = 4;
-            gaps_out = 8;
-            border_size = 2;
-            resize_on_border = false;
-            allow_tearing = false;
-            layout = "dwindle";
-          };
+          workspace_rule = [
+            {
+              workspace = "special:monitor";
+              on_created_empty = "${ghostty} -e ${btop}";
+            }
+            {
+              workspace = "special:chat";
+              monitor = "eDP-1";
+            }
+          ]
+          ++ map (m: {
+            workspace = m.workspace;
+            monitor = m.name;
+            default = true;
+          }) (lib.filter (m: m.enabled && m.workspace != null) cfg.monitors);
 
-          decoration = {
-            rounding = 12;
-
-            shadow = {
-              enabled = true;
-              range = 8;
-              render_power = 2;
-              color = lib.mkForce "rgba(00000040)";
+          # Home Manager renders this as hl.config(); Stylix merges colors here.
+          config = {
+            xwayland = {
+              force_zero_scaling = false;
             };
 
-            blur = {
-              enabled = true;
-              size = 4;
-              passes = 2;
-              special = true;
-              xray = true;
-              popups = true;
+            cursor = {
+              no_hardware_cursors = 1;
+              hide_on_key_press = true;
             };
-          };
 
-          layerrule = [
-            "blur on, ignore_alpha 0.5, match:namespace waybar"
-          ];
-
-          # Omarchy animations
-          animations = {
-            enabled = true;
-
-            bezier = [
-              "easeOutQuint,0.23,1,0.32,1"
-              "easeInOutCubic,0.65,0.05,0.36,1"
-              "linear,0,0,1,1"
-              "almostLinear,0.5,0.5,0.75,1.0"
-              "quick,0.15,0,0.1,1"
-            ];
-
-            animation = [
-              "global, 1, 10, default"
-              "border, 1, 5.39, easeOutQuint"
-              "windows, 1, 4.79, easeOutQuint"
-              "windowsIn, 1, 4.1, easeOutQuint, popin 87%"
-              "windowsOut, 1, 1.49, linear, popin 87%"
-              "fadeIn, 1, 1.73, almostLinear"
-              "fadeOut, 1, 1.46, almostLinear"
-              "fade, 1, 3.03, quick"
-              "layers, 1, 3.81, easeOutQuint"
-              "layersIn, 1, 4, easeOutQuint, fade"
-              "layersOut, 1, 1.5, linear, fade"
-              "fadeLayersIn, 1, 1.79, almostLinear"
-              "fadeLayersOut, 1, 1.39, almostLinear"
-              "workspaces, 1, 4, easeOutQuint, slide"
-            ];
-          };
-
-          dwindle = {
-            preserve_split = true;
-            force_split = 2; # Always split on the right
-          };
-
-          master = {
-            new_status = "master";
-          };
-
-          group = {
-            "col.border_active" = lib.mkDefault "${activeGradient}";
-            "col.border_inactive" = lib.mkDefault "${inactiveGradient}";
-
-            groupbar = {
-              font_size = 12;
-              font_family = "sans-serif";
-              font_weight_active = "ultraheavy";
-              font_weight_inactive = "normal";
-              indicator_height = 0;
-              indicator_gap = 5;
-              height = 22;
-              gaps_in = 5;
-              gaps_out = 0;
-              text_color = lib.mkDefault (rgb colors.base05);
-              text_color_inactive = "rgba(${colors.base04}90)";
-              "col.active" = lib.mkForce "rgba(${colors.base0D}bf)";
-              "col.inactive" = lib.mkForce "rgba(${colors.base03}80)";
-              gradients = true;
-              gradient_rounding = 0;
-              gradient_round_only_edges = false;
+            ecosystem = {
+              no_update_news = true;
             };
+
+            # Omarchy input config
+            input = {
+              kb_layout = "us";
+              kb_options = "compose:caps";
+              repeat_rate = 40;
+              repeat_delay = 600;
+              numlock_by_default = true;
+              follow_mouse = 1;
+              sensitivity = 0;
+
+              touchpad = {
+                natural_scroll = true;
+                scroll_factor = 0.4;
+              };
+            };
+
+            # Omarchy look and feel
+            general = {
+              "col.active_border" = lib.mkDefault activeGradient;
+              "col.inactive_border" = lib.mkDefault inactiveGradient;
+              gaps_in = 4;
+              gaps_out = 8;
+              border_size = 2;
+              resize_on_border = false;
+              allow_tearing = false;
+              layout = "dwindle";
+            };
+
+            decoration = {
+              rounding = 12;
+
+              shadow = {
+                enabled = true;
+                range = 8;
+                render_power = 2;
+                color = lib.mkForce "rgba(00000040)";
+              };
+
+              blur = {
+                enabled = true;
+                size = 4;
+                passes = 2;
+                special = true;
+                xray = true;
+                popups = true;
+              };
+            };
+
+            animations.enabled = true;
+
+            dwindle = {
+              preserve_split = true;
+              force_split = 2; # Always split on the right
+            };
+
+            master = {
+              new_status = "master";
+            };
+
+            group = {
+              "col.border_active" = lib.mkDefault activeGradient;
+              "col.border_inactive" = lib.mkDefault inactiveGradient;
+
+              groupbar = {
+                font_size = 12;
+                font_family = "sans-serif";
+                font_weight_active = "ultraheavy";
+                font_weight_inactive = "normal";
+                indicator_height = 0;
+                indicator_gap = 5;
+                height = 22;
+                gaps_in = 5;
+                gaps_out = 0;
+                text_color = lib.mkDefault (rgb colors.base05);
+                text_color_inactive = "rgba(${colors.base04}90)";
+                "col.active" = lib.mkForce "rgba(${colors.base0D}bf)";
+                "col.inactive" = lib.mkForce "rgba(${colors.base03}80)";
+                gradients = true;
+                gradient_rounding = 0;
+                gradient_round_only_edges = false;
+              };
+            };
+
+            misc = {
+              disable_hyprland_logo = true;
+              disable_splash_rendering = true;
+              focus_on_activate = true;
+              anr_missed_pings = 3;
+              on_focus_under_fullscreen = 1;
+              key_press_enables_dpms = true;
+              mouse_move_enables_dpms = true;
+            };
+
           };
-
-          # Native gesture support (Hyprland 0.46+)
-          # Syntax: gesture = fingers, direction, action, options
-          gesture = [
-            # 3-finger horizontal swipe to switch workspaces (1:1 animation)
-            "3, horizontal, workspace"
-            # 3-finger swipe down — toggle floating
-            "3, down, float"
-            # 4-finger swipe up — fullscreen
-            "4, up, fullscreen"
-          ];
-
-          misc = {
-            disable_hyprland_logo = true;
-            disable_splash_rendering = true;
-            focus_on_activate = true;
-            anr_missed_pings = 3;
-            on_focus_under_fullscreen = 1;
-            key_press_enables_dpms = true;
-            mouse_move_enables_dpms = true;
-          };
-
-          # Workspace-monitor bindings
-          workspace = [
-            "special:monitor, on-created-empty: ${ghostty} -e ${btop}"
-            "1, monitor:desc:GIGA-BYTE TECHNOLOGY CO. LTD. Gigabyte M32U 22181B002365, default:true"
-            "10, monitor:eDP-1, default:true"
-            "special:chat, monitor:eDP-1"
-          ];
-
-          # Omarchy window rules + personal rules (Hyprland 0.53+ syntax)
-          windowrule = [
-            "match:class .*, suppress_event maximize"
-            "match:class ^$, match:title ^$, match:xwayland true, match:float true, match:fullscreen false, match:pin false, no_focus on"
-            "match:class (Alacritty|kitty), scroll_touchpad 1.5"
-            "match:class com.mitchellh.ghostty, scroll_touchpad 0.2"
-            # Personal window rules
-            "match:title ^(MainPicker)$, float on"
-            "match:title ^(Sign in to Security Device)$, float on"
-            "match:title ^(app.v2.gather.town is sharing)(.*)$, workspace 10"
-            "match:class signal, group on"
-            "match:class Slack, group on"
-            "match:class .*gather.*, workspace special:chat"
-            "match:class .*gather.*, group on"
-            "match:class ^(dropdown)$, float on"
-            "match:class ^(dropdown)$, size 800 400"
-            "match:class ^(dropdown)$, center on"
-            "match:class ^(dropdown)$, animation slide"
-            "match:class ^(org.pulseaudio.pavucontrol|.blueman-manager-wrapped|hu.irl.cameractrls|nm-connection-editor|btop)$, float on"
-            "match:class ^(org.pulseaudio.pavucontrol|.blueman-manager-wrapped|hu.irl.cameractrls|nm-connection-editor|btop)$, move (monitor_w-window_w-10) 40"
-            "match:title ^(GIF Preview)$, float on"
-            "match:title ^(GIF Preview)$, center on"
-          ];
-
-          # Tiling bindings (Omarchy + personal vim keys)
-          bind = [
-            # Close windows
-            "$mainMod, Q, killactive,"
-            # Control tiling
-            "$mainMod, S, layoutmsg, togglesplit"
-            "$mainMod, P, pseudo,"
-            "$mainMod, F, togglefloating,"
-            ",F11,fullscreen"
-            "$mainMod CTRL, F, fullscreenstate, 0 2"
-            "$mainMod ALT, F, fullscreen, 1"
-            # Applications
-            "$mainMod, Return, exec, ${ghostty}"
-            "$mainMod, E, exec, ${thunar}"
-            "$mainMod, SPACE, exec, ${fuzzel}"
-            "$mainMod, Y, exec, oath 19125157"
-            "$mainMod, V, exec, ${cliphist} list | ${fuzzel} --dmenu | ${cliphist} decode | ${wl-copy}"
-            # Web apps
-            "$mainMod SHIFT, G, exec, launch-webapp https://app.gather.town/app/V383EJ8uFnnNFtez/Grail"
-            # Move focus with vim keys
-            "$mainMod, h, movefocus, l"
-            "$mainMod, l, movefocus, r"
-            "$mainMod, k, movefocus, u"
-            "$mainMod, j, movefocus, d"
-            # Move focus with arrow keys
-            "$mainMod, LEFT, movefocus, l"
-            "$mainMod, RIGHT, movefocus, r"
-            "$mainMod, UP, movefocus, u"
-            "$mainMod, DOWN, movefocus, d"
-            # Move/swap windows with vim keys
-            "$mainMod SHIFT, h, movewindoworgroup, l"
-            "$mainMod SHIFT, l, movewindoworgroup, r"
-            "$mainMod SHIFT, k, movewindoworgroup, u"
-            "$mainMod SHIFT, j, movewindoworgroup, d"
-            # Resize with vim keys
-            "$mainMod CTRL, h, resizeactive, -60 0"
-            "$mainMod CTRL, l, resizeactive, 60 0"
-            "$mainMod CTRL, k, resizeactive, 0 -60"
-            "$mainMod CTRL, j, resizeactive, 0 60"
-            # Switch workspaces with numbers
-            "$mainMod, 1, workspace, 1"
-            "$mainMod, 2, workspace, 2"
-            "$mainMod, 3, workspace, 3"
-            "$mainMod, 4, workspace, 4"
-            "$mainMod, 5, workspace, 5"
-            "$mainMod, 6, workspace, 6"
-            "$mainMod, 7, workspace, 7"
-            "$mainMod, 8, workspace, 8"
-            "$mainMod, 9, workspace, 9"
-            "$mainMod, 0, workspace, 10"
-            # Move window silently to workspace
-            "$mainMod SHIFT, 1, movetoworkspacesilent, 1"
-            "$mainMod SHIFT, 2, movetoworkspacesilent, 2"
-            "$mainMod SHIFT, 3, movetoworkspacesilent, 3"
-            "$mainMod SHIFT, 4, movetoworkspacesilent, 4"
-            "$mainMod SHIFT, 5, movetoworkspacesilent, 5"
-            "$mainMod SHIFT, 6, movetoworkspacesilent, 6"
-            "$mainMod SHIFT, 7, movetoworkspacesilent, 7"
-            "$mainMod SHIFT, 8, movetoworkspacesilent, 8"
-            "$mainMod SHIFT, 9, movetoworkspacesilent, 9"
-            "$mainMod SHIFT, 0, movetoworkspacesilent, 10"
-            # Special workspaces
-            "$mainMod, B, togglespecialworkspace, browser"
-            "$mainMod, C, togglespecialworkspace, chat"
-            # TAB between workspaces
-            "$mainMod, TAB, workspace, previous"
-            "$mainMod SHIFT, TAB, workspace, e-1"
-            "$mainMod CTRL, TAB, workspace, e+1"
-            # Move workspaces to other monitors
-            "$mainMod SHIFT ALT, LEFT, movecurrentworkspacetomonitor, l"
-            "$mainMod SHIFT ALT, RIGHT, movecurrentworkspacetomonitor, r"
-            # Swap windows with arrows
-            "$mainMod SHIFT, LEFT, swapwindow, l"
-            "$mainMod SHIFT, RIGHT, swapwindow, r"
-            "$mainMod SHIFT, UP, swapwindow, u"
-            "$mainMod SHIFT, DOWN, swapwindow, d"
-            # Resize active window
-            "$mainMod, minus, resizeactive, -100 0"
-            "$mainMod, equal, resizeactive, 100 0"
-            "$mainMod SHIFT, minus, resizeactive, 0 -100"
-            "$mainMod SHIFT, equal, resizeactive, 0 100"
-            # Scroll workspaces
-            "$mainMod, mouse_down, workspace, e+1"
-            "$mainMod, mouse_up, workspace, e-1"
-            # Groups
-            "ALT CTRL SHIFT, L, exec, loginctl lock-session && ${hyprlock}"
-            "$mainMod, G, togglegroup"
-            "$mainMod ALT, G, moveoutofgroup"
-            "$mainMod ALT, J, changegroupactive, f"
-            "$mainMod ALT, K, changegroupactive, b"
-            "$mainMod ALT, LEFT, moveintogroup, l"
-            "$mainMod ALT, RIGHT, moveintogroup, r"
-            "$mainMod ALT, UP, moveintogroup, u"
-            "$mainMod ALT, DOWN, moveintogroup, d"
-            "$mainMod ALT, TAB, changegroupactive, f"
-            "$mainMod ALT SHIFT, TAB, changegroupactive, b"
-            "$mainMod CTRL, LEFT, changegroupactive, b"
-            "$mainMod CTRL, RIGHT, changegroupactive, f"
-            "$mainMod ALT, mouse_down, changegroupactive, f"
-            "$mainMod ALT, mouse_up, changegroupactive, b"
-            # Group window by number
-            "$mainMod ALT, 1, changegroupactive, 1"
-            "$mainMod ALT, 2, changegroupactive, 2"
-            "$mainMod ALT, 3, changegroupactive, 3"
-            "$mainMod ALT, 4, changegroupactive, 4"
-            "$mainMod ALT, 5, changegroupactive, 5"
-            # Keyboard backlight
-            "$mainMod, F3, exec, ${brightnessctl} -d *::kbd_backlight set +33%"
-            "$mainMod, F2, exec, ${brightnessctl} -d *::kbd_backlight set 33%-"
-            # Screenshot
-            '', Print, exec, ${grim} -g "$(${slurp})" - | ${swappy} -f -''
-            # Screen recording
-            "$mainMod, R, exec, ${wfRecorderToggle}"
-          ];
-
-          # ALT+TAB cycling
-          bindr = [
-            "ALT, TAB, cyclenext"
-            "ALT SHIFT, TAB, cyclenext, prev"
-            "ALT, TAB, bringactivetotop"
-            "ALT SHIFT, TAB, bringactivetotop"
-          ];
-
-          # Media keys (repeat on hold)
-          bindel = [
-            ", XF86AudioRaiseVolume, exec, volume-action up"
-            ", XF86AudioLowerVolume, exec, volume-action down"
-            ", XF86AudioMute, exec, volume-action mute"
-            ", XF86AudioMicMute, exec, mic-action mute"
-            ", XF86MonBrightnessUp, exec, ${brightnessctl} set 5%+"
-            ", XF86MonBrightnessDown, exec, ${brightnessctl} set 5%-"
-          ];
-
-          # Media playback (locked)
-          bindl = [
-            ", XF86AudioNext, exec, ${playerctl} next"
-            ", XF86AudioPause, exec, ${playerctl} play-pause"
-            ", XF86AudioPlay, exec, ${playerctl} play-pause"
-            ", XF86AudioPrev, exec, ${playerctl} previous"
-          ];
-
-          # Mouse bindings
-          bindm = [
-            "$mainMod, mouse:272, movewindow"
-            "$mainMod, mouse:273, resizewindow"
-          ];
-
-          exec-once = [
-            # waybar runs as a systemd --user service (Restart=always) plus a
-            # hotplug watcher, both defined in modules/hm/wms/waybar. systemd
-            # supervises them, so it is no longer launched from here.
-            # hyprpaper is started by its systemd user unit
-            # (services.hyprpaper.enable), not from here.
-            "nm-applet --indicator"
-            "[workspace special:chat silent] ${slack}"
-            "[workspace 1 silent] ${ghostty}"
-            # Chromium probes xdg-desktop-portal once at startup; if it wins the
-            # race against the portal coming up, it disables ScreenCast +
-            # FileChooser for the whole session (screen share drops to
-            # window/tab-only, upload dialogs never appear). Import the session
-            # env, restart the portal, THEN launch anything Chromium-based via
-            # `hyprctl dispatch exec` so it always sees a ready portal.
-            "systemctl --user import-environment PATH && systemctl --user restart xdg-desktop-portal.service && hyprctl dispatch exec '[workspace special:chat silent] launch-webapp https://app.gather.town/app/V383EJ8uFnnNFtez/Grail' && hyprctl dispatch exec '[workspace 1 silent] ${chrome}'"
-          ];
         };
+    };
+
+    # HM normally generates this only when it also installs the compositor.
+    xdg.configFile."hypr/.luarc.json".text = builtins.toJSON {
+      workspace.library = [ "${pkgs.hyprland}/share/hypr/stubs" ];
+      diagnostics.globals = [ "hl" ];
     };
   };
 }

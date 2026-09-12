@@ -9,6 +9,7 @@
   programs = {
     shellcheck.enable = true;
     shfmt.enable = true;
+    stylua.enable = true;
     # Currently, goimports is not working in treefmt, awaiting a fix
     # goimports.enable = true;
     deadnix.enable = true;
