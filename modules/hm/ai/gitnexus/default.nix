@@ -51,6 +51,9 @@ in
           cfg.package
         ];
       })
+      # The Claude Code hooks installed by `gitnexus setup` run `node` by name,
+      # so a node must be on PATH; the package above only bundles one internally.
+      pkgs.nodejs
     ];
   };
 }
