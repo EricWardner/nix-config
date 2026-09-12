@@ -9,6 +9,13 @@ let
   cfg = config.modules.hyprland.waybar;
   inherit (config.lib.stylix) colors;
 
+  # Waybar 0.15's workspace buttons still send legacy Hyprland dispatchers.
+  # Backport upstream's Lua IPC support, including config-provider detection.
+  # Keep the package installed by HM and the service executable in sync.
+  waybarPackage = pkgs.waybar.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./hyprland-lua-ipc.patch ];
+  });
+
   webcamToggle = pkgs.writeShellScript "webcam-toggle" ''
     sudo /run/current-system/sw/bin/webcam-toggle toggle
     ${pkgs.procps}/bin/pkill -RTMIN+10 waybar
@@ -367,7 +374,7 @@ in
         StartLimitIntervalSec = 0;
       };
       Service = {
-        ExecStart = "${pkgs.waybar}/bin/waybar";
+        ExecStart = "${config.programs.waybar.package}/bin/waybar";
         ExecReload = "${pkgs.coreutils}/bin/kill -SIGUSR2 $MAINPID";
         Restart = "always";
         RestartSec = 1;
@@ -446,6 +453,7 @@ in
     };
     programs.waybar = {
       enable = true;
+      package = waybarPackage;
       # We define the waybar systemd user service ourselves below (Restart=always
       # + a monitor-hotplug watcher) instead of using the module's unit, so this
       # only writes the config/style. Running under systemd is what makes the bar
