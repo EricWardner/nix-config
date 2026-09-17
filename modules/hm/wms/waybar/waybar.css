@@ -49,6 +49,22 @@ window#waybar {
   border-bottom: 4px solid @base05;
 }
 
+/* Divider between the numbered workspaces and the special ones. Waybar sorts
+   special workspaces last, so the first special button draws a short line on
+   its left edge; a special button that follows another special drops it. */
+#workspaces button.special {
+  padding-left: 14px;
+  background-image: linear-gradient(alpha(@base05, 0.5), alpha(@base05, 0.5));
+  background-size: 1px 14px;
+  background-repeat: no-repeat;
+  background-position: left center;
+}
+
+#workspaces button.special + button.special {
+  padding-left: 8px;
+  background-image: none;
+}
+
 #window {
   margin-right: 8px;
 }
