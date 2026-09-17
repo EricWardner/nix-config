@@ -24,6 +24,7 @@ in
     ./virtualizations
     ../stylix
   ];
+
   options = {
     modules.enable = mkEnableOption "Enable NixOS modules" // {
       default = true;
@@ -67,6 +68,10 @@ in
         ];
       };
     };
+
+    # Let nix-daemon read private flake inputs (tokens etc.) from a file
+    # kept out of the repo.
+    systemd.services.nix-daemon.serviceConfig.EnvironmentFile = "/etc/nix/private-modules.env";
 
     boot = {
       loader.grub = mkIf cfg.grub {
