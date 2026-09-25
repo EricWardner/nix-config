@@ -38,8 +38,7 @@ in
   config = mkIf cfg.enable {
     services.hypridle = {
       enable = true;
-      # Only under Hyprland: the lock/dpms commands are hyprctl/hyprlock, and
-      # COSMIC runs its own cosmic-idle daemon.
+      # Only under Hyprland: the lock/dpms commands are hyprctl/hyprlock.
       systemdTarget = "hyprland-session.target";
       settings = {
         general = {

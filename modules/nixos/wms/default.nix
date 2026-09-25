@@ -1,6 +1,5 @@
 {
   imports = [
-    ./cosmic
     ./greeter
     ./hyprland
   ];

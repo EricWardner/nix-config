@@ -364,8 +364,7 @@ in
     # stays gone.
     #
     # Bound to hyprland-session.target (created by the HM hyprland module's
-    # systemd integration), NOT graphical-session.target: COSMIC starts the
-    # latter too, and waybar drawing over COSMIC's own panel is not a look.
+    # systemd integration) so it only runs under a Hyprland session.
     systemd.user.services.waybar = {
       Unit = {
         Description = "waybar";
@@ -410,8 +409,7 @@ in
     # so hotplugging the physical keyboard never changes its device set. User
     # service (you're in the `input` group), so it can both read evdev and
     # reach your PipeWire session. Stays on graphical-session.target (unlike
-    # waybar above): it's evdev + PipeWire with no compositor dependency, so
-    # PTT keeps working under COSMIC too.
+    # waybar above): it's evdev + PipeWire with no compositor dependency.
     systemd.user.services.push-to-talk = {
       Unit = {
         Description = "Push-to-talk (hold Right Alt) — triggerhappy evdev daemon";
