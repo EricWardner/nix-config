@@ -26,7 +26,7 @@ in
         unityhub
         e2fsprogs
         tcpdump
-        ltrace
+        (ltrace.overrideAttrs { doCheck = false; })
         strace
         pciutils
         usbutils
