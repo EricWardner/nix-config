@@ -25,6 +25,11 @@ in
 
     virtualisation = {
       docker.enable = true;
+      # json-file, not the NixOS default journald: after the nixpkgs update
+      # of 2026-10-10, dockerd wrote container output to the journal but
+      # `docker logs` read nothing back, which broke anything that waits on a
+      # container's output (testcontainers' readiness checks, compose logs).
+      docker.logDriver = "json-file";
       docker.daemon.settings = {
         # Default bridge parked in the last /24 of the primary pool so it
         # doesn't fragment it (its route existing makes the allocator skip it).
