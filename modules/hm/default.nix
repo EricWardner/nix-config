@@ -51,6 +51,7 @@
 
         # Shell Utils
         gh
+        forgejo-cli # fj: Forgejo CLI for code.grail.tiberius.com (replaces tea)
         tmux
         tree
         jq
@@ -75,6 +76,14 @@
         target = "Wallpapers/Wallpapers/..";
       };
     };
+    # fj (forgejo-cli) only offers `fj auth login` (OAuth + PKCE) for hosts it
+    # has a client id for; otherwise it says "doesn't support login". This is a
+    # dedicated "fj" OAuth2 app registered under my Forgejo user (public client,
+    # redirect http://127.0.0.1:26218/). Forgejo's built-in tea app can't be shared:
+    # one grant per user per app, and tea's grant has a different scope.
+    xdg.configFile."forgejo-cli/client_ids".text = ''
+      code.grail.tiberius.com 5cba57d5-9fcf-4707-af96-3a3bc9e7ef5a
+    '';
     xdg.userDirs = {
       enable = true;
       setSessionVariables = true;
