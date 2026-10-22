@@ -61,7 +61,6 @@ let
     runtimeInputs = with pkgs; [
       wireplumber
       procps
-      coreutils
     ];
     text = ''
       case "''${1:-}" in
@@ -71,7 +70,7 @@ let
         flash) ;;
         *)     echo "usage: volume-action {up|down|mute|flash}" >&2; exit 1 ;;
       esac
-      touch /tmp/waybar-volume-flash
+      echo "$EPOCHSECONDS" > /tmp/waybar-volume-flash
       pkill -RTMIN+11 waybar || true
     '';
   };
@@ -188,10 +187,14 @@ let
 
     # "muted" only when EVERY capture source is muted — apps can pin their
     # stream to a non-default source, so the default's state alone can lie.
-    MUTED=1
-    for id in $(${pkgs.pipewire}/bin/pw-dump | ${pkgs.jq}/bin/jq '.[] | select(.info.props."media.class" // "" | startswith("Audio/Source")) | .id'); do
-      ${pkgs.wireplumber}/bin/wpctl get-volume "$id" 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q MUTED || MUTED=0
-    done
+    # The dump already carries each node's mute flag (the same one wpctl
+    # reports), so read it there: one PipeWire client per run instead of one
+    # per source. Props entries aren't ordered, hence any().
+    MUTED=$(${pkgs.pipewire}/bin/pw-dump | ${pkgs.jq}/bin/jq -r '
+      [.[] | select(.info.props."media.class" // "" | startswith("Audio/Source"))
+           | any(.info.params.Props[]?; .mute == true)]
+      | if all then 1 else 0 end')
+    MUTED=''${MUTED:-1}
 
     if [ -f "$MODE_FILE" ]; then
       if [ "$MUTED" = "1" ]; then
@@ -215,15 +218,21 @@ let
       fi
     fi
 
-    ${pkgs.coreutils}/bin/printf '{"text": "%s", "tooltip": "%s", "class": "%s"}\n' "$ICON" "$TOOLTIP" "$CLASS"
+    printf '{"text": "%s", "tooltip": "%s", "class": "%s"}\n' "$ICON" "$TOOLTIP" "$CLASS"
   '';
 
+  # Runs every second on every bar, so everything past wpctl is a bash builtin.
   volumeStatus = pkgs.writeShellScript "volume-status" ''
     FLAG_FILE="/tmp/waybar-volume-flash"
     RAW=$(${pkgs.wireplumber}/bin/wpctl get-volume @DEFAULT_AUDIO_SINK@)
-    VOLUME=$(echo "$RAW" | ${pkgs.gawk}/bin/awk '{print int($2 * 100)}')
 
-    if echo "$RAW" | ${pkgs.gnugrep}/bin/grep -q MUTED; then
+    # "Volume: 0.45 [MUTED]" -> 45 (wpctl always prints two decimals)
+    VOLUME=0
+    if [[ "$RAW" =~ ([0-9]+)\.([0-9]{2}) ]]; then
+      VOLUME=$((10#''${BASH_REMATCH[1]} * 100 + 10#''${BASH_REMATCH[2]}))
+    fi
+
+    if [[ "$RAW" == *MUTED* ]]; then
       ICON="󰝟"
       CLASS="muted"
     elif [ "$VOLUME" -lt 33 ]; then
@@ -237,12 +246,11 @@ let
       CLASS=""
     fi
 
+    # volume-action writes the epoch second of the last change here
     SHOW_PCT=0
     if [ -f "$FLAG_FILE" ]; then
-      NOW=$(${pkgs.coreutils}/bin/date +%s)
-      MTIME=$(${pkgs.coreutils}/bin/stat -c %Y "$FLAG_FILE")
-      AGE=$((NOW - MTIME))
-      [ "$AGE" -lt 2 ] && SHOW_PCT=1
+      read -r CHANGED < "$FLAG_FILE"
+      [[ "$CHANGED" =~ ^[0-9]+$ ]] && ((EPOCHSECONDS - CHANGED < 2)) && SHOW_PCT=1
     fi
 
     if [ "$SHOW_PCT" = "1" ]; then
@@ -251,43 +259,53 @@ let
       TEXT="$ICON"
     fi
 
-    ${pkgs.coreutils}/bin/printf '{"text": "%s", "tooltip": "Volume: %d%%", "class": "%s"}\n' "$TEXT" "$VOLUME" "$CLASS"
+    printf '{"text": "%s", "tooltip": "Volume: %d%%", "class": "%s"}\n' "$TEXT" "$VOLUME" "$CLASS"
   '';
 
+  # "In use" means streaming: a UVC camera moves its VideoStreaming interface
+  # (class 0e, subclass 02) off alt setting 0 only while it is capturing. That
+  # is a few sysfs reads with bash builtins, where the old per-node `fuser`
+  # scanned every process's fds each second on each bar (~45% of a core with
+  # two bars). Bulk-transfer cameras stream on alt 0 and never show in use.
   webcamStatus = pkgs.writeShellScript "webcam-status" ''
-    STATE_FILE="/tmp/webcam-usb-paths"
+    # webcam-toggle (root, via sudo) records the cameras it deauthorized here
+    STATE_FILE="/run/webcam-toggle/usb-paths"
     found=0
     any_on=0
     in_use=0
     for vdir in /sys/class/video4linux/video*; do
       [ -d "$vdir" ] || continue
-      real="$(readlink -f "$vdir/device")"
-      dir="$real"
-      while [ "$dir" != "/" ]; do
+      cd -P "$vdir/device" 2>/dev/null || continue
+      dir="$PWD"
+      while [ -n "$dir" ]; do
         if [ -f "$dir/authorized" ] && [ -f "$dir/idVendor" ]; then
           break
         fi
-        dir="$(dirname "$dir")"
+        dir="''${dir%/*}"
       done
-      [ "$dir" = "/" ] && continue
+      [ -n "$dir" ] || continue
       found=1
-      if [ "$(cat "$dir/authorized")" = "1" ]; then
-        any_on=1
-        vdev="/dev/$(basename "$vdir")"
-        # Capability wrapper (cap_sys_ptrace): plain fuser run from waybar's
-        # systemd --user context can't read the browser's fds/maps to see it
-        # holding the device. See security.wrappers.webcam-fuser in peripherals.
-        if [ -e "$vdev" ] && /run/wrappers/bin/webcam-fuser "$vdev" >/dev/null 2>&1; then
+      read -r auth < "$dir/authorized"
+      [ "$auth" = "1" ] || continue
+      any_on=1
+      for iface in "$dir/''${dir##*/}":*; do
+        {
+          read -r class < "$iface/bInterfaceClass" &&
+            read -r subclass < "$iface/bInterfaceSubClass" &&
+            read -r alt < "$iface/bAlternateSetting"
+        } 2>/dev/null || continue
+        if [ "$class" = "0e" ] && [ "$subclass" = "02" ] && [ "$alt" != "0" ]; then
           in_use=1
         fi
-      fi
+      done
     done
     # Check state file for deauthorized cameras (video4linux entries disappear when deauthorized)
     if [ "$found" = "0" ] && [ -f "$STATE_FILE" ]; then
       while IFS= read -r p; do
         [ -f "$p/authorized" ] || continue
         found=1
-        if [ "$(cat "$p/authorized")" = "1" ]; then
+        read -r auth < "$p/authorized"
+        if [ "$auth" = "1" ]; then
           any_on=1
         fi
       done < "$STATE_FILE"
@@ -415,15 +433,6 @@ in
       # + a monitor-hotplug watcher) instead of using the module's unit, so this
       # only writes the config/style. Running under systemd is what makes the bar
       # reliably recover from crashes and monitor hotplug.
-      #
-      # Caveat that bit us: from the unprivileged user@.service context, the
-      # webcam "in-use" fuser check CANNOT read the fds/maps of browser
-      # processes holding the camera -- those live in the seat0 login session
-      # and ptrace_may_access denies the cross-context /proc read (returns
-      # "available" forever, so the green highlight never fired). The earlier
-      # "verified false" claim here was wrong. Fix: webcam-status calls a
-      # cap_sys_ptrace wrapper (security.wrappers.webcam-fuser) instead of plain
-      # fuser, which works from any context without giving up the systemd unit.
       systemd.enable = false;
       settings = {
         mainBar = {
