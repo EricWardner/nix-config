@@ -15,9 +15,9 @@ use std::os::fd::OwnedFd;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+use bar_tools::inotify::{self, WatchFlags};
 use bar_tools::waybar::Emitter;
 use rustix::event::{PollFd, PollFlags};
-use rustix::fs::inotify;
 
 /// How often to look for streaming while a camera is enabled.
 const POLL: Duration = Duration::from_secs(1);
@@ -43,7 +43,8 @@ enum State {
 
 fn main() {
     let mut out = Emitter::default();
-    let dev_events = watch_dev()
+    // Any node appearing or disappearing in /dev means "rescan".
+    let dev_events = inotify::watch(Path::new("/dev"), WatchFlags::CREATE | WatchFlags::DELETE)
         .inspect_err(|e| {
             bar_tools::warn!("webcam-watch: can't watch /dev ({e}); rescanning every poll");
         })
@@ -81,7 +82,7 @@ fn wait(dev_events: Option<&OwnedFd>, timeout: Option<Duration>) -> bool {
     match bar_tools::poll(&mut fds, timeout) {
         Ok(0) => false,
         Ok(_) => {
-            drain(fd);
+            inotify::drain(fd);
             true
         }
         Err(e) => {
@@ -90,23 +91,6 @@ fn wait(dev_events: Option<&OwnedFd>, timeout: Option<Duration>) -> bool {
             true
         }
     }
-}
-
-/// Watch /dev for nodes appearing or disappearing. Any such event just
-/// means "rescan", so the events themselves are never parsed.
-fn watch_dev() -> rustix::io::Result<OwnedFd> {
-    let fd = inotify::init(inotify::CreateFlags::NONBLOCK | inotify::CreateFlags::CLOEXEC)?;
-    inotify::add_watch(
-        &fd,
-        "/dev",
-        inotify::WatchFlags::CREATE | inotify::WatchFlags::DELETE | inotify::WatchFlags::ONLYDIR,
-    )?;
-    Ok(fd)
-}
-
-fn drain(fd: &OwnedFd) {
-    let mut buf = [0u8; 4096];
-    while matches!(rustix::io::read(fd, &mut buf), Ok(n) if n > 0) {}
 }
 
 /// Find the USB cameras behind /sys/class/video4linux. Deauthorized cameras
