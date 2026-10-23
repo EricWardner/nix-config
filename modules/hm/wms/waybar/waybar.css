@@ -157,25 +157,20 @@ tooltip label {
   color: @base0B;
 }
 
+/* Highlighted states colour the icon (and any number) rather than drawing a
+   box behind it; the watchers switch to filled SF Symbols for theirs. */
 @keyframes blink {
   to {
-    background-color: @base08;
-    color: @base00;
+    color: @base05;
   }
 }
 
-/* Highlighted states keep the shared 5px padding, so a pill never changes
-   a module's width. */
 #battery.warning:not(.charging) {
-  background-color: @base0A;
-  color: @base00;
-  border-radius: 4px;
+  color: @base0A;
 }
 
 #battery.critical:not(.charging) {
-  background-color: @base08;
-  color: @base00;
-  border-radius: 4px;
+  color: @base08;
   animation-name: blink;
   animation-duration: 0.5s;
   animation-timing-function: linear;
@@ -206,18 +201,14 @@ tooltip label {
   color: @base03;
 }
 
-/* PTT armed but silent — visible "hot mic is off" cue */
+/* PTT armed but silent (filled mic.slash) — visible "hot mic is off" cue */
 #custom-mic.ptt-muted {
-  color: @base00;
-  background-color: @base08;
-  border-radius: 4px;
+  color: @base08;
 }
 
-/* PTT active — talking */
+/* PTT active — talking (filled mic) */
 #custom-mic.ptt-active {
-  color: @base00;
-  background-color: @base0B;
-  border-radius: 4px;
+  color: @base0B;
 }
 
 #custom-webcam.muted,
@@ -225,10 +216,9 @@ tooltip label {
   color: @base03;
 }
 
+/* Camera streaming (filled video) */
 #custom-webcam.in-use {
-  color: @base00;
-  background-color: @base0B;
-  border-radius: 4px;
+  color: @base0B;
 }
 
 .hidden {

@@ -186,7 +186,7 @@ fn render(out: &mut Emitter, state: State) {
     let (text, tooltip, class) = match state {
         State::NoCamera => (sf::VIDEO_SLASH, "No cameras found", "disconnected"),
         State::Off => (sf::VIDEO_SLASH, "Webcam muted", "muted"),
-        State::InUse => (sf::VIDEO, "Webcam in use", "in-use"),
+        State::InUse => (sf::VIDEO_FILL, "Webcam in use", "in-use"),
         State::Available => (sf::VIDEO, "Webcam available", "available"),
     };
     out.emit(text, tooltip, class);

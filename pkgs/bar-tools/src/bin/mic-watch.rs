@@ -165,11 +165,11 @@ fn render(out: &mut Emitter, mics: Mics, armed: bool) {
     let (text, tooltip, class) = match (mics, armed) {
         (Mics::None, _) => (sf::MIC_SLASH, "No microphones", "muted"),
         (Mics::AllMuted, true) => (
-            sf::MIC_SLASH,
+            sf::MIC_SLASH_FILL,
             "Push-to-talk armed — hold Right Alt to talk",
             "ptt-muted",
         ),
-        (Mics::Live, true) => (sf::MIC, "Push-to-talk — talking", "ptt-active"),
+        (Mics::Live, true) => (sf::MIC_FILL, "Push-to-talk — talking", "ptt-active"),
         (Mics::AllMuted, false) => (
             sf::MIC_SLASH,
             "Mic muted (left-click for push-to-talk)",
