@@ -230,9 +230,10 @@ in
             exec = "${barTools}/bin/webcam-watch";
             return-type = "json";
             restart-interval = 5;
-            on-click = "${pkgs.cameractrls-gtk4}/bin/cameractrlsgtk4 &";
+            # like mic/volume: middle mutes, right opens the settings app
+            on-click = webcamToggle;
             on-click-middle = webcamToggle;
-            on-click-right = webcamToggle;
+            on-click-right = "${pkgs.cameractrls-gtk4}/bin/cameractrlsgtk4 &";
           };
 
           "group/tray-expander" = {
