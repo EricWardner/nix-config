@@ -22,7 +22,13 @@ let
   # otherwise sleeps, so the bar polls nothing.
   barTools = pkgs.callPackage ../../../../pkgs/bar-tools { };
   wpctl = "${pkgs.wireplumber}/bin/wpctl";
-  pavucontrol = "${pkgs.pavucontrol}/bin/pavucontrol";
+
+  # Start an app from a click in its own transient systemd scope. A plain
+  # child of waybar stays in waybar.service's cgroup, so the monitor-hotplug
+  # restart below would kill it, along with everything opened from the
+  # fuzzel launcher.
+  launch = cmd: "${pkgs.systemd}/bin/systemd-run --user --scope --collect --quiet -- ${cmd}";
+  pavucontrol = launch "${pkgs.pavucontrol}/bin/pavucontrol";
   # webcam-watch sees the cameras come and go through inotify, so the
   # toggle needs no refresh signal.
   webcamToggle = "sudo /run/current-system/sw/bin/webcam-toggle toggle";
@@ -214,8 +220,8 @@ in
 
           "custom/nix" = {
             format = "󱄅";
-            on-click = "fuzzel";
-            on-click-right = "system-menu";
+            on-click = launch "fuzzel";
+            on-click-right = launch "system-menu";
             tooltip-format = "Left: App Launcher\nRight: System Menu";
           };
 
@@ -233,7 +239,7 @@ in
             # like mic/volume: middle mutes, right opens the settings app
             on-click = webcamToggle;
             on-click-middle = webcamToggle;
-            on-click-right = "${pkgs.cameractrls-gtk4}/bin/cameractrlsgtk4 &";
+            on-click-right = launch "${pkgs.cameractrls-gtk4}/bin/cameractrlsgtk4";
           };
 
           "group/tray-expander" = {
@@ -262,7 +268,7 @@ in
             interval = 5;
             format = "";
             format-alt = " {usage}%";
-            on-click-right = "${pkgs.ghostty}/bin/ghostty --class=btop -e ${pkgs.btop}/bin/btop";
+            on-click-right = launch "${pkgs.ghostty}/bin/ghostty --class=btop -e ${pkgs.btop}/bin/btop";
           };
 
           memory = {
@@ -334,7 +340,7 @@ in
             tooltip-format-disconnected = "Disconnected";
             interval = 3;
             spacing = 1;
-            on-click = "${pkgs.networkmanagerapplet}/bin/nm-connection-editor";
+            on-click = launch "${pkgs.networkmanagerapplet}/bin/nm-connection-editor";
           };
 
           battery = {
@@ -369,7 +375,7 @@ in
             format-connected = "󰂱";
             format-no-controller = "󰂲";
             tooltip-format = "Devices connected: {num_connections}";
-            on-click = "${pkgs.blueman}/bin/blueman-manager";
+            on-click = launch "${pkgs.blueman}/bin/blueman-manager";
           };
 
           # Left-click arms/disarms push-to-talk (pttd does the muting).
