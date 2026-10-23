@@ -1,8 +1,7 @@
 hl.layer_rule({ match = { namespace = "waybar" }, blur = true, ignore_alpha = 0.5 })
--- The glass panels of fuzzel (menus) and vicinae (launcher); no xray, so
--- they frost the windows under them rather than showing the wallpaper
--- through them.
-hl.layer_rule({ match = { namespace = "^(launcher|vicinae)$" }, blur = true, ignore_alpha = 0.3, xray = false })
+-- The glass panels of fuzzel (menus) and vicinae (launcher). Global blur
+-- xray is off (hyprland.nix), so they frost the windows under them.
+hl.layer_rule({ match = { namespace = "^(launcher|vicinae)$" }, blur = true, ignore_alpha = 0.3 })
 
 hl.window_rule({ match = { class = ".*" }, suppress_event = "maximize" })
 hl.window_rule({

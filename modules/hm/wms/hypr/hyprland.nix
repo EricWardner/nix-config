@@ -340,7 +340,13 @@ in
                 size = 4;
                 passes = 2;
                 special = true;
-                xray = true;
+                # Off so blur frosts the windows behind, not just the
+                # wallpaper. Hyprland 0.56.2 fades a closing layer out with
+                # this global value and ignores the layer's own xray rule
+                # (LayerFadeout.cpp), so with it on the launcher flashed a
+                # wallpaper cutout on close. Tiled windows still use the
+                # cached wallpaper blur (new_optimizations).
+                xray = false;
                 popups = true;
               };
             };
