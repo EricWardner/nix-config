@@ -18,8 +18,11 @@ const SETTLE: Duration = Duration::from_millis(15);
 const SETTLE_MAX: Duration = Duration::from_millis(100);
 const RECONNECT: Duration = Duration::from_secs(2);
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, PartialEq)]
 struct Volume {
+    /// The output's description, shown in the tooltip; switching outputs
+    /// counts as a change, so it flashes the new output's level.
+    device: String,
     percent: u32,
     muted: bool,
 }
@@ -54,7 +57,7 @@ fn run(out: &mut Emitter) -> Result<Infallible, pa::Error> {
             conn.drain_burst(SETTLE, SETTLE_MAX)?;
             let reading = query(&mut conn)?;
             dirty = conn.missed_events();
-            if shown.is_some_and(|prev| prev != reading) {
+            if shown.as_ref().is_some_and(|prev| *prev != reading) {
                 flash_until = Some(Instant::now() + FLASH);
             }
             shown = Some(reading);
@@ -64,7 +67,8 @@ fn run(out: &mut Emitter) -> Result<Infallible, pa::Error> {
         // events can't keep it on screen.
         let now = Instant::now();
         flash_until = flash_until.filter(|&t| t > now);
-        render(out, shown.flatten(), flash_until.is_some());
+        let reading = shown.as_ref().and_then(Option::as_ref);
+        render(out, reading, flash_until.is_some());
         if dirty {
             continue;
         }
@@ -84,6 +88,7 @@ fn query(conn: &mut Conn) -> Result<Reading, pa::Error> {
     });
     match conn.request::<DeviceVolume>(&req) {
         Ok(dev) => Ok(Some(Volume {
+            device: dev.description,
             percent: dev.percent,
             muted: dev.muted,
         })),
@@ -92,7 +97,7 @@ fn query(conn: &mut Conn) -> Result<Reading, pa::Error> {
     }
 }
 
-fn render(out: &mut Emitter, reading: Reading, flash: bool) {
+fn render(out: &mut Emitter, reading: Option<&Volume>, flash: bool) {
     let Some(v) = reading else {
         return out.emit("󰝟", "No output device", "muted");
     };
@@ -103,7 +108,11 @@ fn render(out: &mut Emitter, reading: Reading, flash: bool) {
         _ => "󰕾",
     };
     let class = if v.muted { "muted" } else { "" };
-    let tooltip = format!("Volume: {}%", v.percent);
+    let tooltip = if v.device.is_empty() {
+        format!("Volume: {}%", v.percent)
+    } else {
+        format!("{}\nVolume: {}%", v.device, v.percent)
+    };
     if flash {
         out.emit(&format!("{icon}  {}%", v.percent), &tooltip, class);
     } else {

@@ -360,6 +360,8 @@ impl TagStructRead for Ack {
 /// newer passthrough formats. Reading only this prefix sidesteps both.
 pub struct DeviceVolume {
     pub index: u32,
+    /// Human-readable name, e.g. "Ryzen HD Audio Controller Analog Stereo".
+    pub description: String,
     /// Average channel volume on the user-facing scale (pavucontrol /
     /// wpctl), where 100% is unamplified.
     pub percent: u32,
@@ -375,7 +377,7 @@ impl TagStructRead for DeviceVolume {
             .read_index()?
             .ok_or_else(|| ProtocolError::Invalid("invalid device index".into()))?;
         ts.read_string()?; // name
-        ts.read_string()?; // description
+        let description = ts.read_string()?;
         ts.read::<SampleSpec>()?;
         ts.read::<ChannelMap>()?;
         ts.read_index()?; // owner module
@@ -384,6 +386,7 @@ impl TagStructRead for DeviceVolume {
         let monitor = ts.read_index()?;
         Ok(DeviceVolume {
             index,
+            description: description.map_or_else(String::new, |d| d.to_string_lossy().into_owned()),
             percent: percent(&volume),
             muted,
             monitor,
