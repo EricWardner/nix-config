@@ -87,15 +87,28 @@
           inherit pre-commit-hooks treefmtEval;
         };
       };
-      devShells.${system}.default = pkgs.mkShell {
-        inherit (self.checks.${system}.pre-commit-check) shellHook;
-        packages = [
-          (self.checks.${system}.pre-commit-check.enabledPackages)
-          treefmtEval.config.build.wrapper
-        ];
-        env = {
-          CLAUDE_INSTANCE = "nix-config";
-          CONTEXT_DOCS_ROOT = "/home/ewardner/nix-config/.claude";
+      packages.${system}.bar-tools = pkgs.callPackage ./pkgs/bar-tools { };
+      devShells.${system} = {
+        default = pkgs.mkShell {
+          inherit (self.checks.${system}.pre-commit-check) shellHook;
+          packages = [
+            (self.checks.${system}.pre-commit-check.enabledPackages)
+            treefmtEval.config.build.wrapper
+          ];
+          env = {
+            CLAUDE_INSTANCE = "nix-config";
+            CONTEXT_DOCS_ROOT = "/home/ewardner/nix-config/.claude";
+          };
+        };
+        # Rust toolchain for pkgs/bar-tools: `nix develop .#bar-tools`
+        bar-tools = pkgs.mkShell {
+          packages = with pkgs; [
+            cargo
+            rustc
+            clippy
+            rustfmt
+            rust-analyzer
+          ];
         };
       };
       nixosConfigurations =

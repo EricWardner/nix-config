@@ -42,3 +42,6 @@ secrets/
 
 # Node (for any tooling)
 node_modules/
+
+# Rust build output
+/pkgs/*/target/

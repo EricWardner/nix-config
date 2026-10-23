@@ -18,5 +18,9 @@
     nixfmt.priority = 1;
     prettier.enable = true;
     taplo.enable = true;
+    rustfmt = {
+      enable = true;
+      edition = "2024";
+    };
   };
 }

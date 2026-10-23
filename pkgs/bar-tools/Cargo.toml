@@ -1,0 +1,18 @@
+[package]
+name = "bar-tools"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Push-to-talk daemon and event-driven waybar status watchers"
+
+[dependencies]
+pulseaudio = "0.3.2"
+rustix = { version = "1", features = ["event"] }
+
+# Small, single-purpose binaries: optimize for size, no unwinding machinery.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
