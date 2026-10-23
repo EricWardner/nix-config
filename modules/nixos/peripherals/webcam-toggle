@@ -6,6 +6,7 @@ set -euo pipefail
 # file would turn the `echo > $p/authorized` writes into arbitrary root file
 # writes).
 ACTION="${1:-toggle}"
+# Also read by webcam-watch (pkgs/bar-tools) to show toggled-off cameras.
 STATE_DIR="/run/webcam-toggle"
 STATE_FILE="$STATE_DIR/usb-paths"
 
