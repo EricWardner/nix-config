@@ -380,8 +380,8 @@ in
             on-click = "${barTools}/bin/micctl ptt";
             on-click-middle = "${barTools}/bin/micctl mute";
             on-click-right = pavucontrol;
-            on-scroll-up = "${barTools}/bin/micctl mute";
-            on-scroll-down = "${barTools}/bin/micctl mute";
+            # no scroll actions: each tick would toggle mute, so scrolling
+            # across the bar could unmute you
           };
 
           # Any volume change flashes the percentage; hover shows it too.
