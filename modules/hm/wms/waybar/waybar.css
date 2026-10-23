@@ -137,6 +137,14 @@ window > menu > menuitem:hover > arrow {
   color: @base05;
 }
 
+/* GTK draws a menu separator as a 1px background line, which the `*`
+   rule's transparent background and zero min-height hide; draw it back. */
+window > menu > separator {
+  min-height: 1px;
+  margin: 4px 0;
+  background-color: alpha(@base05, 0.15);
+}
+
 #tray > .passive {
   -gtk-icon-effect: dim;
 }
