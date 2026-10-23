@@ -226,12 +226,6 @@ in
             tooltip-format = "Left: App Launcher\nRight: System Menu";
           };
 
-          "custom/lock" = {
-            format = "";
-            on-click = "loginctl lock-session && ${pkgs.hyprlock}/bin/hyprlock";
-            tooltip-format = "Lock Screen";
-          };
-
           # restart-interval only matters if a watcher ever exits
           "custom/webcam" = {
             exec = "${barTools}/bin/webcam-watch";

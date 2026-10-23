@@ -130,20 +130,6 @@ window > menu > menuitem:hover > arrow {
   margin-right: 20px;
 }
 
-#custom-lock {
-  padding: 0 8px;
-  margin: 0 4px;
-  border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.1);
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.3);
-  transition: all 0.2s ease;
-}
-
-#custom-lock:hover {
-  background-color: rgba(255, 255, 255, 0.25);
-}
-
 tooltip {
   padding: 6px 10px;
   background: rgba(30, 30, 30, 0.93);
