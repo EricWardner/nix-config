@@ -43,9 +43,14 @@ window#waybar {
   opacity: 0.5;
 }
 
-#workspaces button.focused,
-#workspaces button.visible,
-#workspaces button.available {
+/* hyprland/workspaces marks the focused workspace .active and every
+   workspace shown on a monitor .visible, so the other monitor's workspace
+   gets a dim underline and only the focused one a bright one. */
+#workspaces button.visible {
+  border-bottom: 4px solid alpha(@base05, 0.35);
+}
+
+#workspaces button.active {
   border-bottom: 4px solid @base05;
 }
 
