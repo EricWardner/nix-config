@@ -22,9 +22,13 @@ hl.window_rule({
 	center = true,
 	animation = "slide",
 })
+-- Apps opened from waybar float in the top-right corner, below the bar.
+-- Check classes with `hyprctl clients` when one tiles: blueman's changed
+-- from .blueman-manager-wrapped, and ghostty ignores a --class that isn't a
+-- valid app ID (needs a dot), as the bare "btop" once was.
 hl.window_rule({
 	match = {
-		class = "^(org.pulseaudio.pavucontrol|.blueman-manager-wrapped|hu.irl.cameractrls|nm-connection-editor|btop)$",
+		class = "^(org.pulseaudio.pavucontrol|blueman-manager|hu.irl.cameractrls|nm-connection-editor|com.mitchellh.ghostty.btop)$",
 	},
 	float = true,
 	move = { "(monitor_w-window_w-10)", 40 },

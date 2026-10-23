@@ -214,7 +214,8 @@ in
             max-length = 20;
             rewrite = {
               "^(?!.*\\S).*" = "Desktop";
-              "com\\.mitchellh\\.ghostty" = "Ghostty";
+              "^com\\.mitchellh\\.ghostty$" = "Ghostty";
+              "^com\\.mitchellh\\.ghostty\\.btop$" = "btop";
             };
           };
 
@@ -268,7 +269,9 @@ in
             interval = 5;
             format = "";
             format-alt = " {usage}%";
-            on-click-right = launch "${pkgs.ghostty}/bin/ghostty --class=btop -e ${pkgs.btop}/bin/btop";
+            # the class must be a valid app ID (with a dot) or ghostty ignores
+            # it, and the floating rule in hypr/lua/rules.lua matches on it
+            on-click-right = launch "${pkgs.ghostty}/bin/ghostty --class=com.mitchellh.ghostty.btop -e ${pkgs.btop}/bin/btop";
           };
 
           memory = {
