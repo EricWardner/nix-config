@@ -12,14 +12,18 @@ use bar_tools::inotify::{self, WatchFlags};
 use bar_tools::pa::{self, Conn, Frame};
 use bar_tools::ptt;
 use bar_tools::waybar::Emitter;
-use pulseaudio::protocol::{Command, SourceInfoList, SubscriptionMask};
+use pulseaudio::protocol::{Command, SubscriptionMask};
 use rustix::event::{PollFd, PollFlags};
 
-/// An event burst ends after this much quiet, or after `SETTLE_MAX`. Arming
-/// push-to-talk goes through the same wait, so pttd's mutes land before
-/// the first render instead of a "talking" flicker.
+/// An event burst ends after this much quiet, or after `SETTLE_MAX`.
 const SETTLE: Duration = Duration::from_millis(15);
 const SETTLE_MAX: Duration = Duration::from_millis(100);
+/// Arming or disarming waits longer for quiet. The mutes pttd sends in
+/// response show up as events only after the server has written each mic's
+/// hardware mixer (~60ms for five mics), and rendering before then would
+/// flash "talking".
+const ARM_SETTLE: Duration = Duration::from_millis(150);
+const ARM_SETTLE_MAX: Duration = Duration::from_millis(300);
 /// A source list that fails to decode (the protocol crate rejects the state
 /// of a device mid-hotplug) is retried this often.
 const RETRY: Duration = Duration::from_secs(1);
@@ -84,9 +88,14 @@ fn run(out: &mut Emitter, armed: &Armed) -> Result<Infallible, pa::Error> {
     let mut mics: Option<Mics> = None;
     let mut retry_at: Option<Instant> = None;
     let mut dirty = true;
+    let mut arming = false;
     loop {
         if dirty {
-            conn.drain_burst(SETTLE, SETTLE_MAX)?;
+            if std::mem::take(&mut arming) {
+                conn.drain_burst(ARM_SETTLE, ARM_SETTLE_MAX)?;
+            } else {
+                conn.drain_burst(SETTLE, SETTLE_MAX)?;
+            }
             match query(&mut conn) {
                 Ok(m) => {
                     mics = Some(m);
@@ -128,6 +137,7 @@ fn run(out: &mut Emitter, armed: &Armed) -> Result<Infallible, pa::Error> {
         if let (true, Some(fd)) = (armed_changed, &armed.events) {
             inotify::drain(fd);
             dirty = true;
+            arming = true;
         }
         if audio_ready && matches!(conn.read_frame()?, Frame::Event(_)) {
             dirty = true;
@@ -138,16 +148,12 @@ fn run(out: &mut Emitter, armed: &Armed) -> Result<Infallible, pa::Error> {
     }
 }
 
-/// The capture sources' combined mute state; sink monitors don't count.
+/// The capture sources' combined mute state.
 fn query(conn: &mut Conn) -> Result<Mics, pa::Error> {
-    let sources: SourceInfoList = conn.request(&Command::GetSourceInfoList)?;
-    let mut mics = sources
-        .iter()
-        .filter(|s| s.monitor_of_sink_index.is_none())
-        .peekable();
-    Ok(if mics.peek().is_none() {
+    let sources = conn.capture_sources()?;
+    Ok(if sources.is_empty() {
         Mics::None
-    } else if mics.all(|s| s.muted) {
+    } else if sources.iter().all(|s| s.muted) {
         Mics::AllMuted
     } else {
         Mics::Live

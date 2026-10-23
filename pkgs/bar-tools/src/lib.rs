@@ -34,8 +34,13 @@ pub mod inotify {
     /// A non-blocking inotify fd watching the directory `dir`.
     pub fn watch(dir: &Path, flags: WatchFlags) -> rustix::io::Result<OwnedFd> {
         let fd = init(CreateFlags::NONBLOCK | CreateFlags::CLOEXEC)?;
-        add_watch(&fd, dir, flags | WatchFlags::ONLYDIR)?;
+        add(&fd, dir, flags)?;
         Ok(fd)
+    }
+
+    /// Also watch the directory `dir` through `fd`.
+    pub fn add(fd: &OwnedFd, dir: &Path, flags: WatchFlags) -> rustix::io::Result<()> {
+        add_watch(fd, dir, flags | WatchFlags::ONLYDIR).map(drop)
     }
 
     /// Discard the queued events.

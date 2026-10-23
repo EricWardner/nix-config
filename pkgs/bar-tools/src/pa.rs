@@ -179,6 +179,17 @@ impl Conn {
         self.request::<Ack>(cmd).map(|_| ())
     }
 
+    /// The capture sources, i.e. every source except sink monitors.
+    pub fn capture_sources(&mut self) -> Result<Vec<CaptureSource>, Error> {
+        let CaptureSourceList(sources) = self.request(&Command::GetSourceInfoList)?;
+        Ok(sources)
+    }
+
+    /// Queue a mute change for the source with this index.
+    pub fn queue_source_mute(&mut self, index: u32, mute: bool) -> Result<u32, Error> {
+        self.queue(&source_mute(index, mute))
+    }
+
     /// Whether subscription events arrived while the last [`Conn::request`]
     /// waited, i.e. whether its answer may already be stale.
     pub fn missed_events(&self) -> bool {
@@ -251,6 +262,88 @@ fn decode<T: TagStructRead>(payload: &[u8], version: u16) -> Result<T, ProtocolE
     T::read(&mut ts, version)
 }
 
+pub fn source_mute(index: u32, mute: bool) -> Command {
+    Command::SetSourceMute(protocol::SetDeviceMuteParams {
+        device_index: Some(index),
+        device_name: None,
+        mute,
+    })
+}
+
+pub struct CaptureSource {
+    pub index: u32,
+    pub muted: bool,
+}
+
+/// A source list reply, keeping only the capture sources. It is decoded
+/// without the `pulseaudio` crate's strict checks, which reject the states
+/// pipewire-pulse reports for devices being created or in error (exactly
+/// when a mic is hotplugged) and unknown port or format values, failing the
+/// whole list. This walks the same fields as the crate's `SourceInfo`, gated
+/// by protocol version the same way, but reads those values as raw numbers.
+struct CaptureSourceList(Vec<CaptureSource>);
+
+impl TagStructRead for CaptureSourceList {
+    fn read(ts: &mut TagStructReader<'_>, version: u16) -> Result<Self, ProtocolError> {
+        let mut sources = Vec::new();
+        while ts.has_data_left()? {
+            let index = ts
+                .read_index()?
+                .ok_or_else(|| ProtocolError::Invalid("invalid source index".into()))?;
+            ts.read_string()?; // name
+            ts.read_string()?; // description
+            ts.read::<SampleSpec>()?;
+            ts.read::<ChannelMap>()?;
+            ts.read_index()?; // owner module
+            ts.read::<ChannelVolume>()?;
+            let muted = ts.read_bool()?;
+            let monitor_of_sink = ts.read_index()?;
+            ts.read_string()?; // monitored sink's name
+            ts.read_usec()?; // latency
+            ts.read_string()?; // driver
+            ts.read_u32()?; // flags
+            if version >= 13 {
+                ts.read::<protocol::Props>()?;
+                ts.read_usec()?; // configured latency
+            }
+            if version >= 15 {
+                ts.read::<protocol::Volume>()?; // base volume
+                ts.read_u32()?; // state
+                ts.read_u32()?; // volume steps
+                ts.read_index()?; // card
+            }
+            if version >= 16 {
+                for _ in 0..ts.read_u32()? {
+                    ts.read_string()?; // port name
+                    ts.read_string()?; // port description
+                    ts.read_u32()?; // priority
+                    if version >= 24 {
+                        ts.read_u32()?; // availability
+                    }
+                    if version >= 34 {
+                        ts.read_string()?; // availability group
+                        ts.read_u32()?; // port type
+                    }
+                }
+                ts.read_string()?; // active port
+            }
+            if version >= 21 {
+                for _ in 0..ts.read_u8()? {
+                    if ts.read_tag()? != protocol::Tag::FormatInfo {
+                        return Err(ProtocolError::Invalid("expected format info".into()));
+                    }
+                    ts.read_u8()?; // encoding
+                    ts.read::<protocol::Props>()?;
+                }
+            }
+            if monitor_of_sink.is_none() {
+                sources.push(CaptureSource { index, muted });
+            }
+        }
+        Ok(CaptureSourceList(sources))
+    }
+}
+
 /// An empty reply body.
 struct Ack;
 
@@ -271,6 +364,9 @@ pub struct DeviceVolume {
     /// wpctl), where 100% is unamplified.
     pub percent: u32,
     pub muted: bool,
+    /// For a source, the sink it monitors (sink monitors aren't
+    /// microphones); for a sink, its monitor source.
+    pub monitor: Option<u32>,
 }
 
 impl TagStructRead for DeviceVolume {
@@ -285,10 +381,12 @@ impl TagStructRead for DeviceVolume {
         ts.read_index()?; // owner module
         let volume: ChannelVolume = ts.read()?;
         let muted = ts.read_bool()?;
+        let monitor = ts.read_index()?;
         Ok(DeviceVolume {
             index,
             percent: percent(&volume),
             muted,
+            monitor,
         })
     }
 }
