@@ -74,6 +74,10 @@ window#waybar {
   margin-right: 8px;
 }
 
+/* Built-in modules carry 5px of horizontal padding that custom modules
+   don't, which squeezed webcam/mic/volume together. Setting it on all of
+   them makes every module box the same width, so the icons sit at equal
+   centre-to-centre spacing. */
 #cpu,
 #memory,
 #temperature,
@@ -81,11 +85,13 @@ window#waybar {
 #pulseaudio,
 #custom-volume,
 #custom-mic,
+#custom-webcam,
 #backlight,
 #bluetooth,
 #network {
   min-width: 12px;
   margin: 0 4px;
+  padding: 0 5px;
 }
 
 #custom-nix {
@@ -158,18 +164,18 @@ tooltip label {
   }
 }
 
+/* Highlighted states keep the shared 5px padding, so a pill never changes
+   a module's width. */
 #battery.warning:not(.charging) {
   background-color: @base0A;
   color: @base00;
   border-radius: 4px;
-  padding: 0 4px;
 }
 
 #battery.critical:not(.charging) {
   background-color: @base08;
   color: @base00;
   border-radius: 4px;
-  padding: 0 4px;
   animation-name: blink;
   animation-duration: 0.5s;
   animation-timing-function: linear;
@@ -205,7 +211,6 @@ tooltip label {
   color: @base00;
   background-color: @base08;
   border-radius: 4px;
-  padding: 0 4px;
 }
 
 /* PTT active — talking */
@@ -213,11 +218,6 @@ tooltip label {
   color: @base00;
   background-color: @base0B;
   border-radius: 4px;
-  padding: 0 4px;
-}
-
-#custom-webcam {
-  margin: 0 4px;
 }
 
 #custom-webcam.muted,
@@ -229,7 +229,6 @@ tooltip label {
   color: @base00;
   background-color: @base0B;
   border-radius: 4px;
-  padding: 0 4px;
 }
 
 .hidden {
