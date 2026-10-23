@@ -16,9 +16,17 @@ let
     patches = (old.patches or [ ]) ++ [ ./hyprland-lua-ipc.patch ];
   });
 
+  # Refresh a waybar module by sending its `signal` to waybar's main process
+  # only. `pkill waybar` matches by substring, so it also hit
+  # waybar-monitor-watch, which an untrapped RT signal kills; `pkill -x
+  # waybar` misses entirely (the process is .waybar-wrapped).
+  signalWaybar =
+    n:
+    "${pkgs.systemd}/bin/systemctl --user kill --kill-whom=main -s RTMIN+${toString n} waybar.service";
+
   webcamToggle = pkgs.writeShellScript "webcam-toggle" ''
     sudo /run/current-system/sw/bin/webcam-toggle toggle
-    ${pkgs.procps}/bin/pkill -RTMIN+10 waybar
+    ${signalWaybar 10}
   '';
 
   # waybar doesn't rebuild its bars when the set of outputs changes, so on a
@@ -60,7 +68,6 @@ let
     name = "volume-action";
     runtimeInputs = with pkgs; [
       wireplumber
-      procps
     ];
     text = ''
       case "''${1:-}" in
@@ -71,7 +78,7 @@ let
         *)     echo "usage: volume-action {up|down|mute|flash}" >&2; exit 1 ;;
       esac
       echo "$EPOCHSECONDS" > /tmp/waybar-volume-flash
-      pkill -RTMIN+11 waybar || true
+      ${signalWaybar 11} || true
     '';
   };
 
@@ -89,12 +96,11 @@ let
       wireplumber
       pipewire # pw-dump
       jq
-      procps
       coreutils
     ];
     text = ''
       MODE_FILE="/tmp/ptt-mode"
-      refresh() { pkill -RTMIN+12 waybar || true; }
+      refresh() { ${signalWaybar 12} || true; }
 
       sources() {
         pw-dump | jq '.[] | select(.info.props."media.class" // "" | startswith("Audio/Source")) | .id'
