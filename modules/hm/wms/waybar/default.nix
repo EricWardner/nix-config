@@ -16,18 +16,16 @@ let
     patches = (old.patches or [ ]) ++ [ ./hyprland-lua-ipc.patch ];
   });
 
-  # Refresh a waybar module by sending its `signal` to waybar's main process
-  # only. `pkill waybar` matches by substring, so it also hit
-  # waybar-monitor-watch, which an untrapped RT signal kills; `pkill -x
-  # waybar` misses entirely (the process is .waybar-wrapped).
-  signalWaybar =
-    n:
-    "${pkgs.systemd}/bin/systemctl --user kill --kill-whom=main -s RTMIN+${toString n} waybar.service";
-
-  webcamToggle = pkgs.writeShellScript "webcam-toggle" ''
-    sudo /run/current-system/sw/bin/webcam-toggle toggle
-    ${signalWaybar 10}
-  '';
+  # The push-to-talk daemon and the bar's event-driven status watchers
+  # (pkgs/bar-tools). Each custom module below runs a watcher as a
+  # long-running exec that prints a line only when its state changes and
+  # otherwise sleeps, so the bar polls nothing.
+  barTools = pkgs.callPackage ../../../../pkgs/bar-tools { };
+  wpctl = "${pkgs.wireplumber}/bin/wpctl";
+  pavucontrol = "${pkgs.pavucontrol}/bin/pavucontrol";
+  # webcam-watch sees the cameras come and go through inotify, so the
+  # toggle needs no refresh signal.
+  webcamToggle = "sudo /run/current-system/sw/bin/webcam-toggle toggle";
 
   # waybar doesn't rebuild its bars when the set of outputs changes, so on a
   # monitor hotplug we restart the waybar user service. Listens to Hyprland's
@@ -63,269 +61,6 @@ let
       done
     '';
   };
-
-  volumeAction = pkgs.writeShellApplication {
-    name = "volume-action";
-    runtimeInputs = with pkgs; [
-      wireplumber
-    ];
-    text = ''
-      case "''${1:-}" in
-        up)    wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+ ;;
-        down)  wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- ;;
-        mute)  wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle ;;
-        flash) ;;
-        *)     echo "usage: volume-action {up|down|mute|flash}" >&2; exit 1 ;;
-      esac
-      echo "$EPOCHSECONDS" > /tmp/waybar-volume-flash
-      ${signalWaybar 11} || true
-    '';
-  };
-
-  # Push-to-talk: toggle PTT mode by clicking the waybar module; hold the talk
-  # key (Right Alt, read from evdev by triggerhappy below) to un-mute while PTT
-  # mode is armed.
-  #   /tmp/ptt-mode exists  => PTT mode armed (mic defaults to muted)
-  # Three visible states: normal-on, ptt-muted (armed, silent), ptt-active (talking).
-  # Apps can pin their capture stream to a non-default source (Chrome does), so
-  # muting @DEFAULT_AUDIO_SOURCE@ alone leaves other mics hot — every action
-  # here operates on ALL capture sources.
-  micAction = pkgs.writeShellApplication {
-    name = "mic-action";
-    runtimeInputs = with pkgs; [
-      wireplumber
-      pipewire # pw-dump
-      jq
-      coreutils
-    ];
-    text = ''
-      MODE_FILE="/tmp/ptt-mode"
-      refresh() { ${signalWaybar 12} || true; }
-
-      sources() {
-        pw-dump | jq '.[] | select(.info.props."media.class" // "" | startswith("Audio/Source")) | .id'
-      }
-      set_mute_all() {
-        mapfile -t ids < <(sources)
-        for id in "''${ids[@]}"; do wpctl set-mute "$id" "$1" || true; done
-      }
-      any_unmuted() {
-        mapfile -t ids < <(sources)
-        for id in "''${ids[@]}"; do
-          wpctl get-volume "$id" 2>/dev/null | grep -q MUTED || return 0
-        done
-        return 1
-      }
-
-      case "''${1:-}" in
-        toggle-mode)
-          if [ -f "$MODE_FILE" ]; then
-            rm -f "$MODE_FILE"
-            set_mute_all 0   # leaving PTT -> mics live
-          else
-            touch "$MODE_FILE"
-            set_mute_all 1   # entering PTT -> mics muted until you talk
-          fi
-          ;;
-        talk-start)
-          [ -f "$MODE_FILE" ] || exit 0
-          set_mute_all 0
-          ;;
-        talk-end)
-          [ -f "$MODE_FILE" ] || exit 0
-          set_mute_all 1
-          ;;
-        mute)
-          if any_unmuted; then set_mute_all 1; else set_mute_all 0; fi
-          ;;
-        *)
-          echo "usage: mic-action {toggle-mode|talk-start|talk-end|mute}" >&2
-          exit 1
-          ;;
-      esac
-      refresh
-    '';
-  };
-
-  # Hold-to-talk key bindings for the triggerhappy daemon. Read raw evdev so
-  # the modifier-key *release* is seen (Hyprland's bindr can't do this for
-  # modifiers — #3453). value 1 = press, 0 = release. mic-action self-guards
-  # on /tmp/ptt-mode, so these no-op unless PTT mode is armed from waybar.
-  pttTriggers = pkgs.writeText "ptt-triggers.conf" ''
-    KEY_RIGHTALT 1 ${micAction}/bin/mic-action talk-start
-    KEY_RIGHTALT 0 ${micAction}/bin/mic-action talk-end
-  '';
-
-  # Bridge: on input hotplug, restart thd so it reopens the current device set
-  # and a keyboard plugged in after startup still drives push-to-talk. A fresh
-  # thd is the only resync that can't half-fail: the previous th-cmd
-  # --clear/--add socket dance left the daemon with leaked fds and an *empty*
-  # watch list when a device node vanished mid-resync (PTT silently dead,
-  # 2026-07), and read errors from disconnecting devices leak fds the same way.
-  pttHotplug = pkgs.writeShellApplication {
-    name = "ptt-hotplug";
-    runtimeInputs = with pkgs; [
-      systemd # udevadm, systemctl
-      coreutils
-    ];
-    text = ''
-      # cover devices that appeared before the monitor below was listening
-      (
-        sleep 2
-        systemctl --user try-restart push-to-talk.service
-      ) &
-
-      udevadm monitor --udev --subsystem-match=input | while read -r line; do
-        case "$line" in
-          *" add "* | *" remove "*)
-            # one hotplug = a burst of udev events; settle, drain, restart once
-            sleep 1
-            while read -r -t 1 line; do :; done
-            systemctl --user restart push-to-talk.service
-            ;;
-        esac
-      done
-    '';
-  };
-
-  micStatus = pkgs.writeShellScript "mic-status" ''
-    MODE_FILE="/tmp/ptt-mode"
-
-    # "muted" only when EVERY capture source is muted — apps can pin their
-    # stream to a non-default source, so the default's state alone can lie.
-    # The dump already carries each node's mute flag (the same one wpctl
-    # reports), so read it there: one PipeWire client per run instead of one
-    # per source. Props entries aren't ordered, hence any().
-    MUTED=$(${pkgs.pipewire}/bin/pw-dump | ${pkgs.jq}/bin/jq -r '
-      [.[] | select(.info.props."media.class" // "" | startswith("Audio/Source"))
-           | any(.info.params.Props[]?; .mute == true)]
-      | if all then 1 else 0 end')
-    MUTED=''${MUTED:-1}
-
-    if [ -f "$MODE_FILE" ]; then
-      if [ "$MUTED" = "1" ]; then
-        ICON="󰍭"
-        CLASS="ptt-muted"
-        TOOLTIP="Push-to-talk armed — hold Right Alt to talk"
-      else
-        ICON="󰍬"
-        CLASS="ptt-active"
-        TOOLTIP="Push-to-talk — talking"
-      fi
-    else
-      if [ "$MUTED" = "1" ]; then
-        ICON="󰍭"
-        CLASS="muted"
-        TOOLTIP="Mic muted (left-click for push-to-talk)"
-      else
-        ICON="󰍬"
-        CLASS="on"
-        TOOLTIP="Mic live (left-click for push-to-talk)"
-      fi
-    fi
-
-    printf '{"text": "%s", "tooltip": "%s", "class": "%s"}\n' "$ICON" "$TOOLTIP" "$CLASS"
-  '';
-
-  # Runs every second on every bar, so everything past wpctl is a bash builtin.
-  volumeStatus = pkgs.writeShellScript "volume-status" ''
-    FLAG_FILE="/tmp/waybar-volume-flash"
-    RAW=$(${pkgs.wireplumber}/bin/wpctl get-volume @DEFAULT_AUDIO_SINK@)
-
-    # "Volume: 0.45 [MUTED]" -> 45 (wpctl always prints two decimals)
-    VOLUME=0
-    if [[ "$RAW" =~ ([0-9]+)\.([0-9]{2}) ]]; then
-      VOLUME=$((10#''${BASH_REMATCH[1]} * 100 + 10#''${BASH_REMATCH[2]}))
-    fi
-
-    if [[ "$RAW" == *MUTED* ]]; then
-      ICON="󰝟"
-      CLASS="muted"
-    elif [ "$VOLUME" -lt 33 ]; then
-      ICON="󰕿"
-      CLASS=""
-    elif [ "$VOLUME" -lt 67 ]; then
-      ICON="󰖀"
-      CLASS=""
-    else
-      ICON="󰕾"
-      CLASS=""
-    fi
-
-    # volume-action writes the epoch second of the last change here
-    SHOW_PCT=0
-    if [ -f "$FLAG_FILE" ]; then
-      read -r CHANGED < "$FLAG_FILE"
-      [[ "$CHANGED" =~ ^[0-9]+$ ]] && ((EPOCHSECONDS - CHANGED < 2)) && SHOW_PCT=1
-    fi
-
-    if [ "$SHOW_PCT" = "1" ]; then
-      TEXT="$ICON  $VOLUME%"
-    else
-      TEXT="$ICON"
-    fi
-
-    printf '{"text": "%s", "tooltip": "Volume: %d%%", "class": "%s"}\n' "$TEXT" "$VOLUME" "$CLASS"
-  '';
-
-  # "In use" means streaming: a UVC camera moves its VideoStreaming interface
-  # (class 0e, subclass 02) off alt setting 0 only while it is capturing. That
-  # is a few sysfs reads with bash builtins, where the old per-node `fuser`
-  # scanned every process's fds each second on each bar (~45% of a core with
-  # two bars). Bulk-transfer cameras stream on alt 0 and never show in use.
-  webcamStatus = pkgs.writeShellScript "webcam-status" ''
-    # webcam-toggle (root, via sudo) records the cameras it deauthorized here
-    STATE_FILE="/run/webcam-toggle/usb-paths"
-    found=0
-    any_on=0
-    in_use=0
-    for vdir in /sys/class/video4linux/video*; do
-      [ -d "$vdir" ] || continue
-      cd -P "$vdir/device" 2>/dev/null || continue
-      dir="$PWD"
-      while [ -n "$dir" ]; do
-        if [ -f "$dir/authorized" ] && [ -f "$dir/idVendor" ]; then
-          break
-        fi
-        dir="''${dir%/*}"
-      done
-      [ -n "$dir" ] || continue
-      found=1
-      read -r auth < "$dir/authorized"
-      [ "$auth" = "1" ] || continue
-      any_on=1
-      for iface in "$dir/''${dir##*/}":*; do
-        {
-          read -r class < "$iface/bInterfaceClass" &&
-            read -r subclass < "$iface/bInterfaceSubClass" &&
-            read -r alt < "$iface/bAlternateSetting"
-        } 2>/dev/null || continue
-        if [ "$class" = "0e" ] && [ "$subclass" = "02" ] && [ "$alt" != "0" ]; then
-          in_use=1
-        fi
-      done
-    done
-    # Check state file for deauthorized cameras (video4linux entries disappear when deauthorized)
-    if [ "$found" = "0" ] && [ -f "$STATE_FILE" ]; then
-      while IFS= read -r p; do
-        [ -f "$p/authorized" ] || continue
-        found=1
-        read -r auth < "$p/authorized"
-        if [ "$auth" = "1" ]; then
-          any_on=1
-        fi
-      done < "$STATE_FILE"
-    fi
-    if [ "$found" = "0" ]; then
-      echo '{"text": "󱜷", "tooltip": "No cameras found", "class": "disconnected"}'
-    elif [ "$any_on" = "0" ]; then
-      echo '{"text": "󱜷", "tooltip": "Webcam muted", "class": "muted"}'
-    elif [ "$in_use" = "1" ]; then
-      echo '{"text": "󰖠", "tooltip": "Webcam in use", "class": "in-use"}'
-    else
-      echo '{"text": "󰖠", "tooltip": "Webcam available", "class": "available"}'
-    fi
-  '';
 in
 {
   options = {
@@ -334,10 +69,8 @@ in
     };
   };
   config = mkIf cfg.enable {
-    home.packages = [
-      volumeAction
-      micAction
-    ];
+    # micctl for keybinds; the rest are handy to run by hand when debugging
+    home.packages = [ barTools ];
 
     # waybar runs as a systemd --user service so the session manager keeps it
     # alive no matter how it dies (Restart=always recovers from crashes and the
@@ -386,52 +119,28 @@ in
       Install.WantedBy = [ "hyprland-session.target" ];
     };
 
-    # Push-to-talk: triggerhappy reads evdev directly and drives the mic on
-    # Right Alt press/release. It watches keyd's virtual keyboard (stable
-    # by-id symlink, see modules/nixos/peripherals) rather than real hardware,
-    # so hotplugging the physical keyboard never changes its device set. User
-    # service (you're in the `input` group), so it can both read evdev and
-    # reach your PipeWire session. Stays on graphical-session.target (unlike
-    # waybar above): it's evdev + PipeWire with no compositor dependency.
-    systemd.user.services.push-to-talk = {
+    # Push-to-talk (pkgs/bar-tools/src/bin/pttd.rs): while armed from the mic
+    # module, every mic stays muted except while Right Alt is held. It reads
+    # keyd's virtual keyboard (stable by-id symlink, see
+    # modules/nixos/peripherals), so real keyboards coming and going never
+    # matter, and reopens it if keyd itself restarts. User service (you're in
+    # the `input` group) on graphical-session.target, unlike waybar: it's
+    # evdev + audio with no compositor dependency.
+    systemd.user.services.pttd = {
       Unit = {
-        Description = "Push-to-talk (hold Right Alt) — triggerhappy evdev daemon";
+        Description = "Push-to-talk (hold Right Alt while armed)";
         After = [ "graphical-session.target" ];
         PartOf = [ "graphical-session.target" ];
-        # the hotplug bridge restarts this unit if keyd itself bounces;
-        # never let a burst of restarts trip the start limit
         StartLimitIntervalSec = 0;
       };
       Service = {
-        ExecStart = "${pkgs.triggerhappy}/bin/thd --triggers ${pttTriggers} --deviceglob /dev/input/by-id/keyd-virtual-keyboard-event-kbd";
-        Restart = "on-failure";
-        RestartSec = 2;
+        ExecStart = "${barTools}/bin/pttd /dev/input/by-id/keyd-virtual-keyboard-event-kbd";
+        Restart = "always";
+        RestartSec = 1;
       };
       Install.WantedBy = [ "graphical-session.target" ];
     };
 
-    # thd only opens its device at startup, so if keyd restarts (e.g. a
-    # rebuild) its virtual keyboard is recreated and thd is left watching a
-    # stale, now-dead device. This bridge watches udev for input add/remove
-    # and bounces the daemon so it reopens the (possibly new) device. Runs as
-    # the user (in the `input` group), so no root/udev rule needed. Wants (not
-    # Requires/PartOf) push-to-talk: the bridge restarts that unit, and a
-    # propagating dependency would take the bridge down with it mid-restart.
-    systemd.user.services.push-to-talk-hotplug = {
-      Unit = {
-        Description = "Push-to-talk: restart triggerhappy on input hotplug";
-        After = [ "push-to-talk.service" ];
-        Wants = [ "push-to-talk.service" ];
-        PartOf = [ "graphical-session.target" ];
-        StartLimitIntervalSec = 0;
-      };
-      Service = {
-        ExecStart = "${pttHotplug}/bin/ptt-hotplug";
-        Restart = "on-failure";
-        RestartSec = 2;
-      };
-      Install.WantedBy = [ "graphical-session.target" ];
-    };
     programs.waybar = {
       enable = true;
       package = waybarPackage;
@@ -516,14 +225,14 @@ in
             tooltip-format = "Lock Screen";
           };
 
+          # restart-interval only matters if a watcher ever exits
           "custom/webcam" = {
-            exec = "${webcamStatus}";
+            exec = "${barTools}/bin/webcam-watch";
             return-type = "json";
-            interval = 1;
-            signal = 10;
+            restart-interval = 5;
             on-click = "${pkgs.cameractrls-gtk4}/bin/cameractrlsgtk4 &";
-            on-click-middle = "${webcamToggle}";
-            on-click-right = "${webcamToggle}";
+            on-click-middle = webcamToggle;
+            on-click-right = webcamToggle;
           };
 
           "group/tray-expander" = {
@@ -662,28 +371,27 @@ in
             on-click = "${pkgs.blueman}/bin/blueman-manager";
           };
 
+          # Left-click arms/disarms push-to-talk (pttd does the muting).
           "custom/mic" = {
-            exec = "${micStatus}";
+            exec = "${barTools}/bin/mic-watch";
             return-type = "json";
-            interval = 2;
-            signal = 12;
-            on-click = "${micAction}/bin/mic-action toggle-mode";
-            on-click-middle = "${micAction}/bin/mic-action mute";
-            on-click-right = "${pkgs.pavucontrol}/bin/pavucontrol";
-            on-scroll-up = "${micAction}/bin/mic-action mute";
-            on-scroll-down = "${micAction}/bin/mic-action mute";
+            restart-interval = 5;
+            on-click = "${barTools}/bin/micctl ptt";
+            on-click-middle = "${barTools}/bin/micctl mute";
+            on-click-right = pavucontrol;
+            on-scroll-up = "${barTools}/bin/micctl mute";
+            on-scroll-down = "${barTools}/bin/micctl mute";
           };
 
+          # Any volume change flashes the percentage; hover shows it too.
           "custom/volume" = {
-            exec = "${volumeStatus}";
+            exec = "${barTools}/bin/volume-watch";
             return-type = "json";
-            interval = 1;
-            signal = 11;
-            on-click = "${volumeAction}/bin/volume-action flash";
-            on-click-middle = "${volumeAction}/bin/volume-action mute";
-            on-click-right = "${pkgs.pavucontrol}/bin/pavucontrol";
-            on-scroll-up = "${volumeAction}/bin/volume-action up";
-            on-scroll-down = "${volumeAction}/bin/volume-action down";
+            restart-interval = 5;
+            on-click-middle = "${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle";
+            on-click-right = pavucontrol;
+            on-scroll-up = "${wpctl} set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+";
+            on-scroll-down = "${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-";
           };
         };
       };

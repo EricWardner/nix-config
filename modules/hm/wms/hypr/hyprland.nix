@@ -25,6 +25,7 @@ let
   slurp = "${pkgs.slurp}/bin/slurp";
   swappy = "${pkgs.swappy}/bin/swappy";
   playerctl = "${pkgs.playerctl}/bin/playerctl";
+  wpctl = "${pkgs.wireplumber}/bin/wpctl";
   btop = "${pkgs.btop}/bin/btop";
   slack = "${pkgs.slack}/bin/slack";
   chrome = "${pkgs.google-chrome}/bin/google-chrome-stable";
@@ -41,10 +42,11 @@ let
     keyboardDimmer = "${brightnessctl} -d '*::kbd_backlight' set 33%-";
     screenshot = ''${grim} -g "$(${slurp})" - | ${swappy} -f -'';
     record = "wf-recorder-toggle";
-    volumeUp = "volume-action up";
-    volumeDown = "volume-action down";
-    volumeMute = "volume-action mute";
-    micMute = "mic-action mute";
+    # the bar's volume-watch flashes the new level on any change
+    volumeUp = "${wpctl} set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+";
+    volumeDown = "${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-";
+    volumeMute = "${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle";
+    micMute = "micctl mute"; # from bar-tools (waybar module)
     brighter = "${brightnessctl} set 5%+";
     dimmer = "${brightnessctl} set 5%-";
     mediaNext = "${playerctl} next";
