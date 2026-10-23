@@ -203,24 +203,21 @@ in
             "hyprland/window"
             "clock"
           ];
-          # One glass island (waybar.css) holding the always-open tray (its
+          # The always-open tray sits on a glass island (waybar.css); its
           # applets, nm-applet and blueman, cover network and bluetooth, so
-          # those have no modules of their own) and the status icons.
-          modules-right = [ "group/status" ];
-          "group/status" = {
-            orientation = "horizontal";
-            modules = [
-              "tray"
-              "custom/webcam"
-              "custom/mic"
-              "custom/volume"
-              "cpu"
-              "memory"
-              "temperature"
-              "backlight"
-              "battery"
-            ];
-          };
+          # those have no modules of their own. The status icons stay on the
+          # bare bar.
+          modules-right = [
+            "tray"
+            "custom/webcam"
+            "custom/mic"
+            "custom/volume"
+            "cpu"
+            "memory"
+            "temperature"
+            "backlight"
+            "battery"
+          ];
 
           "hyprland/workspaces" = {
             on-click = "activate";
@@ -273,7 +270,8 @@ in
 
           tray = {
             icon-size = 16; # matches the SF Symbols at the bar's 16px font
-            # 16px icons + 24px spacing = the status icons' 40px pitch
+            # 16px icons + 24px spacing keep the 40px pitch of the status
+            # icons beside the island
             spacing = 24;
           };
 

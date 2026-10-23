@@ -97,29 +97,23 @@ window#waybar {
   font-size: 20px;
 }
 
-/* One light-glass island holding the always-open tray (nm-applet, blueman,
-   ...) and the status icons: a faint white-tinted rounded surface with a
-   rim and top highlight, so it reads as glass catching light. It's inset
-   just 2px from the bar's top and bottom (the bar itself is transparent),
-   for room above and below the icons. Hyprland only blurs behind waybar
-   where it is over 50% opaque (`ignore_alpha = 0.5` in hypr/lua/rules.lua,
-   which keeps text on the bare bar free of halos), so it isn't frosted;
-   over the flat blue wallpaper there is nothing to frost. Lower that
-   threshold to frost a textured wallpaper. The tray takes the same 4px
-   margin as every module plus 6px padding, so its 16px end icons sit as if
-   centred in the status icons' 28px boxes: one 40px step throughout. */
-#status {
+/* The always-open tray (nm-applet, blueman, ...) sits on a light-glass
+   island, apart from the status icons on the bare bar: a faint
+   white-tinted rounded surface with a rim and top highlight, so it reads
+   as glass catching light. It's inset just 2px from the bar's top and
+   bottom (the bar itself is transparent), for room above and below the
+   icons. Hyprland only blurs behind waybar where it is over 50% opaque
+   (`ignore_alpha = 0.5` in hypr/lua/rules.lua, which keeps text on the
+   bare bar free of halos), so it isn't frosted; over the flat blue
+   wallpaper there is nothing to frost. Lower that threshold to frost a
+   textured wallpaper. */
+#tray {
   background-color: alpha(@base05, 0.1);
   border: 1px solid alpha(@base05, 0.1);
   box-shadow: inset 0 1px alpha(@base05, 0.08);
   border-radius: 8px;
   padding: 0 6px;
   margin: 2px 4px;
-}
-
-#tray {
-  margin: 0 4px;
-  padding: 0 6px;
 }
 
 #tray > widget:hover {
