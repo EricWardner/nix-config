@@ -6,7 +6,8 @@ use std::convert::Infallible;
 use std::time::{Duration, Instant};
 
 use bar_tools::pa::{self, Conn, DeviceVolume, Frame};
-use bar_tools::waybar::{self, Emitter};
+use bar_tools::sf;
+use bar_tools::waybar::Emitter;
 use pulseaudio::protocol::{Command, DEFAULT_SINK, GetSinkInfo, PulseError, SubscriptionMask};
 use rustix::event::{PollFd, PollFlags};
 
@@ -35,7 +36,7 @@ fn main() {
     loop {
         let Err(err) = run(&mut out);
         bar_tools::warn!("volume-watch: {err}; reconnecting");
-        out.emit("󰝟", "Audio server unavailable", "muted");
+        out.emit(sf::SPEAKER_SLASH, "Audio server unavailable", "muted");
         std::thread::sleep(RECONNECT);
     }
 }
@@ -99,13 +100,13 @@ fn query(conn: &mut Conn) -> Result<Reading, pa::Error> {
 
 fn render(out: &mut Emitter, reading: Option<&Volume>, flash: bool) {
     let Some(v) = reading else {
-        return out.emit("󰝟", "No output device", "muted");
+        return out.emit(sf::SPEAKER_SLASH, "No output device", "muted");
     };
     let icon = match v.percent {
-        _ if v.muted => "󰝟",
-        0..33 => "󰕿",
-        33..67 => "󰖀",
-        _ => "󰕾",
+        _ if v.muted => sf::SPEAKER_SLASH,
+        0..33 => sf::SPEAKER_WAVE_1,
+        33..67 => sf::SPEAKER_WAVE_2,
+        _ => sf::SPEAKER_WAVE_3,
     };
     let class = if v.muted { "muted" } else { "" };
     let tooltip = if v.device.is_empty() {
@@ -114,8 +115,7 @@ fn render(out: &mut Emitter, reading: Option<&Volume>, flash: bool) {
         format!("{}\nVolume: {}%", v.device, v.percent)
     };
     if flash {
-        let text = format!("{}{}%", waybar::number_icon(icon), v.percent);
-        out.emit_markup(&text, &tooltip, class);
+        out.emit(&format!("{icon} {}%", v.percent), &tooltip, class);
     } else {
         out.emit(icon, &tooltip, class);
     }

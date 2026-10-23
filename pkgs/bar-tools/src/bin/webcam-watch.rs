@@ -16,6 +16,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use bar_tools::inotify::{self, WatchFlags};
+use bar_tools::sf;
 use bar_tools::waybar::Emitter;
 use rustix::event::{PollFd, PollFlags};
 
@@ -183,10 +184,10 @@ fn attr(dir: &Path, name: &str) -> Option<String> {
 
 fn render(out: &mut Emitter, state: State) {
     let (text, tooltip, class) = match state {
-        State::NoCamera => ("󱜷", "No cameras found", "disconnected"),
-        State::Off => ("󱜷", "Webcam muted", "muted"),
-        State::InUse => ("󰖠", "Webcam in use", "in-use"),
-        State::Available => ("󰖠", "Webcam available", "available"),
+        State::NoCamera => (sf::VIDEO_SLASH, "No cameras found", "disconnected"),
+        State::Off => (sf::VIDEO_SLASH, "Webcam muted", "muted"),
+        State::InUse => (sf::VIDEO, "Webcam in use", "in-use"),
+        State::Available => (sf::VIDEO, "Webcam available", "available"),
     };
     out.emit(text, tooltip, class);
 }

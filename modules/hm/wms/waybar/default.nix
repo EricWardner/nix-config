@@ -23,17 +23,31 @@ let
   barTools = pkgs.callPackage ../../../../pkgs/bar-tools { };
   wpctl = "${pkgs.wireplumber}/bin/wpctl";
 
-  # An icon that leads a number, plus the gap before the number. It's drawn
-  # from Symbols Nerd Font, whose glyph boxes fit their ink, so every icon
-  # sits the same distance from its number; the patched SF Pro boxes every
-  # icon at 1.14em, leaving a narrow glyph like the thermometer far from its
-  # value. Icon-only formats keep SF Pro's equal boxes, which is what keeps
-  # the bar's icons evenly spaced. Symbols Nerd Font centres glyphs ~0.75px
-  # lower than the patched font, so `rise` (1/1024 px) lifts them level;
-  # tuned for the bar's 16px font. The gap is a space plus a thin space
-  # (&#x2009;). volume-watch does the same in Rust
-  # (bar_tools::waybar::number_icon).
-  numberIcon = glyph: "<span font_family='Symbols Nerd Font' rise='768'>${glyph}</span> &#x2009;";
+  # Status icons are SF Symbols, Apple's icon set drawn to match SF Pro:
+  # they share its stroke weight and baseline and space like text, so an
+  # icon sits one ordinary space from its number. They ship inside SF Pro
+  # as private-use characters (U+100000 up), named here because most
+  # editors show them as boxes; the code points come from this SF Pro
+  # build and could move if the font is updated. SF Symbols has no logos,
+  # so bluetooth, ethernet, the nix icon and the workspace app icons stay
+  # Nerd Font glyphs. The bar-tools watchers use the same set
+  # (bar_tools::sf).
+  sf = {
+    chevronRight = "􀆓"; # U+100193 chevron.right
+    wifi = "􀙇"; # U+100647 wifi
+    wifiSlash = "􀙈"; # U+100648 wifi.slash
+    cpu = "􀫥"; # U+100AE5 cpu
+    memory = "􀫦"; # U+100AE6 memorychip
+    thermometer = "􀇬"; # U+1001EC thermometer
+    sunMin = "􀆫"; # U+1001AB sun.min
+    sunMax = "􀆭"; # U+1001AD sun.max
+    battery0 = "􀛪"; # U+1006EA battery.0
+    battery25 = "􀛩"; # U+1006E9 battery.25
+    battery50 = "􀺶"; # U+100EB6 battery.50
+    battery75 = "􀺸"; # U+100EB8 battery.75
+    battery100 = "􀛨"; # U+1006E8 battery.100
+    batteryBolt = "􀢋"; # U+10088B battery.100.bolt
+  };
 
   # Start an app from a click in its own transient systemd scope. A plain
   # child of waybar stays in waybar.service's cgroup, so the monitor-hotplug
@@ -262,7 +276,7 @@ in
           };
 
           "custom/expand-icon" = {
-            format = "󰅂";
+            format = sf.chevronRight;
             tooltip = false;
           };
 
@@ -273,43 +287,32 @@ in
 
           cpu = {
             interval = 5;
-            format = "";
-            format-alt = "${numberIcon ""}{usage}%";
+            format = sf.cpu;
+            format-alt = "${sf.cpu} {usage}%";
             # the class must be a valid app ID (with a dot) or ghostty ignores
             # it, and the floating rule in hypr/lua/rules.lua matches on it
             on-click-right = launch "${pkgs.ghostty}/bin/ghostty --class=com.mitchellh.ghostty.btop -e ${pkgs.btop}/bin/btop";
           };
 
           memory = {
-            format = "";
-            format-alt = "${numberIcon ""}{}%";
+            format = sf.memory;
+            format-alt = "${sf.memory} {}%";
           };
 
           temperature = {
             critical-threshold = 80;
-            format-critical = "${numberIcon "{icon}"}{temperatureC}°C";
+            format-critical = "{icon} {temperatureC}°C";
             format = "{icon}";
-            format-alt = "${numberIcon "{icon}"}{temperatureC}°C";
-            format-icons = [
-              ""
-              ""
-              ""
-              ""
-              ""
-            ];
+            format-alt = "{icon} {temperatureC}°C";
+            format-icons = [ sf.thermometer ];
           };
 
           backlight = {
             format = "{icon}";
-            format-alt = "${numberIcon "{icon}"}{percent}%";
+            format-alt = "{icon} {percent}%";
             format-icons = [
-              "󰃚"
-              "󰃛"
-              "󰃜"
-              "󰃝"
-              "󰃞"
-              "󰃟"
-              "󰃠"
+              sf.sunMin
+              sf.sunMax
             ];
             tooltip-format = "Backlight: {percent}%";
           };
@@ -334,16 +337,11 @@ in
           };
 
           network = {
-            format-icons = [
-              "󰤟"
-              "󰤢"
-              "󰤥"
-              "󰤨"
-            ];
+            format-icons = [ sf.wifi ];
             format = "{icon}";
             format-wifi = "{icon}";
             format-ethernet = "󰌘";
-            format-disconnected = "󰌙";
+            format-disconnected = sf.wifiSlash;
             tooltip-format-wifi = "{essid} ({frequency} GHz)\n↓{bandwidthDownBytes}  ↑{bandwidthUpBytes}";
             tooltip-format-ethernet = "↓{bandwidthDownBytes}  ↑{bandwidthUpBytes}";
             tooltip-format-disconnected = "Disconnected";
@@ -354,22 +352,17 @@ in
 
           battery = {
             format = "{icon}";
-            format-charging = "${numberIcon "󰂄"}{capacity}%";
-            format-plugged = "${numberIcon "󰚥"}{capacity}%";
-            format-alt = "${numberIcon "{icon}"}{capacity}%";
+            format-charging = "${sf.batteryBolt} {capacity}%";
+            format-plugged = "${sf.batteryBolt} {capacity}%";
+            format-alt = "{icon} {capacity}%";
             format-icons = [
-              "󰁺"
-              "󰁻"
-              "󰁼"
-              "󰁽"
-              "󰁾"
-              "󰁿"
-              "󰂀"
-              "󰂁"
-              "󰂂"
-              "󰁹"
+              sf.battery0
+              sf.battery25
+              sf.battery50
+              sf.battery75
+              sf.battery100
             ];
-            format-full = "󱟢";
+            format-full = sf.batteryBolt;
             tooltip-format = "{power}W {timeTo}";
             interval = 5;
             states = {

@@ -8,35 +8,14 @@ pub struct Emitter {
     last: String,
 }
 
-/// Pango markup for an icon that leads a number, plus the gap before the
-/// number. The icon is drawn from Symbols Nerd Font, whose glyph boxes fit
-/// their ink, so every icon sits the same distance from its number; the
-/// bar's default (patched SF Pro) gives every icon an equal, wider box. It
-/// centres glyphs ~0.75px lower than the patched font, so `rise` (1/1024
-/// px) lifts them level, tuned for the bar's 16px font. The gap is a space
-/// plus a thin space. Matches `numberIcon` in the waybar module.
-pub fn number_icon(icon: &str) -> String {
-    format!("<span font_family='Symbols Nerd Font' rise='768'>{icon}</span> &#x2009;")
-}
-
 impl Emitter {
     /// Print one module update, skipping it if nothing changed. Exits the
     /// process once stdout is gone: waybar closed the module, so there is
     /// no one left to report to.
     pub fn emit(&mut self, text: &str, tooltip: &str, class: &str) {
-        self.write(text, true, tooltip, class);
-    }
-
-    /// Like [`Emitter::emit`], but `text` is Pango markup the caller has
-    /// already made safe (the tooltip is still escaped).
-    pub fn emit_markup(&mut self, text: &str, tooltip: &str, class: &str) {
-        self.write(text, false, tooltip, class);
-    }
-
-    fn write(&mut self, text: &str, escape_text: bool, tooltip: &str, class: &str) {
         let mut line = String::with_capacity(96);
         line.push_str("{\"text\":\"");
-        escape_into(&mut line, text, escape_text);
+        escape_into(&mut line, text, true);
         line.push_str("\",\"tooltip\":\"");
         escape_into(&mut line, tooltip, true);
         line.push_str("\",\"class\":\"");

@@ -8,6 +8,21 @@ use rustix::event::{PollFd, Timespec};
 pub mod pa;
 pub mod waybar;
 
+/// The watchers' icons: SF Symbols, which ship inside SF Pro (the bar's
+/// font) as private-use characters and match its weight and baseline. The
+/// code points come from this SF Pro build and could move if the font is
+/// updated; the waybar module names the rest of the bar's set the same way.
+pub mod sf {
+    pub const VIDEO: &str = "\u{100349}"; // video
+    pub const VIDEO_SLASH: &str = "\u{10034D}"; // video.slash
+    pub const MIC: &str = "\u{1002B0}"; // mic
+    pub const MIC_SLASH: &str = "\u{1002B2}"; // mic.slash
+    pub const SPEAKER_SLASH: &str = "\u{1002A2}"; // speaker.slash
+    pub const SPEAKER_WAVE_1: &str = "\u{1002A4}"; // speaker.wave.1
+    pub const SPEAKER_WAVE_2: &str = "\u{1002A6}"; // speaker.wave.2
+    pub const SPEAKER_WAVE_3: &str = "\u{1002A8}"; // speaker.wave.3
+}
+
 /// Push-to-talk's one piece of shared state: it is armed while the file
 /// `$XDG_RUNTIME_DIR/ptt/armed` exists. pttd mutes and unmutes the mics as
 /// it appears and disappears; mic-watch shows it. The directory holds

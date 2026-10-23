@@ -74,10 +74,10 @@ window#waybar {
   margin-right: 8px;
 }
 
-/* Built-in modules carry 5px of horizontal padding that custom modules
-   don't, which squeezed webcam/mic/volume together. Setting it on all of
-   them makes every module box the same width, so the icons sit at equal
-   centre-to-centre spacing. */
+/* Every module gets the same box, so the icons sit at equal centre-to-centre
+   spacing: the same padding (built-in modules carry 5px that custom ones
+   don't), and a 26px minimum, because SF Symbols have natural widths
+   (16-27px) and centre in it. Only the battery, last in the row, is wider. */
 #cpu,
 #memory,
 #temperature,
@@ -89,7 +89,7 @@ window#waybar {
 #backlight,
 #bluetooth,
 #network {
-  min-width: 12px;
+  min-width: 26px;
   margin: 0 4px;
   padding: 0 5px;
 }

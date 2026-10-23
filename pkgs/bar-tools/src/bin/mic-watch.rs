@@ -11,6 +11,7 @@ use std::time::{Duration, Instant};
 use bar_tools::inotify::{self, WatchFlags};
 use bar_tools::pa::{self, Conn, Frame};
 use bar_tools::ptt;
+use bar_tools::sf;
 use bar_tools::waybar::Emitter;
 use pulseaudio::protocol::{Command, SubscriptionMask};
 use rustix::event::{PollFd, PollFlags};
@@ -76,7 +77,7 @@ fn main() {
     loop {
         let Err(err) = run(&mut out, &armed);
         bar_tools::warn!("mic-watch: {err}; reconnecting");
-        out.emit("󰍭", "Audio server unavailable", "muted");
+        out.emit(sf::MIC_SLASH, "Audio server unavailable", "muted");
         std::thread::sleep(RECONNECT);
     }
 }
@@ -162,15 +163,19 @@ fn query(conn: &mut Conn) -> Result<Mics, pa::Error> {
 
 fn render(out: &mut Emitter, mics: Mics, armed: bool) {
     let (text, tooltip, class) = match (mics, armed) {
-        (Mics::None, _) => ("󰍭", "No microphones", "muted"),
+        (Mics::None, _) => (sf::MIC_SLASH, "No microphones", "muted"),
         (Mics::AllMuted, true) => (
-            "󰍭",
+            sf::MIC_SLASH,
             "Push-to-talk armed — hold Right Alt to talk",
             "ptt-muted",
         ),
-        (Mics::Live, true) => ("󰍬", "Push-to-talk — talking", "ptt-active"),
-        (Mics::AllMuted, false) => ("󰍭", "Mic muted (left-click for push-to-talk)", "muted"),
-        (Mics::Live, false) => ("󰍬", "Mic live (left-click for push-to-talk)", "on"),
+        (Mics::Live, true) => (sf::MIC, "Push-to-talk — talking", "ptt-active"),
+        (Mics::AllMuted, false) => (
+            sf::MIC_SLASH,
+            "Mic muted (left-click for push-to-talk)",
+            "muted",
+        ),
+        (Mics::Live, false) => (sf::MIC, "Mic live (left-click for push-to-talk)", "on"),
     };
     out.emit(text, tooltip, class);
 }
