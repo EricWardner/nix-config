@@ -34,7 +34,7 @@ let
     terminal = ghostty;
     files = thunar;
     launcher = fuzzel;
-    clipboard = "${cliphist} list | ${fuzzel} --dmenu | ${cliphist} decode | ${wl-copy}";
+    clipboard = "${cliphist} list | ${fuzzel} --dmenu --placeholder 'Search clipboard' | ${cliphist} decode | ${wl-copy}";
     oath = "oath 19125157";
     gather = "launch-webapp https://app.gather.town/app/V383EJ8uFnnNFtez/Grail";
     lock = "${pkgs.systemd}/bin/loginctl lock-session";
