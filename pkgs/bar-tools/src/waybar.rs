@@ -8,14 +8,33 @@ pub struct Emitter {
     last: String,
 }
 
+/// Pango markup for a number shown beside an icon: a size smaller (14px
+/// against the bar's 16px) so the icon leads, lifted ~0.75px (`rise` is in
+/// 1/1024 px) so it centres on the icon instead of sitting on the 16px
+/// baseline. `text` must be plain text such as "45%". Matches `num` in the
+/// waybar module.
+pub fn number(text: &str) -> String {
+    format!("<span size='87.5%' rise='768'>{text}</span>")
+}
+
 impl Emitter {
     /// Print one module update, skipping it if nothing changed. Exits the
     /// process once stdout is gone: waybar closed the module, so there is
     /// no one left to report to.
     pub fn emit(&mut self, text: &str, tooltip: &str, class: &str) {
+        self.write(text, true, tooltip, class);
+    }
+
+    /// Like [`Emitter::emit`], but `text` is Pango markup the caller has
+    /// already made safe (the tooltip is still escaped).
+    pub fn emit_markup(&mut self, text: &str, tooltip: &str, class: &str) {
+        self.write(text, false, tooltip, class);
+    }
+
+    fn write(&mut self, text: &str, escape_text: bool, tooltip: &str, class: &str) {
         let mut line = String::with_capacity(96);
         line.push_str("{\"text\":\"");
-        escape_into(&mut line, text, true);
+        escape_into(&mut line, text, escape_text);
         line.push_str("\",\"tooltip\":\"");
         escape_into(&mut line, tooltip, true);
         line.push_str("\",\"class\":\"");

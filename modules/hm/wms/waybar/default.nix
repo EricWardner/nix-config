@@ -49,6 +49,13 @@ let
     batteryBolt = "􀢋"; # U+10088B battery.100.bolt
   };
 
+  # Numbers beside icons are drawn a size smaller (14px against the bar's
+  # 16px) so the icon leads; a relative size keeps the ratio if the bar's
+  # font size changes. `rise` (1/1024 px) lifts them ~0.75px so they centre
+  # on the icon instead of sitting on the 16px baseline. volume-watch
+  # matches it (bar_tools::waybar::number).
+  num = text: "<span size='87.5%' rise='768'>${text}</span>";
+
   # Start an app from a click in its own transient systemd scope. A plain
   # child of waybar stays in waybar.service's cgroup, so the monitor-hotplug
   # restart below would kill it, along with everything opened from the
@@ -288,7 +295,7 @@ in
           cpu = {
             interval = 5;
             format = sf.cpu;
-            format-alt = "${sf.cpu} {usage}%";
+            format-alt = "${sf.cpu} ${num "{usage}%"}";
             # the class must be a valid app ID (with a dot) or ghostty ignores
             # it, and the floating rule in hypr/lua/rules.lua matches on it
             on-click-right = launch "${pkgs.ghostty}/bin/ghostty --class=com.mitchellh.ghostty.btop -e ${pkgs.btop}/bin/btop";
@@ -296,20 +303,20 @@ in
 
           memory = {
             format = sf.memory;
-            format-alt = "${sf.memory} {}%";
+            format-alt = "${sf.memory} ${num "{}%"}";
           };
 
           temperature = {
             critical-threshold = 80;
-            format-critical = "{icon} {temperatureC}°C";
+            format-critical = "{icon} ${num "{temperatureC}°C"}";
             format = "{icon}";
-            format-alt = "{icon} {temperatureC}°C";
+            format-alt = "{icon} ${num "{temperatureC}°C"}";
             format-icons = [ sf.thermometer ];
           };
 
           backlight = {
             format = "{icon}";
-            format-alt = "{icon} {percent}%";
+            format-alt = "{icon} ${num "{percent}%"}";
             format-icons = [
               sf.sunMin
               sf.sunMax
@@ -352,9 +359,9 @@ in
 
           battery = {
             format = "{icon}";
-            format-charging = "${sf.batteryBolt} {capacity}%";
-            format-plugged = "${sf.batteryBolt} {capacity}%";
-            format-alt = "{icon} {capacity}%";
+            format-charging = "${sf.batteryBolt} ${num "{capacity}%"}";
+            format-plugged = "${sf.batteryBolt} ${num "{capacity}%"}";
+            format-alt = "{icon} ${num "{capacity}%"}";
             format-icons = [
               sf.battery0
               sf.battery25
