@@ -6,7 +6,7 @@ use std::convert::Infallible;
 use std::time::{Duration, Instant};
 
 use bar_tools::pa::{self, Conn, DeviceVolume, Frame};
-use bar_tools::waybar::Emitter;
+use bar_tools::waybar::{self, Emitter};
 use pulseaudio::protocol::{Command, DEFAULT_SINK, GetSinkInfo, PulseError, SubscriptionMask};
 use rustix::event::{PollFd, PollFlags};
 
@@ -114,7 +114,8 @@ fn render(out: &mut Emitter, reading: Option<&Volume>, flash: bool) {
         format!("{}\nVolume: {}%", v.device, v.percent)
     };
     if flash {
-        out.emit(&format!("{icon}  {}%", v.percent), &tooltip, class);
+        let text = format!("{}{}%", waybar::number_icon(icon), v.percent);
+        out.emit_markup(&text, &tooltip, class);
     } else {
         out.emit(icon, &tooltip, class);
     }

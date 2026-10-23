@@ -23,6 +23,18 @@ let
   barTools = pkgs.callPackage ../../../../pkgs/bar-tools { };
   wpctl = "${pkgs.wireplumber}/bin/wpctl";
 
+  # An icon that leads a number, plus the gap before the number. It's drawn
+  # from Symbols Nerd Font, whose glyph boxes fit their ink, so every icon
+  # sits the same distance from its number; the patched SF Pro boxes every
+  # icon at 1.14em, leaving a narrow glyph like the thermometer far from its
+  # value. Icon-only formats keep SF Pro's equal boxes, which is what keeps
+  # the bar's icons evenly spaced. Symbols Nerd Font centres glyphs ~0.75px
+  # lower than the patched font, so `rise` (1/1024 px) lifts them level;
+  # tuned for the bar's 16px font. The gap is a space plus a thin space
+  # (&#x2009;). volume-watch does the same in Rust
+  # (bar_tools::waybar::number_icon).
+  numberIcon = glyph: "<span font_family='Symbols Nerd Font' rise='768'>${glyph}</span> &#x2009;";
+
   # Start an app from a click in its own transient systemd scope. A plain
   # child of waybar stays in waybar.service's cgroup, so the monitor-hotplug
   # restart below would kill it, along with everything opened from the
@@ -262,7 +274,7 @@ in
           cpu = {
             interval = 5;
             format = "";
-            format-alt = " {usage}%";
+            format-alt = "${numberIcon ""}{usage}%";
             # the class must be a valid app ID (with a dot) or ghostty ignores
             # it, and the floating rule in hypr/lua/rules.lua matches on it
             on-click-right = launch "${pkgs.ghostty}/bin/ghostty --class=com.mitchellh.ghostty.btop -e ${pkgs.btop}/bin/btop";
@@ -270,14 +282,14 @@ in
 
           memory = {
             format = "";
-            format-alt = " {}%";
+            format-alt = "${numberIcon ""}{}%";
           };
 
           temperature = {
             critical-threshold = 80;
-            format-critical = "{icon} {temperatureC}°C";
+            format-critical = "${numberIcon "{icon}"}{temperatureC}°C";
             format = "{icon}";
-            format-alt = "{icon} {temperatureC}°C";
+            format-alt = "${numberIcon "{icon}"}{temperatureC}°C";
             format-icons = [
               ""
               ""
@@ -289,7 +301,7 @@ in
 
           backlight = {
             format = "{icon}";
-            format-alt = "{icon} {percent}%";
+            format-alt = "${numberIcon "{icon}"}{percent}%";
             format-icons = [
               "󰃚"
               "󰃛"
@@ -342,9 +354,9 @@ in
 
           battery = {
             format = "{icon}";
-            format-charging = "󰂄 {capacity}%";
-            format-plugged = "󰚥 {capacity}%";
-            format-alt = "{icon} {capacity}%";
+            format-charging = "${numberIcon "󰂄"}{capacity}%";
+            format-plugged = "${numberIcon "󰚥"}{capacity}%";
+            format-alt = "${numberIcon "{icon}"}{capacity}%";
             format-icons = [
               "󰁺"
               "󰁻"
