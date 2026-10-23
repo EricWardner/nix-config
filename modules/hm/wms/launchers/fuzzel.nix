@@ -12,7 +12,7 @@ in
       main = {
         # U+1002AB magnifyingglass (SF Symbols), quoted to keep the spaces
         prompt = "\"􀊫  \"";
-        placeholder = "Search apps";
+        placeholder = "Search";
         width = 36; # characters
         lines = 8;
         # Values divisible by 4 for clean 1.25x scaling

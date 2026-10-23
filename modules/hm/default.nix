@@ -95,10 +95,6 @@
       templates = null;
       publicShare = null;
     };
-    services.cliphist = {
-      enable = true;
-      allowImages = true;
-    };
     programs = {
       direnv = {
         enable = true;

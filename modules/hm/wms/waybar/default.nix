@@ -54,8 +54,7 @@ let
 
   # Start an app from a click in its own transient systemd scope. A plain
   # child of waybar stays in waybar.service's cgroup, so the monitor-hotplug
-  # restart below would kill it, along with everything opened from the
-  # fuzzel launcher.
+  # restart below would kill it.
   launch = cmd: "${pkgs.systemd}/bin/systemd-run --user --scope --collect --quiet -- ${cmd}";
   pavucontrol = launch "${pkgs.pavucontrol}/bin/pavucontrol";
   # webcam-watch sees the cameras come and go through inotify, so the
@@ -252,7 +251,7 @@ in
 
           "custom/nix" = {
             format = "󱄅";
-            on-click = launch "fuzzel";
+            on-click = "${config.programs.vicinae.package}/bin/vicinae toggle";
             on-click-right = launch "system-menu";
             tooltip-format = "Left: App Launcher\nRight: System Menu";
           };

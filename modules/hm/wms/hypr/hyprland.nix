@@ -17,9 +17,7 @@ let
   # Binary paths
   ghostty = "${pkgs.ghostty}/bin/ghostty";
   thunar = "${pkgs.thunar}/bin/thunar";
-  fuzzel = "${pkgs.fuzzel}/bin/fuzzel";
-  cliphist = "${pkgs.cliphist}/bin/cliphist";
-  wl-copy = "${pkgs.wl-clipboard}/bin/wl-copy";
+  vicinae = "${config.programs.vicinae.package}/bin/vicinae";
   brightnessctl = "${pkgs.brightnessctl}/bin/brightnessctl";
   grim = "${pkgs.grim}/bin/grim";
   slurp = "${pkgs.slurp}/bin/slurp";
@@ -33,8 +31,8 @@ let
   commands = {
     terminal = ghostty;
     files = thunar;
-    launcher = fuzzel;
-    clipboard = "${cliphist} list | ${fuzzel} --dmenu --placeholder 'Search clipboard' | ${cliphist} decode | ${wl-copy}";
+    launcher = "${vicinae} toggle";
+    clipboard = "${vicinae} deeplink vicinae://launch/clipboard/history";
     oath = "oath 19125157";
     gather = "launch-webapp https://app.gather.town/app/V383EJ8uFnnNFtez/Grail";
     lock = "${pkgs.systemd}/bin/loginctl lock-session";
