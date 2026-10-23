@@ -29,13 +29,9 @@ let
   # as private-use characters (U+100000 up), named here because most
   # editors show them as boxes; the code points come from this SF Pro
   # build and could move if the font is updated. SF Symbols has no logos,
-  # so bluetooth, ethernet, the nix icon and the workspace app icons stay
-  # Nerd Font glyphs. The bar-tools watchers use the same set
-  # (bar_tools::sf).
+  # so the nix icon and the workspace app icons stay Nerd Font glyphs. The
+  # bar-tools watchers use the same set (bar_tools::sf).
   sf = {
-    chevronRight = "􀆓"; # U+100193 chevron.right
-    wifi = "􀙇"; # U+100647 wifi
-    wifiSlash = "􀙈"; # U+100648 wifi.slash
     cpu = "􀫥"; # U+100AE5 cpu
     memory = "􀫦"; # U+100AE6 memorychip
     thermometer = "􀇬"; # U+1001EC thermometer
@@ -207,19 +203,24 @@ in
             "hyprland/window"
             "clock"
           ];
-          modules-right = [
-            "group/tray-expander"
-            "network"
-            "bluetooth"
-            "custom/webcam"
-            "custom/mic"
-            "custom/volume"
-            "cpu"
-            "memory"
-            "temperature"
-            "backlight"
-            "battery"
-          ];
+          # One glass island (waybar.css) holding the always-open tray (its
+          # applets, nm-applet and blueman, cover network and bluetooth, so
+          # those have no modules of their own) and the status icons.
+          modules-right = [ "group/status" ];
+          "group/status" = {
+            orientation = "horizontal";
+            modules = [
+              "tray"
+              "custom/webcam"
+              "custom/mic"
+              "custom/volume"
+              "cpu"
+              "memory"
+              "temperature"
+              "backlight"
+              "battery"
+            ];
+          };
 
           "hyprland/workspaces" = {
             on-click = "activate";
@@ -270,26 +271,10 @@ in
             on-click-right = launch "${pkgs.cameractrls-gtk4}/bin/cameractrlsgtk4";
           };
 
-          "group/tray-expander" = {
-            orientation = "inherit";
-            drawer = {
-              transition-duration = 600;
-              children-class = "tray-group-item";
-            };
-            modules = [
-              "custom/expand-icon"
-              "tray"
-            ];
-          };
-
-          "custom/expand-icon" = {
-            format = sf.chevronRight;
-            tooltip = false;
-          };
-
           tray = {
-            icon-size = 12;
-            spacing = 16;
+            icon-size = 16; # matches the SF Symbols at the bar's 16px font
+            # 16px icons + 24px spacing = the status icons' 40px pitch
+            spacing = 24;
           };
 
           cpu = {
@@ -343,20 +328,6 @@ in
             };
           };
 
-          network = {
-            format-icons = [ sf.wifi ];
-            format = "{icon}";
-            format-wifi = "{icon}";
-            format-ethernet = "󰌘";
-            format-disconnected = sf.wifiSlash;
-            tooltip-format-wifi = "{essid} ({frequency} GHz)\n↓{bandwidthDownBytes}  ↑{bandwidthUpBytes}";
-            tooltip-format-ethernet = "↓{bandwidthDownBytes}  ↑{bandwidthUpBytes}";
-            tooltip-format-disconnected = "Disconnected";
-            interval = 3;
-            spacing = 1;
-            on-click = launch "${pkgs.networkmanagerapplet}/bin/nm-connection-editor";
-          };
-
           battery = {
             format = "{icon}";
             format-charging = "${sf.batteryBolt} ${num "{capacity}%"}";
@@ -376,15 +347,6 @@ in
               warning = 30;
               critical = 15;
             };
-          };
-
-          bluetooth = {
-            format = "󰂯";
-            format-disabled = "󰂲";
-            format-connected = "󰂱";
-            format-no-controller = "󰂲";
-            tooltip-format = "Devices connected: {num_connections}";
-            on-click = launch "${pkgs.blueman}/bin/blueman-manager";
           };
 
           # Left-click arms/disarms push-to-talk (pttd does the muting).
