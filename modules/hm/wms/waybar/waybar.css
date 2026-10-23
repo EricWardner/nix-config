@@ -75,9 +75,10 @@ window#waybar {
 }
 
 /* Every module gets the same box, so the icons sit at equal centre-to-centre
-   spacing: the same padding (built-in modules carry 5px that custom ones
-   don't), and a 26px minimum, because SF Symbols have natural widths
-   (16-27px) and centre in it. Only the battery, last in the row, is wider. */
+   spacing: a 26px minimum, because SF Symbols have natural widths (16-27px)
+   and centre in it, and the same padding (set explicitly, since built-in
+   modules otherwise carry 5px that custom ones don't). Only the battery,
+   last in the row, is wider. */
 #cpu,
 #memory,
 #temperature,
@@ -91,7 +92,7 @@ window#waybar {
 #network {
   min-width: 26px;
   margin: 0 4px;
-  padding: 0 5px;
+  padding: 0 1px;
 }
 
 #custom-nix {
