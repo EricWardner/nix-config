@@ -23,4 +23,13 @@
       }
     ];
   };
+
+  # waybar's temperature module defaults to thermal_zone0, a board sensor
+  # here that runs well below the CPU. Read the CPU's own k10temp (Tctl,
+  # PCI 00:18.3) so the critical threshold means something; hwmonN numbers
+  # aren't stable across boots, hence the device path.
+  programs.waybar.settings.mainBar.temperature = {
+    hwmon-path-abs = "/sys/devices/pci0000:00/0000:00:18.3/hwmon";
+    input-filename = "temp1_input";
+  };
 }
