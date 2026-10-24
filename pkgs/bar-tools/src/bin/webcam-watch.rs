@@ -43,7 +43,6 @@ enum State {
 }
 
 fn main() {
-    let fill = fill_color();
     let mut out = Emitter::default();
     // Any node appearing or disappearing in /dev means "rescan".
     let dev_events = inotify::watch(Path::new("/dev"), WatchFlags::CREATE | WatchFlags::DELETE)
@@ -60,7 +59,7 @@ fn main() {
             cameras = scan();
         }
         let state = probe(&cameras);
-        render(&mut out, state, fill.as_deref());
+        render(&mut out, state);
 
         let timeout = match state {
             State::Available | State::InUse => Some(POLL),
@@ -183,33 +182,11 @@ fn attr(dir: &Path, name: &str) -> Option<String> {
         .map(|s| s.trim().to_owned())
 }
 
-/// The in-use fill colour, the first argument (`#rrggbb`). It goes into
-/// Pango markup, so anything but a hex colour is ignored.
-fn fill_color() -> Option<String> {
-    let color = std::env::args().nth(1)?;
-    let hex = color.strip_prefix('#')?;
-    (matches!(hex.len(), 3 | 6 | 8) && hex.chars().all(|c| c.is_ascii_hexdigit())).then_some(color)
-}
-
-fn render(out: &mut Emitter, state: State, fill: Option<&str>) {
-    if let (State::InUse, Some(fill)) = (state, fill) {
-        // video.fill in the fill colour with the video outline drawn over it
-        // in the bar colour, so the white border stays. Both glyphs advance
-        // 2916/2048 em, 22.78px at the bar's 16px; minus that much letter
-        // spacing (Pango counts 1024ths of a pixel) stacks them, and Pango
-        // adds none at the label's ends, so the icon keeps its usual width.
-        let text = format!(
-            "<span letter_spacing='-23328'><span foreground='{fill}'>{}</span>{}</span>",
-            sf::VIDEO_FILL,
-            sf::VIDEO
-        );
-        out.emit_markup(&text, "Webcam in use", "in-use");
-        return;
-    }
+fn render(out: &mut Emitter, state: State) {
     let (text, tooltip, class) = match state {
         State::NoCamera => (sf::VIDEO_SLASH, "No cameras found", "disconnected"),
         State::Off => (sf::VIDEO_SLASH, "Webcam muted", "muted"),
-        State::InUse => (sf::VIDEO_FILL, "Webcam in use", "in-use"),
+        State::InUse => (sf::VIDEO, "Webcam in use", "in-use"),
         State::Available => (sf::VIDEO, "Webcam available", "available"),
     };
     out.emit(text, tooltip, class);

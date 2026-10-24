@@ -13,13 +13,12 @@ pub mod waybar;
 /// code points come from this SF Pro build and could move if the font is
 /// updated; the waybar module names the rest of the bar's set the same way.
 pub mod sf {
-    // The filled variants mark the highlighted states (camera in use,
-    // push-to-talk armed or talking), which waybar.css colours.
+    // mic.slash.fill marks push-to-talk armed but silent. Camera in use and
+    // push-to-talk talking keep the outline icon, which waybar.css puts on
+    // a green pill.
     pub const VIDEO: &str = "\u{100349}"; // video
-    pub const VIDEO_FILL: &str = "\u{10034A}"; // video.fill
     pub const VIDEO_SLASH: &str = "\u{10034D}"; // video.slash
     pub const MIC: &str = "\u{1002B0}"; // mic
-    pub const MIC_FILL: &str = "\u{1002B1}"; // mic.fill
     pub const MIC_SLASH: &str = "\u{1002B2}"; // mic.slash
     pub const MIC_SLASH_FILL: &str = "\u{1002B3}"; // mic.slash.fill
     pub const SPEAKER_SLASH: &str = "\u{1002A2}"; // speaker.slash

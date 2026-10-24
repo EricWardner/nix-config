@@ -220,19 +220,21 @@ tooltip label {
   color: @base08;
 }
 
-/* PTT active — talking (filled mic) */
-#custom-mic.ptt-active {
-  color: @base0B;
-}
-
 #custom-webcam.muted,
 #custom-webcam.disconnected {
   color: @base03;
 }
 
-/* Camera streaming: webcam-watch draws a green video.fill under the usual
-   outline itself (the colour is its argument), so .in-use keeps the bar
-   colour and the white border stays. */
+/* Live: push-to-talk talking and the camera streaming. The outline icon in
+   the dark colour on a green pill, inset 3px from the bar's top and bottom. */
+#custom-mic.ptt-active,
+#custom-webcam.in-use {
+  background: @base0B;
+  color: @base00;
+  border-radius: 7px;
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
 
 .hidden {
   opacity: 0;

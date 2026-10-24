@@ -169,7 +169,7 @@ fn render(out: &mut Emitter, mics: Mics, armed: bool) {
             "Push-to-talk armed — hold Right Alt to talk",
             "ptt-muted",
         ),
-        (Mics::Live, true) => (sf::MIC_FILL, "Push-to-talk — talking", "ptt-active"),
+        (Mics::Live, true) => (sf::MIC, "Push-to-talk — talking", "ptt-active"),
         (Mics::AllMuted, false) => (
             sf::MIC_SLASH,
             "Mic muted (left-click for push-to-talk)",
