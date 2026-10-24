@@ -23,7 +23,6 @@ in
         pavucontrol
         git
         vim
-        unityhub
         e2fsprogs
         tcpdump
         (ltrace.overrideAttrs { doCheck = false; })
