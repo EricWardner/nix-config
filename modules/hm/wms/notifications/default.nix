@@ -136,7 +136,8 @@ in
       "mode=do-not-disturb urgency=critical".invisible = 0;
 
       # The touch prompt sits mid-screen like a dialog, so it's a dark card
-      # (the light glass looked out of place there), and it has no body.
+      # (the light glass looked out of place there), edged in the green of
+      # its Yubico logo, and it has no body.
       "app-name=yubikey-touch-detector" = {
         "icon-path" = "${config.home.homeDirectory}/.nix-profile/share/icons/hicolor";
         "max-icon-size" = 128;
@@ -145,7 +146,8 @@ in
         layer = "overlay";
         on-notify = "exec pw-play ${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/dialog-warning.oga";
         background-color = "#${colors.base00}eb";
-        border-color = "#${colors.base05}1a";
+        border-color = "#97c73b";
+        border-size = 2;
         text-color = "#${colors.base05}";
         format = "${label "YubiKey"}\\n<b>%s</b>";
       };
