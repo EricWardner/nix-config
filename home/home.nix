@@ -16,6 +16,10 @@
   };
   stylix = {
     targets.k9s.enable = true;
+    # Rofi isn't used, and the target still sets programs.rofi.font, which
+    # Home Manager renamed to programs.rofi.settings.font: a warning on
+    # every evaluation until stylix catches up.
+    targets.rofi.enable = false;
     # The gtksourceview target also patches the library itself (its overlay),
     # which changes the hash of everything built on it: Inkscape then misses
     # cache.nixos.org and compiles from source on every nixpkgs update. The
