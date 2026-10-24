@@ -83,6 +83,28 @@ let
       --unit=camera-settings -- ${cameractrls}/bin/cameractrlsgtk4
   '';
 
+  # The record button's right-click menu (a GtkBuilder file; each item's id
+  # names its entry in menu-actions)
+  recordMenu = pkgs.writeText "record-menu.xml" ''
+    <?xml version="1.0" encoding="UTF-8"?>
+    <interface>
+      <object class="GtkMenu" id="menu">
+        <child>
+          <object class="GtkMenuItem" id="folder">
+            <property name="label">Open recordings folder</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkMenuItem" id="last">
+            <property name="label">Last recording…</property>
+          </object>
+        </child>
+      </object>
+    </interface>
+  '';
+  # Thunar, through the file-manager D-Bus interface it starts on demand
+  videosFolder = "${pkgs.systemd}/bin/busctl --user call org.freedesktop.FileManager1 /org/freedesktop/FileManager1 org.freedesktop.FileManager1 ShowFolders ass 1 file://${config.home.homeDirectory}/Videos ''";
+
   # waybar doesn't rebuild its bars when the set of outputs changes, so on a
   # monitor hotplug we restart the waybar user service. Listens to Hyprland's
   # event socket; systemd keeps this watcher alive (Restart=always).
@@ -123,6 +145,13 @@ in
     modules.hyprland.waybar.enable = mkEnableOption "Enable waybar" // {
       default = true;
     };
+    modules.hyprland.waybar.recordButton =
+      mkEnableOption ''
+        a record button beside the webcam icon (screen-record; Super+R does
+        the same). The recording's progress shows after the clock either way''
+      // {
+        default = true;
+      };
   };
   config = mkIf cfg.enable {
     # micctl for keybinds; the rest are handy to run by hand when debugging
@@ -220,11 +249,13 @@ in
             "custom/nix"
             "hyprland/workspaces"
           ];
-          # The Do Not Disturb moon (wms/notifications) follows the clock.
+          # The Do Not Disturb moon (wms/notifications) follows the clock,
+          # then a screen recording's progress while one is under way.
           modules-center = [
             "hyprland/window"
             "clock"
             "custom/dnd"
+            "custom/recording"
           ];
           # The always-open tray sits on a glass island (waybar.css); its
           # applets, net-panel and blueman, cover network and bluetooth, so
@@ -232,6 +263,9 @@ in
           # bare bar.
           modules-right = [
             "tray"
+          ]
+          ++ lib.optional cfg.recordButton "custom/record"
+          ++ [
             "custom/webcam"
             "custom/mic"
             "custom/volume"
@@ -290,6 +324,32 @@ in
             on-click = webcamToggle;
             on-click-middle = webcamToggle;
             on-click-right = "${cameraSettings}";
+          };
+
+          # Screen recording (home/tools/screen-record), started in its own
+          # scope so a waybar restart can't kill a recording. The button
+          # starts or stops; the status module after the clock shows the
+          # selection, countdown, timer and conversion, and a finished GIF
+          # opens its menu.
+          "custom/record" = {
+            exec = "${barTools}/bin/record-watch button";
+            return-type = "json";
+            restart-interval = 5;
+            on-click = launch "screen-record";
+            menu = "on-click-right";
+            menu-file = "${recordMenu}";
+            menu-actions = {
+              folder = videosFolder;
+              # the GIF menu (show in folder, copy, open, delete) for the
+              # newest recording
+              last = launch "screen-record menu";
+            };
+          };
+          "custom/recording" = {
+            exec = "${barTools}/bin/record-watch status";
+            return-type = "json";
+            restart-interval = 5;
+            on-click = launch "screen-record click";
           };
 
           tray = {

@@ -25,6 +25,32 @@ pub mod sf {
     pub const SPEAKER_WAVE_1: &str = "\u{1002A4}"; // speaker.wave.1
     pub const SPEAKER_WAVE_2: &str = "\u{1002A6}"; // speaker.wave.2
     pub const SPEAKER_WAVE_3: &str = "\u{1002A8}"; // speaker.wave.3
+    // Screen recording (record-watch)
+    pub const RECORD_CIRCLE: &str = "\u{10075C}"; // record.circle
+    pub const STOP_CIRCLE: &str = "\u{10072A}"; // stop.circle
+    pub const CIRCLE_DASHED: &str = "\u{1004DE}"; // circle.dashed
+    pub const CIRCLE_FILL: &str = "\u{100001}"; // circle.fill
+    pub const ONE_CIRCLE_FILL: &str = "\u{10003B}"; // 1.circle.fill
+    pub const TWO_CIRCLE_FILL: &str = "\u{10003D}"; // 2.circle.fill
+    pub const THREE_CIRCLE_FILL: &str = "\u{10003F}"; // 3.circle.fill
+    pub const HOURGLASS_BOTTOM: &str = "\u{100588}"; // hourglass.bottomhalf.filled
+    pub const HOURGLASS_TOP: &str = "\u{100589}"; // hourglass.tophalf.filled
+    pub const CHECKMARK_CIRCLE_FILL: &str = "\u{100063}"; // checkmark.circle.fill
+}
+
+/// What screen-record (home/tools/screen-record) is doing, for the bar: one
+/// line in `$XDG_RUNTIME_DIR/screen-record/state`, a state and its argument
+/// (`selecting`, `countdown 3`, `recording <unix ms>`, `converting`,
+/// `done <gif>`, `idle`). The script replaces the file by rename, so an
+/// inotify watch on the directory sees each change whole.
+pub mod record {
+    use std::path::PathBuf;
+
+    pub const STATE: &str = "state";
+
+    pub fn dir() -> Option<PathBuf> {
+        std::env::var_os("XDG_RUNTIME_DIR").map(|d| PathBuf::from(d).join("screen-record"))
+    }
 }
 
 /// Push-to-talk's one piece of shared state: it is armed while the file

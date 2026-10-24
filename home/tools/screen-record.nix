@@ -10,6 +10,11 @@ let
       libnotify
       slurp
       mpv
+      fuzzel
+      wl-clipboard-rs
+      systemd # busctl
+      util-linux # setsid
+      findutils
     ];
 
     text = builtins.readFile ./screen-record;

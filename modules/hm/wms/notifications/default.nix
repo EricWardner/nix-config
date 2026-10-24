@@ -120,6 +120,9 @@ in
         icon-path = "${claudeIcon}";
         format = "${label "Claude Code"}\\n<b>%b</b>";
       };
+      # screen-record's "GIF saved" carries the GIF as its image: a bigger
+      # preview than an app icon.
+      "app-name=\"Screen recording\"".max-icon-size = 96;
 
       "urgency=low".text-color = "#${colors.base03}";
       "urgency=critical" = {

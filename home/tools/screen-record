@@ -1,42 +1,144 @@
-# Toggle: a second press stops the recording
-if pgrep -x wl-screenrec > /dev/null; then
-  pkill -INT -x wl-screenrec
-  exit 0
-fi
+# screen-record: record an area to an MP4 and a GIF in ~/Videos.
+#
+#   screen-record        start (select, count down, record), or stop or
+#                        cancel the recording in progress: Super+R and the
+#                        bar's record button
+#   screen-record click  the bar's status module: the same, except that a
+#                        finished recording opens its menu
+#   screen-record menu [GIF]
+#                        show in folder, copy, open or delete (the newest
+#                        GIF by default)
+#
+# The state for the bar (bar-tools record-watch) is one line in
+# $XDG_RUNTIME_DIR/screen-record/state, replaced by rename.
 
-# Also kill any stale slurp
-pkill -x slurp 2>/dev/null || true
+dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/screen-record"
+mkdir -p "$dir"
 
-geometry=$(slurp) || exit 1
-
-# One notification that each update replaces, labelled for mako
-notify() {
-  notify-send -a "Screen recording" \
-    -h string:x-canonical-private-synchronous:screen-record "$@"
+set_state() {
+  printf '%s\n' "$*" > "$dir/.state"
+  mv "$dir/.state" "$dir/state"
 }
 
-for n in 3 2 1; do
-  notify -t 1000 "Recording in" "<span color='#90a4f4' font='26px'><i><b>$n</b></i></span>"
-  sleep 1
-done
+get_state() {
+  cat "$dir/state" 2>/dev/null || echo idle
+}
 
-dateTime=$(date +%m-%d-%Y-%H-%M-%S)
-mp4File="$HOME/Videos/$dateTime.mp4"
-gifFile="$HOME/Videos/$dateTime.gif"
+notify() {
+  notify-send -a "Screen recording" "$@"
+}
 
-# Just the selected region, encoded on the GPU (VA-API, the Radeon's video
-# engine): frames stay in GPU memory from capture to encode, and only
-# screen changes are encoded. AMD's encoder has no low-power mode.
-wl-screenrec -g "$geometry" --codec avc --low-power=off -f "$mp4File" || true
+menu() {
+  local gif=${1:-}
+  if [ -z "$gif" ]; then
+    gif=$(find "$HOME/Videos" -maxdepth 1 -name '*.gif' -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
+  fi
+  if [ ! -f "$gif" ]; then
+    notify -t 3000 "Recording not found" "${gif:-No GIFs in ~/Videos}"
+    return 1
+  fi
+  # A small picker, not a search: no input line (typing still filters), as
+  # tall as its items, the GIF's name above them
+  local choice
+  choice=$(printf '%s\n' "Show in folder" "Copy GIF" "Copy file" "Open" "Delete" |
+    fuzzel --dmenu --hide-prompt --minimal-lines --width 24 \
+      --mesg "$(basename "$gif")") || return 0
+  case $choice in
+    "Show in folder")
+      busctl --user call org.freedesktop.FileManager1 /org/freedesktop/FileManager1 \
+        org.freedesktop.FileManager1 ShowItems ass 1 "file://$gif" "" >/dev/null
+      ;;
+    # The image itself, for pasting into chat or a document
+    "Copy GIF") wl-copy --type image/gif < "$gif" ;;
+    # As a file, for upload fields and file managers
+    "Copy file") wl-copy --type text/uri-list "file://$gif" ;;
+    Open) setsid -f mpv --loop --title="GIF Preview" "$gif" >/dev/null 2>&1 ;;
+    Delete)
+      rm -f "$gif" "${gif%.gif}.mp4"
+      if [ "$(get_state)" = "done $gif" ]; then set_state idle; fi
+      ;;
+  esac
+}
 
-# Convert to GIF
-notify -t 10000 "Converting to GIF..." "This may take a moment"
-if [ -s "$mp4File" ]; then
-  ffmpeg -loglevel error -i "$mp4File" \
+record() {
+  echo $$ > "$dir/pid"
+  # Cancelled during the countdown (see toggle)
+  trap 'set_state idle; exit 130' TERM
+
+  pkill -x slurp 2>/dev/null || true
+  set_state selecting
+  local geometry
+  if ! geometry=$(slurp); then
+    set_state idle
+    exit 1
+  fi
+
+  for n in 3 2 1; do
+    set_state countdown "$n"
+    sleep 1
+  done
+  trap - TERM
+
+  local stamp mp4File gifFile
+  stamp=$(date +%m-%d-%Y-%H-%M-%S)
+  mp4File="$HOME/Videos/$stamp.mp4"
+  gifFile="$HOME/Videos/$stamp.gif"
+
+  # Just the selected region, encoded on the GPU (VA-API, the Radeon's
+  # video engine): frames stay in GPU memory from capture to encode, and
+  # only screen changes are encoded. AMD's encoder has no low-power mode.
+  set_state recording "$(date +%s%3N)"
+  wl-screenrec -g "$geometry" --codec avc --low-power=off -f "$mp4File" || true
+
+  if [ ! -s "$mp4File" ]; then
+    set_state idle
+    notify -t 3000 "Recording failed" "No video file was created"
+    exit 1
+  fi
+
+  set_state converting
+  if ! ffmpeg -loglevel error -i "$mp4File" \
     -vf "fps=60,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse=dither=sierra2_4a" \
-    -loop 0 "$gifFile" \
-    && notify -t 3000 "GIF Saved" "$gifFile" \
-    && mpv --loop --title="GIF Preview" "$gifFile" &
-else
-  notify -t 3000 "Recording Failed" "No video file was created"
-fi
+    -loop 0 "$gifFile"; then
+    set_state idle
+    notify -t 5000 "GIF conversion failed" "The MP4 is in ~/Videos"
+    exit 1
+  fi
+
+  # The bar shows "Saved" for a few seconds; the notification (the GIF as
+  # its preview) opens the menu when clicked.
+  set_state "done" "$gifFile"
+  (
+    sleep 8
+    if [ "$(get_state)" = "done $gifFile" ]; then set_state idle; fi
+  ) &
+  local action
+  action=$(notify -t 20000 -i "$gifFile" -A default=Options --wait \
+    "GIF saved" "$(basename "$gifFile")  (click for options)") || true
+  if [ "$action" = default ]; then menu "$gifFile"; fi
+}
+
+toggle() {
+  case $(get_state) in
+    recording*) pkill -INT -x wl-screenrec ;;
+    selecting*) pkill -x slurp ;;
+    countdown*) kill "$(cat "$dir/pid")" 2>/dev/null || set_state idle ;;
+    *) record ;;
+  esac
+}
+
+case ${1:-} in
+  "") toggle ;;
+  click)
+    state=$(get_state)
+    case $state in
+      "done "*) menu "${state#done }" ;;
+      *) toggle ;;
+    esac
+    ;;
+  menu) menu "${2:-}" ;;
+  *)
+    echo "usage: screen-record [click | menu [GIF]]" >&2
+    exit 2
+    ;;
+esac
