@@ -75,7 +75,7 @@ in
     services.mako.enable = true;
     services.mako.settings = {
       "default-timeout" = 5000;
-      anchor = "top-right";
+      anchor = "top-center";
       width = 360;
       # tall enough for a few lines of body (the default 100px cuts it to one)
       height = 160;
