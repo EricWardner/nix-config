@@ -98,7 +98,19 @@ in
       firewall = {
         enable = true;
       };
-      networkmanager.enable = true;
+      networkmanager = {
+        enable = true;
+        # Lets NetworkManager tell a working connection from a captive
+        # portal or one with no internet (net-panel's "Sign-in required"
+        # and "No internet"). GNOME's endpoint is made for NetworkManager
+        # and served from Fastly; captive portals don't special-case it the
+        # way some let Apple's and Google's probes through to hide the login
+        # popup, which would read as online before signing in.
+        settings.connectivity = {
+          uri = "http://nmcheck.gnome.org/check_network_status.txt";
+          interval = 300;
+        };
+      };
     };
 
     hardware = {
