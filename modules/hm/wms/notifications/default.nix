@@ -43,6 +43,16 @@ let
         ;;
     esac
   '';
+
+  # Claude Code notifies through Ghostty, so its notifications carry
+  # Ghostty's icon name (as the image-path hint) and no app name. mako can't
+  # swap an icon, but it looks that name up in icon-path, so for these a
+  # directory with a Claude spark filed under Ghostty's icon name stands in.
+  claudeIcon = pkgs.runCommand "claude-notification-icon" { } ''
+    mkdir -p $out/48x48/apps
+    cp ${./claude.svg} $out/48x48/apps/com.mitchellh.ghostty.svg
+  '';
+  label = name: "<span size='85%%' alpha='60%%'>${name}</span>";
 in
 {
   config = mkIf config.modules.hyprland.enable {
@@ -84,7 +94,7 @@ in
 
       # The app's name small and dimmed over a bold title, like iOS
       font = "${config.stylix.fonts.sansSerif.name} 11";
-      format = "<span size='85%%' alpha='60%%'>%a</span>\\n<b>%s</b>\\n%b";
+      format = "${label "%a"}\\n<b>%s</b>\\n%b";
 
       # mako looks icons up only in these directories (themes by hand, no
       # inheritance); its default is /usr/share, which NixOS doesn't have.
@@ -99,6 +109,16 @@ in
       # Dismissed notifications Super+Shift+N (makoctl restore) can bring
       # back, newest first
       max-history = 20;
+
+      # Ghostty's notifications have no app name to show; name it. Claude
+      # Code's (titled "Claude Code") read as their own app: the spark, its
+      # name above, and the message as the title. Sections later in name
+      # order win, so the Claude one overrides the Ghostty one.
+      "desktop-entry=com.mitchellh.ghostty".format = "${label "Ghostty"}\\n<b>%s</b>\\n%b";
+      "summary=\"Claude Code\"" = {
+        icon-path = "${claudeIcon}";
+        format = "${label "Claude Code"}\\n<b>%b</b>";
+      };
 
       "urgency=low".text-color = "#${colors.base04}";
       "urgency=critical" = {
