@@ -41,3 +41,11 @@ hl.window_rule({
 	move = { "(monitor_w-window_w-10)", 40 },
 })
 hl.window_rule({ match = { title = "^(GIF Preview)$" }, float = true, center = true })
+-- Thunar floats. Its main windows ("<folder> - Thunar") open at a set size
+-- in the middle; its dialogs (copy progress, properties) keep their own size.
+hl.window_rule({ match = { class = "^(Thunar)$" }, float = true })
+hl.window_rule({
+	match = { class = "^(Thunar)$", title = "^(.* - Thunar)$" },
+	size = { 1100, 700 },
+	center = true,
+})
