@@ -1035,6 +1035,7 @@ struct Pending {
 pub struct Ui {
     opts: Options,
     window: gtk::Window,
+    panel: gtk::Box,
     wifi: Toggle,
     notice: gtk::Box,
     notice_label: gtk::Label,
@@ -1083,15 +1084,19 @@ impl Ui {
         let window = gtk::Window::builder()
             .application(app)
             .title("Network")
-            .resizable(false)
             .build();
         window.add_css_class("net-panel");
         window.init_layer_shell();
         window.set_layer(Layer::Top);
         window.set_namespace(Some("net-panel"));
         window.set_keyboard_mode(KeyboardMode::OnDemand);
-        window.set_anchor(Edge::Top, true);
-        window.set_anchor(Edge::Right, true);
+        // The window covers the monitor below the bar, clear but for the
+        // panel: a click anywhere else closes it, and the pointer passing
+        // over windows can't move focus (Hyprland's follow_mouse) and close
+        // it mid-reach. The bar stays clear, so the tray icon still toggles.
+        for edge in [Edge::Top, Edge::Right, Edge::Bottom, Edge::Left] {
+            window.set_anchor(edge, true);
+        }
         window.set_exclusive_zone(0);
 
         let (wifi, _) = Toggle::new("Wi-Fi");
@@ -1214,6 +1219,8 @@ impl Ui {
         let panel = vbox(12);
         panel.add_css_class("panel");
         panel.set_size_request(PANEL_WIDTH, -1);
+        panel.set_halign(gtk::Align::End);
+        panel.set_valign(gtk::Align::Start);
         panel.append(&search_revealer);
         panel.append(&header);
         panel.append(&notice);
@@ -1229,6 +1236,7 @@ impl Ui {
         let ui = Rc::new(Self {
             opts,
             window,
+            panel,
             wifi,
             notice,
             notice_label,
@@ -1415,8 +1423,25 @@ impl Ui {
         });
         self.window.add_controller(keys);
 
-        // Close when focus goes elsewhere (Hyprland focuses the panel when it
-        // maps; clicking another window takes it away).
+        // A click on the clear part of the window, outside the panel, closes it.
+        let outside = gtk::GestureClick::new();
+        outside.set_button(0);
+        let weak = Rc::downgrade(self);
+        outside.connect_pressed(move |gesture, _, x, y| {
+            let Some(ui) = weak.upgrade() else { return };
+            let inside = ui
+                .panel
+                .compute_bounds(&ui.window)
+                .is_some_and(|b| b.contains_point(&gtk::graphene::Point::new(x as f32, y as f32)));
+            if !inside {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+                ui.hide();
+            }
+        });
+        self.window.add_controller(outside);
+
+        // Close when focus goes elsewhere, say a keybind switching windows
+        // (Hyprland focuses the panel when it maps).
         let weak = Rc::downgrade(self);
         self.window.connect_is_active_notify(move |window| {
             let Some(ui) = weak.upgrade() else { return };
@@ -2224,12 +2249,12 @@ impl Ui {
                 let full = PANEL_WIDTH + 2 * SIDE_MARGIN;
                 let right = g.x() + g.width() - x - full / 2;
                 self.window.set_monitor(Some(&monitor));
-                self.window
-                    .set_margin(Edge::Right, right.clamp(0, (g.width() - full).max(0)));
+                self.panel
+                    .set_margin_end(right.clamp(0, (g.width() - full).max(0)));
             }
             _ => {
                 self.window.set_monitor(None);
-                self.window.set_margin(Edge::Right, 0);
+                self.panel.set_margin_end(0);
             }
         }
     }
