@@ -75,21 +75,22 @@ in
     services.mako.enable = true;
     services.mako.settings = {
       "default-timeout" = 5000;
-      anchor = "top-center";
+      anchor = "top-right";
       width = 360;
       # tall enough for a few lines of body (the default 100px cuts it to one)
       height = 160;
       margin = "10";
 
-      # Frosted glass like the bar's tray island and net-panel: translucent
-      # (Hyprland blurs behind it, the "notifications" layer rule in
-      # hypr/lua/rules.lua), a faint 1px edge, rounded corners.
-      background-color = "#${colors.base00}b8";
-      border-color = "#${colors.base05}1a";
+      # A light card, so it stands out over the dark terminals it usually
+      # lands on (a dark one matched them): the theme's foreground, 65%
+      # opaque over Hyprland's blur (the "notifications" layer rule in
+      # hypr/lua/rules.lua), dark text, a faint dark edge, rounded corners.
+      background-color = "#${colors.base05}a6";
+      border-color = "#${colors.base00}1a";
       border-size = 1;
       border-radius = 14;
       padding = "14,16";
-      text-color = "#${colors.base05}";
+      text-color = "#${colors.base00}";
       progress-color = "over #${colors.base0D}33";
 
       # The app's name small and dimmed over a bold title, like iOS
@@ -120,7 +121,7 @@ in
         format = "${label "Claude Code"}\\n<b>%b</b>";
       };
 
-      "urgency=low".text-color = "#${colors.base04}";
+      "urgency=low".text-color = "#${colors.base03}";
       "urgency=critical" = {
         border-color = "#${colors.base08}";
         default-timeout = 0;
