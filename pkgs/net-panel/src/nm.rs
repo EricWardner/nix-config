@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use async_channel::Sender;
-use futures_util::{FutureExt as _, StreamExt as _};
+use futures_util::StreamExt as _;
 use gtk::glib;
 use zbus::message::Type as MessageType;
 use zbus::zvariant::{ObjectPath, OwnedObjectPath, OwnedValue, Value};
@@ -419,6 +419,23 @@ pub async fn watch(conn: Connection, tx: Sender<crate::Event>) {
             return;
         }
     };
+    // Signals are read as they arrive, by a task of their own. zbus stops
+    // reading the bus while a stream's queue (64 messages) is full, replies
+    // included: a scan's burst landing while this loop waited on
+    // GetManagedObjects left it waiting for a reply that never came, and the
+    // panel showed that moment's networks for good.
+    let (changed, changes) = async_channel::unbounded::<bool>();
+    glib::spawn_future_local(async move {
+        while let Some(msg) = stream.next().await {
+            if changed
+                .send(touches_settings(msg.ok().as_ref()))
+                .await
+                .is_err()
+            {
+                return;
+            }
+        }
+    });
     let mut saved: Option<Vec<Saved>> = None;
     let mut last: Option<Snapshot> = None;
     loop {
@@ -443,13 +460,12 @@ pub async fn watch(conn: Connection, tx: Sender<crate::Event>) {
         }
 
         // Wait for a change, then let the rest of its burst arrive.
-        let Some(first) = stream.next().await else {
+        let Ok(mut settings_changed) = changes.recv().await else {
             return;
         };
-        let mut settings_changed = touches_settings(first.ok().as_ref());
         glib::timeout_future(Duration::from_millis(120)).await;
-        while let Some(Some(msg)) = stream.next().now_or_never() {
-            settings_changed |= touches_settings(msg.ok().as_ref());
+        while let Ok(more) = changes.try_recv() {
+            settings_changed |= more;
         }
         if settings_changed {
             saved = None;
