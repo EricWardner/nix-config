@@ -14,8 +14,8 @@ pub mod waybar;
 /// updated; the waybar module names the rest of the bar's set the same way.
 pub mod sf {
     // mic.slash.fill marks push-to-talk armed but silent. Camera in use and
-    // push-to-talk talking keep the outline icon, which waybar.css puts on
-    // a green pill.
+    // push-to-talk talking keep the outline icon, which waybar.css marks
+    // with a green dot.
     pub const VIDEO: &str = "\u{100349}"; // video
     pub const VIDEO_SLASH: &str = "\u{10034D}"; // video.slash
     pub const MIC: &str = "\u{1002B0}"; // mic

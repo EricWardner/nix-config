@@ -225,15 +225,22 @@ tooltip label {
   color: @base03;
 }
 
-/* Live: push-to-talk talking and the camera streaming. The outline icon in
-   the dark colour on a green pill, inset 3px from the bar's top and bottom. */
+/* Live: push-to-talk talking and the camera streaming. A 6px green dot at
+   the icon's top-right, drawn as the module's background, so it takes no
+   width and nothing on the bar moves when it appears. */
 #custom-mic.ptt-active,
 #custom-webcam.in-use {
-  background: @base0B;
-  color: @base00;
-  border-radius: 7px;
-  margin-top: 3px;
-  margin-bottom: 3px;
+  background-image: radial-gradient(circle, @base0B 2.6px, transparent 3.1px);
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+  background-position: 100% 6px;
+}
+
+/* The camera's box reaches 4px further right, taken from its margin so the
+   icon and its neighbours stay put, so its dot clears the lens. */
+#custom-webcam {
+  padding-right: 5px;
+  margin-right: 0;
 }
 
 .hidden {
