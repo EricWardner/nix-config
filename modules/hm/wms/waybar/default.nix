@@ -60,6 +60,16 @@ let
   # webcam-watch sees the cameras come and go through inotify, so the
   # toggle needs no refresh signal.
   webcamToggle = "sudo /run/current-system/sw/bin/webcam-toggle toggle";
+  # Opens the camera settings, or closes them if they're already open,
+  # instead of stacking another window: the app runs in a named scope that
+  # the next click stops.
+  cameraSettings = pkgs.writeShellScript "camera-settings" ''
+    if ${pkgs.systemd}/bin/systemctl --user --quiet is-active camera-settings.scope; then
+      exec ${pkgs.systemd}/bin/systemctl --user stop camera-settings.scope
+    fi
+    exec ${pkgs.systemd}/bin/systemd-run --user --scope --collect --quiet \
+      --unit=camera-settings -- ${pkgs.cameractrls-gtk4}/bin/cameractrlsgtk4
+  '';
 
   # waybar doesn't rebuild its bars when the set of outputs changes, so on a
   # monitor hotplug we restart the waybar user service. Listens to Hyprland's
@@ -261,10 +271,11 @@ in
             exec = "${barTools}/bin/webcam-watch";
             return-type = "json";
             restart-interval = 5;
-            # like mic/volume: middle mutes, right opens the settings app
+            # like mic/volume: middle mutes, right opens (or closes) the
+            # settings app
             on-click = webcamToggle;
             on-click-middle = webcamToggle;
-            on-click-right = launch "${pkgs.cameractrls-gtk4}/bin/cameractrlsgtk4";
+            on-click-right = "${cameraSettings}";
           };
 
           tray = {
