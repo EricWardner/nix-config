@@ -272,14 +272,34 @@ window.net-panel {
   background-color: alpha(@np_accent, 0.35);
 }
 
-@keyframes spin {
-  to {
-    -gtk-icon-transform: rotate(1turn);
+/* Three dots breathing in turn while a scan runs. */
+@keyframes breathe {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
-.panel button.spinning image {
-  animation: spin 1s linear infinite;
+.scan-dots .dot {
+  min-width: 4px;
+  min-height: 4px;
+  border-radius: 2px;
+  background-color: @np_accent;
+  animation: breathe 1.2s ease-in-out infinite;
+}
+
+.scan-dots .dot:nth-child(2) {
+  animation-delay: 160ms;
+}
+
+.scan-dots .dot:nth-child(3) {
+  animation-delay: 320ms;
 }
 
 .footer-label {

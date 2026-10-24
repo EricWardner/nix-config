@@ -1048,7 +1048,7 @@ pub struct Ui {
     known_list: gtk::ListBox,
     other_list: gtk::ListBox,
     other_empty: gtk::Label,
-    rescan: gtk::Button,
+    scan_state: gtk::Stack,
     wired_box: gtk::Box,
     wired_list: gtk::ListBox,
     vpn_box: gtk::Box,
@@ -1138,9 +1138,26 @@ impl Ui {
         };
         let (known_box, _, known_list) = section("Known networks");
         let (other_box, other_heading, other_list) = section("Other networks");
-        // Spins (style.css) while a scan runs.
+        // The refresh button, or three breathing dots (style.css) while a
+        // scan runs.
         let rescan = icon_button("view-refresh-symbolic", "Scan again");
-        other_heading.append(&rescan);
+        let dots = hbox(3);
+        dots.add_css_class("scan-dots");
+        dots.set_halign(gtk::Align::Center);
+        dots.set_valign(gtk::Align::Center);
+        dots.update_property(&[gtk::accessible::Property::Label("Scanning")]);
+        for _ in 0..3 {
+            let dot = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+            dot.add_css_class("dot");
+            dots.append(&dot);
+        }
+        let scan_state = gtk::Stack::builder()
+            .transition_type(gtk::StackTransitionType::Crossfade)
+            .transition_duration(150)
+            .build();
+        scan_state.add_named(&rescan, Some("idle"));
+        scan_state.add_named(&dots, Some("scanning"));
+        other_heading.append(&scan_state);
         let other_empty = label("No other networks in range", &["dim"]);
         other_empty.set_margin_start(6);
         other_empty.set_visible(false);
@@ -1226,7 +1243,7 @@ impl Ui {
 
             other_list,
             other_empty,
-            rescan: rescan.clone(),
+            scan_state,
             wired_box,
             wired_list,
             vpn_box,
@@ -1642,11 +1659,8 @@ impl Ui {
             }
         }
         let scanning = self.scan.get().is_some();
-        if scanning {
-            self.rescan.add_css_class("spinning");
-        } else {
-            self.rescan.remove_css_class("spinning");
-        }
+        self.scan_state
+            .set_visible_child_name(if scanning { "scanning" } else { "idle" });
         let others = self
             .rows
             .borrow()
