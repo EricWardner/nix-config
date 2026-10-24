@@ -111,6 +111,9 @@ in
           interval = 300;
         };
       };
+      # NetworkManager turns this on for mobile broadband; neither host has
+      # a cellular modem.
+      modemmanager.enable = false;
     };
 
     hardware = {
