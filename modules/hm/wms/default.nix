@@ -5,5 +5,6 @@
     ./notifications
     ./launchers
     ./net-panel
+    ./blueman.nix
   ];
 }
