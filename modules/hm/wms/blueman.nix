@@ -12,5 +12,8 @@
       # Like waybar and net-panel, only under a Hyprland session.
       systemdTargets = [ "hyprland-session.target" ];
     };
+    # Clicking the tray icon again closes the device window instead of just
+    # focusing it, like net-panel's.
+    dconf.settings."org/blueman/plugins/standarditems".toggle-manager-onclick = true;
   };
 }
