@@ -19,6 +19,9 @@
     stylix.targets.waybar.enable = true;
     stylix.targets.hyprlock.enable = lib.mkForce false;
     stylix.targets.hyprpaper.enable = lib.mkForce false;
+    # The hyprland target would also turn hyprpaper on to show stylix.image;
+    # the wallpaper is swaybg (wms/hypr/wallpaper.nix).
+    stylix.targets.hyprland.hyprpaper.enable = false;
     xdg = {
       enable = true;
       mimeApps = {

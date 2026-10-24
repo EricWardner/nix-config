@@ -199,7 +199,7 @@ in
         };
       };
       extraConfig = ''
-        -- Waybar, hyprpaper and net-panel are supervised by their systemd
+        -- Waybar, swaybg and net-panel are supervised by their systemd
         -- user services.
         hl.on("hyprland.start", function()
           hl.exec_cmd(${toLua ghostty}, { workspace = "1 silent" })

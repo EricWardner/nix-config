@@ -25,7 +25,7 @@ in
         background = [
           {
             monitor = "";
-            path = config.modules.hyprpaper.wallpaper;
+            path = config.modules.wallpaper.path;
             blur_passes = 3;
             blur_size = 8;
           }
