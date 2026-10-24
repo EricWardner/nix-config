@@ -115,8 +115,9 @@ window#waybar {
   box-shadow: inset 0 1px alpha(@base05, 0.08);
   border-radius: 8px;
   padding: 0 6px;
-  /* a little extra room before the status icons, to set the island apart */
-  margin: 2px 20px 2px 4px;
+  /* twice the gap between status icons before the first of them, to set
+     the island apart */
+  margin: 2px 28px 2px 4px;
 }
 
 /* The moon takes the tray's 24px spacing before the first applet */
