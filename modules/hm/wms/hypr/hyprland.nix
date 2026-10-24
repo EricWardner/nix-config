@@ -38,7 +38,7 @@ let
     keyboardBrighter = "${brightnessctl} -d '*::kbd_backlight' set +33%";
     keyboardDimmer = "${brightnessctl} -d '*::kbd_backlight' set 33%-";
     screenshot = ''${grim} -g "$(${slurp})" - | ${swappy} -f -'';
-    record = "wf-recorder-toggle";
+    record = "screen-record";
     doNotDisturb = "mako-dnd toggle"; # from wms/notifications
     notificationRestore = "${pkgs.mako}/bin/makoctl restore";
     # swayosd-client makes the change and shows the popup (wms/swayosd.nix,

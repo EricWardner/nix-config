@@ -1,0 +1,42 @@
+# Toggle: a second press stops the recording
+if pgrep -x wl-screenrec > /dev/null; then
+  pkill -INT -x wl-screenrec
+  exit 0
+fi
+
+# Also kill any stale slurp
+pkill -x slurp 2>/dev/null || true
+
+geometry=$(slurp) || exit 1
+
+# One notification that each update replaces, labelled for mako
+notify() {
+  notify-send -a "Screen recording" \
+    -h string:x-canonical-private-synchronous:screen-record "$@"
+}
+
+for n in 3 2 1; do
+  notify -t 1000 "Recording in" "<span color='#90a4f4' font='26px'><i><b>$n</b></i></span>"
+  sleep 1
+done
+
+dateTime=$(date +%m-%d-%Y-%H-%M-%S)
+mp4File="$HOME/Videos/$dateTime.mp4"
+gifFile="$HOME/Videos/$dateTime.gif"
+
+# Just the selected region, encoded on the GPU (VA-API, the Radeon's video
+# engine): frames stay in GPU memory from capture to encode, and only
+# screen changes are encoded. AMD's encoder has no low-power mode.
+wl-screenrec -g "$geometry" --codec avc --low-power=off -f "$mp4File" || true
+
+# Convert to GIF
+notify -t 10000 "Converting to GIF..." "This may take a moment"
+if [ -s "$mp4File" ]; then
+  ffmpeg -loglevel error -i "$mp4File" \
+    -vf "fps=60,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse=dither=sierra2_4a" \
+    -loop 0 "$gifFile" \
+    && notify -t 3000 "GIF Saved" "$gifFile" \
+    && mpv --loop --title="GIF Preview" "$gifFile" &
+else
+  notify -t 3000 "Recording Failed" "No video file was created"
+fi

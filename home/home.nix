@@ -2,7 +2,7 @@
 {
   imports = [
     ./tools/oath.nix
-    ./tools/wf-recorder.nix
+    ./tools/screen-record.nix
     ../modules/hm
   ];
   dconf.settings = {
