@@ -60,15 +60,27 @@ let
   # webcam-watch sees the cameras come and go through inotify, so the
   # toggle needs no refresh signal.
   webcamToggle = "sudo /run/current-system/sw/bin/webcam-toggle toggle";
+  # Each time it opens a camera with pan/tilt/zoom (the Brio's digital
+  # ones count), cameractrls runs three helpers in turn to list gamepad,
+  # MIDI and SpaceMouse controllers for steering it: ~0.8s of a ~1.6s
+  # start. None are used here, so it lists none; the PTZ sliders remain.
+  cameractrls = pkgs.cameractrls-gtk4.overrideAttrs (old: {
+    postPatch = old.postPatch + ''
+      substituteInPlace cameractrls.py --replace-fail \
+        "self.controllers = get_ptz_hw_controllers(ptz_hw_executables)" \
+        "self.controllers = []"
+    '';
+  });
   # Opens the camera settings, or closes them if they're already open,
   # instead of stacking another window: the app runs in a named scope that
-  # the next click stops.
+  # the next click stops. GTK's software renderer skips loading Mesa.
   cameraSettings = pkgs.writeShellScript "camera-settings" ''
     if ${pkgs.systemd}/bin/systemctl --user --quiet is-active camera-settings.scope; then
       exec ${pkgs.systemd}/bin/systemctl --user stop camera-settings.scope
     fi
+    export GSK_RENDERER=cairo
     exec ${pkgs.systemd}/bin/systemd-run --user --scope --collect --quiet \
-      --unit=camera-settings -- ${pkgs.cameractrls-gtk4}/bin/cameractrlsgtk4
+      --unit=camera-settings -- ${cameractrls}/bin/cameractrlsgtk4
   '';
 
   # waybar doesn't rebuild its bars when the set of outputs changes, so on a
