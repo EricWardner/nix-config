@@ -28,13 +28,12 @@ let
         redraw
         ;;
       status)
-        # The moon (moon.fill, SF Symbols U+1001BA, like Apple's Focus) is
-        # always there and only hidden by CSS while off, so its space next
-        # to the clock never comes and goes and the centre never shifts.
+        # The moon (moon.fill, SF Symbols U+1001BA, like Apple's Focus),
+        # or nothing: an empty module hides.
         if $makoctl mode | ${pkgs.gnugrep}/bin/grep -qx do-not-disturb; then
           printf '{"text":"\U001001BA","tooltip":"Do Not Disturb (click to turn off)","class":"on"}\n'
         else
-          printf '{"text":"\U001001BA","tooltip":"","class":"off"}\n'
+          printf '{"text":""}\n'
         fi
         ;;
       *)
@@ -58,8 +57,8 @@ in
   config = mkIf config.modules.hyprland.enable {
     home.packages = [ makoDnd ];
 
-    # The bar's moon, after the clock (wms/waybar), visible only while Do
-    # Not Disturb is on. Clicking its hidden space does nothing.
+    # The bar's moon, first on the tray island (wms/waybar), shown only
+    # while Do Not Disturb is on.
     programs.waybar.settings.mainBar."custom/dnd" = {
       exec = "${makoDnd}/bin/mako-dnd status";
       return-type = "json";

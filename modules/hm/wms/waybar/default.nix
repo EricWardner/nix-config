@@ -249,20 +249,21 @@ in
             "custom/nix"
             "hyprland/workspaces"
           ];
-          # The Do Not Disturb moon (wms/notifications) follows the clock,
-          # then a screen recording's progress while one is under way.
+          # A screen recording's progress follows the clock while one is
+          # under way.
           modules-center = [
             "hyprland/window"
             "clock"
-            "custom/dnd"
             "custom/recording"
           ];
-          # The always-open tray sits on a glass island (waybar.css); its
-          # applets, net-panel and blueman, cover network and bluetooth, so
-          # those have no modules of their own. The status icons stay on the
-          # bare bar.
+          # The applets sit on a glass island (waybar.css): the tray, whose
+          # applets (net-panel, blueman) cover network and bluetooth so those
+          # have no modules of their own, led by the Do Not Disturb moon
+          # (wms/notifications) while it's on. The row packs from the right
+          # edge, so the island growing leftward for the moon moves nothing.
+          # The status icons stay on the bare bar.
           modules-right = [
-            "tray"
+            "group/applets"
           ]
           ++ lib.optional cfg.recordButton "custom/record"
           ++ [
@@ -350,6 +351,14 @@ in
             return-type = "json";
             restart-interval = 5;
             on-click = launch "screen-record click";
+          };
+
+          "group/applets" = {
+            orientation = "horizontal";
+            modules = [
+              "custom/dnd"
+              "tray"
+            ];
           };
 
           tray = {

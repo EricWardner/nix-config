@@ -98,8 +98,9 @@ window#waybar {
   font-size: 20px;
 }
 
-/* The always-open tray (net-panel, blueman, ...) sits on a light-glass
-   island, apart from the status icons on the bare bar: a faint
+/* The applets (the Do Not Disturb moon while it's on, then the tray:
+   net-panel, blueman, ...) sit on a light-glass island, apart from the
+   status icons on the bare bar: a faint
    white-tinted rounded surface with a rim and top highlight, so it reads
    as glass catching light. It's inset just 2px from the bar's top and
    bottom (the bar itself is transparent), for room above and below the
@@ -108,13 +109,19 @@ window#waybar {
    bare bar free of halos), so it isn't frosted; over the flat blue
    wallpaper there is nothing to frost. Lower that threshold to frost a
    textured wallpaper. */
-#tray {
+#applets {
   background-color: alpha(@base05, 0.1);
   border: 1px solid alpha(@base05, 0.1);
   box-shadow: inset 0 1px alpha(@base05, 0.08);
   border-radius: 8px;
   padding: 0 6px;
   margin: 2px 4px;
+}
+
+/* The moon takes the tray's 24px spacing before the first applet */
+#applets #custom-dnd {
+  margin: 0 24px 0 0;
+  padding: 0;
 }
 
 #tray > widget:hover {
@@ -170,22 +177,11 @@ tooltip label {
   margin-left: 8px;
 }
 
-/* The Do Not Disturb moon is its own item after the clock, set off by the
-   same 33px as the window title before it (21px plus the clock's padding
-   and the glyph's bearing). It keeps its space while off, only transparent,
-   so the centre doesn't shift when it turns on. */
-#custom-dnd {
-  margin: 0 0 0 21px;
-  padding: 0;
-}
-
-#custom-dnd.off {
-  color: transparent;
-}
-
-/* A screen recording's progress, after the moon and set off the same way;
-   hidden while idle. Red while counting down and recording (the dot and
-   timer), dimmed while converting, green once saved. */
+/* A screen recording's progress is its own item after the clock, set off by
+   the same 33px as the window title before it (21px plus the clock's
+   padding and the glyph's bearing); hidden while idle. Red while counting
+   down and recording (the dot and timer), dimmed while converting, green
+   once saved. */
 #custom-recording {
   margin: 0 0 0 21px;
   padding: 0;
