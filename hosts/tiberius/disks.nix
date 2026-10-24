@@ -28,6 +28,9 @@
                 name = "crypted";
                 settings = {
                   allowDiscards = true;
+                  # Encrypt inline instead of through dm-crypt's workqueues, which
+                  # only add latency on NVMe with hardware AES.
+                  bypassWorkqueues = true;
                 };
                 content = {
                   type = "btrfs";
