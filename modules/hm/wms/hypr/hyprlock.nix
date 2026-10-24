@@ -58,10 +58,11 @@ in
         ];
 
         label = [
-          # Time
+          # Time: hyprlock fills in $TIME (HH:MM) and redraws it itself, with
+          # no shell started every second on each monitor
           {
             monitor = "";
-            text = ''cmd[update:1000] echo "$(date +"%H:%M")"'';
+            text = "$TIME";
             color = "rgb(${colors.base05})";
             font_size = 120;
             font_family = "sans-serif";
@@ -69,10 +70,11 @@ in
             halign = "center";
             valign = "center";
           }
-          # Date
+          # Date: no built-in for it, so date runs once a minute, as in
+          # hyprlock's sample config; it changes at most a minute late
           {
             monitor = "";
-            text = ''cmd[update:1000] echo "$(date +"%A, %d %B")"'';
+            text = ''cmd[update:60000] date +"%A, %d %B"'';
             color = "rgb(${colors.base04})";
             font_size = 24;
             font_family = "sans-serif";
