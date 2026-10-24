@@ -22,16 +22,38 @@ impl Emitter {
     /// process once stdout is gone: waybar closed the module, so there is
     /// no one left to report to.
     pub fn emit(&mut self, text: &str, tooltip: &str, class: &str) {
-        self.write(text, true, tooltip, class);
+        self.write(text, true, tooltip, class, None);
     }
 
     /// Like [`Emitter::emit`], but `text` is Pango markup the caller has
     /// already made safe (the tooltip is still escaped).
     pub fn emit_markup(&mut self, text: &str, tooltip: &str, class: &str) {
-        self.write(text, false, tooltip, class);
+        self.write(text, false, tooltip, class, None);
     }
 
-    fn write(&mut self, text: &str, escape_text: bool, tooltip: &str, class: &str) {
+    /// Like [`Emitter::emit_markup`], plus `alt` (plain text) and
+    /// `percentage`, which the module's `format-alt` shows as `{alt}` and
+    /// `{percentage}` once a left-click toggles it, like the built-in cpu
+    /// module's.
+    pub fn emit_level(
+        &mut self,
+        text: &str,
+        tooltip: &str,
+        class: &str,
+        alt: &str,
+        percentage: u32,
+    ) {
+        self.write(text, false, tooltip, class, Some((alt, percentage)));
+    }
+
+    fn write(
+        &mut self,
+        text: &str,
+        escape_text: bool,
+        tooltip: &str,
+        class: &str,
+        level: Option<(&str, u32)>,
+    ) {
         let mut line = String::with_capacity(96);
         line.push_str("{\"text\":\"");
         escape_into(&mut line, text, escape_text);
@@ -39,7 +61,13 @@ impl Emitter {
         escape_into(&mut line, tooltip, true);
         line.push_str("\",\"class\":\"");
         escape_into(&mut line, class, false);
-        line.push_str("\"}\n");
+        line.push('"');
+        if let Some((alt, percentage)) = level {
+            line.push_str(",\"alt\":\"");
+            escape_into(&mut line, alt, true);
+            line.push_str(&format!("\",\"percentage\":{percentage}"));
+        }
+        line.push_str("}\n");
         if line == self.last {
             return;
         }

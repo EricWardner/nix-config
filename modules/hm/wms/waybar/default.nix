@@ -369,10 +369,12 @@ in
             # across the bar could unmute you
           };
 
-          # Any volume change flashes the percentage; hover shows it too.
+          # Any volume change flashes the percentage and hover shows it; a
+          # left-click keeps it shown, like cpu and memory.
           "custom/volume" = {
             exec = "${barTools}/bin/volume-watch";
             return-type = "json";
+            format-alt = "{alt} ${num "{percentage}%"}";
             restart-interval = 5;
             on-click-middle = "${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle";
             on-click-right = pavucontrol;

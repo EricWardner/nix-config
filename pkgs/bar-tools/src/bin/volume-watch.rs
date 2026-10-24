@@ -114,10 +114,12 @@ fn render(out: &mut Emitter, reading: Option<&Volume>, flash: bool) {
     } else {
         format!("{}\nVolume: {}%", v.device, v.percent)
     };
-    if flash {
-        let text = format!("{icon} {}", waybar::number(&format!("{}%", v.percent)));
-        out.emit_markup(&text, &tooltip, class);
+    // The icon alone and the level also go out for format-alt, which shows
+    // the percentage all the time once a left-click toggles it.
+    let text = if flash {
+        format!("{icon} {}", waybar::number(&format!("{}%", v.percent)))
     } else {
-        out.emit(icon, &tooltip, class);
-    }
+        icon.to_owned()
+    };
+    out.emit_level(&text, &tooltip, class, icon, v.percent);
 }
