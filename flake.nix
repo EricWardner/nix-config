@@ -87,7 +87,10 @@
           inherit pre-commit-hooks treefmtEval;
         };
       };
-      packages.${system}.bar-tools = pkgs.callPackage ./pkgs/bar-tools { };
+      packages.${system} = {
+        bar-tools = pkgs.callPackage ./pkgs/bar-tools { };
+        net-panel = pkgs.callPackage ./pkgs/net-panel { };
+      };
       devShells.${system} = {
         default = pkgs.mkShell {
           inherit (self.checks.${system}.pre-commit-check) shellHook;
@@ -105,6 +108,15 @@
           packages = with pkgs; [
             cargo
             rustc
+            clippy
+            rustfmt
+            rust-analyzer
+          ];
+        };
+        # Rust toolchain plus GTK for pkgs/net-panel: `nix develop .#net-panel`
+        net-panel = pkgs.mkShell {
+          inputsFrom = [ self.packages.${system}.net-panel ];
+          packages = with pkgs; [
             clippy
             rustfmt
             rust-analyzer
