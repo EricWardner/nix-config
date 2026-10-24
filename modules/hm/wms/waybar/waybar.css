@@ -230,10 +230,9 @@ tooltip label {
   color: @base03;
 }
 
-/* Camera streaming (filled video) */
-#custom-webcam.in-use {
-  color: @base0B;
-}
+/* Camera streaming: webcam-watch draws a green video.fill under the usual
+   outline itself (the colour is its argument), so .in-use keeps the bar
+   colour and the white border stays. */
 
 .hidden {
   opacity: 0;

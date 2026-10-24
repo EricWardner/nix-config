@@ -258,7 +258,8 @@ in
 
           # restart-interval only matters if a watcher ever exits
           "custom/webcam" = {
-            exec = "${barTools}/bin/webcam-watch";
+            # the in-use fill colour (waybar.css)
+            exec = "${barTools}/bin/webcam-watch '#${colors.base0B}'";
             return-type = "json";
             restart-interval = 5;
             # like mic/volume: middle mutes, right opens the settings app
