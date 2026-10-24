@@ -153,6 +153,14 @@ in
     };
   };
   config = mkIf cfg.enable {
+    # The same Rosé Pine cursor as stylix's XCursor theme (BreezeX-RosePine),
+    # as a hyprcursor theme: Hyprland draws it from SVGs at each monitor's
+    # scale (1.25, 1.6) instead of scaling bitmaps up blurry. Apps that load
+    # cursors themselves (XWayland) keep the XCursor theme. HM's own
+    # pointerCursor.hyprcursor option reuses the XCursor name, which differs.
+    xdg.dataFile."icons/rose-pine-hyprcursor".source =
+      "${pkgs.rose-pine-hyprcursor}/share/icons/rose-pine-hyprcursor";
+
     wayland.windowManager.hyprland = {
       enable = true;
       # Explicit because home.stateVersion predates Home Manager's Lua default.
@@ -236,6 +244,7 @@ in
               })
               {
                 XCURSOR_SIZE = "24";
+                HYPRCURSOR_THEME = "rose-pine-hyprcursor";
                 HYPRCURSOR_SIZE = "24";
                 GDK_BACKEND = "wayland,x11,*";
                 QT_QPA_PLATFORM = "wayland;xcb";
