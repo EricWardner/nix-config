@@ -1,8 +1,8 @@
 hl.layer_rule({ match = { namespace = "waybar" }, blur = true, ignore_alpha = 0.5 })
--- The glass panels of fuzzel (menus), vicinae (launcher) and net-panel (the
--- network panel). Global blur xray is off (hyprland.nix), so they frost the
--- windows under them.
-hl.layer_rule({ match = { namespace = "^(launcher|vicinae|net-panel)$" }, blur = true, ignore_alpha = 0.3 })
+-- The glass panels of fuzzel (menus), vicinae (launcher), net-panel (the
+-- network panel) and swayosd (volume and brightness popups). Global blur
+-- xray is off (hyprland.nix), so they frost the windows under them.
+hl.layer_rule({ match = { namespace = "^(launcher|vicinae|net-panel|swayosd)$" }, blur = true, ignore_alpha = 0.3 })
 
 hl.window_rule({ match = { class = ".*" }, suppress_event = "maximize" })
 hl.window_rule({
