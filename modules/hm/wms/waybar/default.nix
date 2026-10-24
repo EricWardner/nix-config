@@ -331,7 +331,7 @@ in
           # scope so a waybar restart can't kill a recording. The button
           # starts or stops; the status module after the clock shows the
           # selection, countdown, timer and conversion, and a finished GIF
-          # opens its menu.
+          # opens its preview.
           "custom/record" = {
             exec = "${barTools}/bin/record-watch button";
             return-type = "json";
@@ -341,8 +341,7 @@ in
             menu-file = "${recordMenu}";
             menu-actions = {
               folder = videosFolder;
-              # the GIF menu (show in folder, copy, open, delete) for the
-              # newest recording
+              # the newest recording's preview (capture-preview)
               last = launch "screen-record menu";
             };
           };

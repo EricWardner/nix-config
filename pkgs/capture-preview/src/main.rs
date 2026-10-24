@@ -1,0 +1,577 @@
+//! capture-preview: a screen recording playing in a glass panel in the
+//! middle of the screen, with what to do with it. screen-record opens it when
+//! its "Recording saved" notification (or the bar's "Saved") is clicked.
+//!
+//! An MP4 plays in GtkVideo (GStreamer, decoded on the GPU through VA-API),
+//! with play/pause and a seek bar on hover; Convert to GIF makes the GIF next
+//! to it, after which Copy GIF takes the button's place. A GIF is decoded
+//! frame by frame as it plays (gif + gif-dispose), so a long one costs one
+//! frame of memory, not all of them.
+//!
+//! Usage: capture-preview [--css FILE] [--gif-size WxH] FILE
+//!   --gif-size  the GIF's size, normally the recorded area's on-screen
+//!               size (the MP4 is at the monitor's scale); default the MP4's
+
+use std::cell::{Cell, RefCell};
+use std::fs::File;
+use std::io::BufReader;
+use std::path::{Path, PathBuf};
+use std::process::{Child, Command, Stdio};
+use std::rc::Rc;
+use std::time::Duration;
+
+use gtk::prelude::*;
+use gtk::{gdk, gio, glib};
+use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
+
+/// The preview's largest size, in logical pixels.
+const MAX_W: f64 = 720.0;
+const MAX_H: f64 = 440.0;
+
+/// The same conversion screen-record used to run on every recording: 30 fps,
+/// ordered dithering and a palette from what changes between frames, about a
+/// second for a 5 s clip with text staying sharp.
+const GIF_FILTER: &str = "fps=30,scale={w}:{h}:flags=lanczos,split[s0][s1];\
+    [s0]palettegen=stats_mode=diff[p];\
+    [s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle";
+
+struct Options {
+    css: Option<PathBuf>,
+    gif_size: Option<(u32, u32)>,
+    file: PathBuf,
+}
+
+fn parse_args() -> Result<Options, String> {
+    let mut css = None;
+    let mut gif_size = None;
+    let mut file = None;
+    let mut args = std::env::args().skip(1);
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--css" => css = Some(PathBuf::from(args.next().ok_or("--css needs a file")?)),
+            "--gif-size" => {
+                let value = args.next().ok_or("--gif-size needs WxH")?;
+                gif_size = Some(parse_size(&value).ok_or("--gif-size needs WxH")?);
+            }
+            "-h" | "--help" => return Err(String::new()),
+            _ if file.is_none() => file = Some(PathBuf::from(arg)),
+            _ => return Err(format!("unexpected argument: {arg}")),
+        }
+    }
+    let file = file.ok_or("no file given")?;
+    Ok(Options {
+        css,
+        gif_size,
+        file,
+    })
+}
+
+fn parse_size(s: &str) -> Option<(u32, u32)> {
+    let (w, h) = s.split_once('x')?;
+    Some((w.parse().ok()?, h.parse().ok()?))
+}
+
+fn main() -> glib::ExitCode {
+    let opts = match parse_args() {
+        Ok(opts) => opts,
+        Err(e) => {
+            if !e.is_empty() {
+                eprintln!("capture-preview: {e}");
+            }
+            eprintln!("usage: capture-preview [--css FILE] [--gif-size WxH] FILE");
+            return glib::ExitCode::from(2);
+        }
+    };
+    let app = gtk::Application::builder()
+        .application_id("io.github.capture-preview")
+        .flags(gio::ApplicationFlags::NON_UNIQUE)
+        .build();
+    let opts = Rc::new(opts);
+    app.connect_activate(move |app| build(app, &opts));
+    // GTK must not see our arguments
+    app.run_with_args::<&str>(&[])
+}
+
+/// A GIF played from the file, one composited frame at a time.
+struct Player {
+    path: PathBuf,
+    decoder: gif::Decoder<BufReader<File>>,
+    screen: gif_dispose::Screen,
+}
+
+impl Player {
+    fn open(path: &Path) -> Result<Self, gif::DecodingError> {
+        let mut options = gif::DecodeOptions::new();
+        options.set_color_output(gif::ColorOutput::Indexed);
+        let decoder = options.read_info(BufReader::new(File::open(path)?))?;
+        let screen = gif_dispose::Screen::new_decoder(&decoder);
+        Ok(Self {
+            path: path.to_owned(),
+            decoder,
+            screen,
+        })
+    }
+
+    fn size(&self) -> (u32, u32) {
+        (
+            u32::from(self.decoder.width()),
+            u32::from(self.decoder.height()),
+        )
+    }
+
+    /// The next frame as a texture and how long to show it; at the end the
+    /// file is opened again, so the GIF loops.
+    fn next(&mut self) -> Option<(gdk::MemoryTexture, Duration)> {
+        let delay = match self.decoder.read_next_frame() {
+            Ok(Some(frame)) => {
+                let delay = frame.delay;
+                self.screen.blit_frame(frame).ok()?;
+                delay
+            }
+            Ok(None) => {
+                *self = Self::open(&self.path).ok()?;
+                return self.next();
+            }
+            Err(_) => return None,
+        };
+        let pixels = self.screen.pixels_rgba();
+        let (w, h) = (pixels.width(), pixels.height());
+        let mut bytes = Vec::with_capacity(w * h * 4);
+        for row in pixels.rows() {
+            for px in row {
+                bytes.extend_from_slice(&[px.r, px.g, px.b, px.a]);
+            }
+        }
+        let texture = gdk::MemoryTexture::new(
+            i32::try_from(w).ok()?,
+            i32::try_from(h).ok()?,
+            gdk::MemoryFormat::R8g8b8a8,
+            &glib::Bytes::from_owned(bytes),
+            w * 4,
+        );
+        // GIF delays are in hundredths of a second; browsers treat 0 and 1
+        // as 10, and so does this
+        let cs = if delay < 2 { 10 } else { u64::from(delay) };
+        Some((texture, Duration::from_millis(cs * 10)))
+    }
+}
+
+/// An MP4's size and length, from ffprobe.
+fn probe(path: &Path) -> Option<(u32, u32, f64)> {
+    let out = Command::new("ffprobe")
+        .args([
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height:format=duration",
+            "-of",
+            "default=noprint_wrappers=1",
+        ])
+        .arg(path)
+        .output()
+        .ok()?;
+    let text = String::from_utf8_lossy(&out.stdout);
+    let field = |key: &str| {
+        text.lines()
+            .find_map(|l| l.strip_prefix(key)?.strip_prefix('='))
+            .map(str::to_owned)
+    };
+    Some((
+        field("width")?.parse().ok()?,
+        field("height")?.parse().ok()?,
+        field("duration")
+            .and_then(|d| d.parse().ok())
+            .unwrap_or(0.0),
+    ))
+}
+
+fn build(app: &gtk::Application, opts: &Options) {
+    load_css(opts.css.as_deref());
+
+    let window = gtk::ApplicationWindow::builder()
+        .application(app)
+        .title("Recording")
+        .build();
+    window.add_css_class("capture-preview");
+    window.init_layer_shell();
+    window.set_layer(Layer::Overlay);
+    window.set_namespace(Some("capture-preview"));
+    window.set_keyboard_mode(KeyboardMode::Exclusive);
+    // The whole monitor, dimmed a touch around the panel: a click anywhere
+    // outside the panel closes it
+    for edge in [Edge::Top, Edge::Right, Edge::Bottom, Edge::Left] {
+        window.set_anchor(edge, true);
+    }
+    window.set_exclusive_zone(-1);
+
+    let file = opts.file.clone();
+    let is_gif = file
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("gif"));
+    let gif = file.with_extension("gif");
+
+    // The media and what to say about it
+    let (preview, (w, h), details): (gtk::Widget, _, String) = if is_gif {
+        let player = match Player::open(&file) {
+            Ok(player) => player,
+            Err(e) => return fail(app, &file, &e.to_string()),
+        };
+        let size = player.size();
+        let picture = gtk::Picture::new();
+        picture.set_content_fit(gtk::ContentFit::Contain);
+        picture.set_can_shrink(true);
+        play(Rc::new(RefCell::new(player)), picture.clone(), &window);
+        (picture.upcast(), size, String::new())
+    } else {
+        let Some((w, h, secs)) = probe(&file) else {
+            return fail(app, &file, "not a video ffprobe can read");
+        };
+        let video = gtk::Video::for_file(Some(&gio::File::for_path(&file)));
+        video.set_autoplay(true);
+        // GtkVideo's own loop doesn't take with the GStreamer backend on
+        // these files (the stream just ends), so start it over by hand
+        if let Some(stream) = video.media_stream() {
+            stream.connect_ended_notify(|stream| {
+                if stream.is_ended() {
+                    stream.seek(0);
+                    stream.play();
+                }
+            });
+        }
+        let secs = secs.round() as u64;
+        (
+            video.upcast(),
+            (w, h),
+            format!("{}:{:02}  ·  ", secs / 60, secs % 60),
+        )
+    };
+
+    let panel = gtk::Box::new(gtk::Orientation::Vertical, 12);
+    panel.add_css_class("panel");
+    panel.set_halign(gtk::Align::Center);
+    panel.set_valign(gtk::Align::Center);
+
+    // Header: the file's name and what it is
+    let name = file
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let title = gtk::Label::new(Some(&name));
+    title.add_css_class("title");
+    title.set_xalign(0.0);
+    title.set_hexpand(true);
+    title.set_ellipsize(gtk::pango::EllipsizeMode::Middle);
+    let info_text = format!("{w} × {h}  ·  {details}{}", human_size(file_size(&file)));
+    let info = gtk::Label::new(Some(&info_text));
+    info.add_css_class("dim");
+    let show_gif_size = {
+        let (info, info_text) = (info.clone(), info_text.clone());
+        move |gif: &Path| {
+            info.set_text(&format!(
+                "{info_text}  ·  GIF {}",
+                human_size(file_size(gif))
+            ))
+        }
+    };
+    if !is_gif && gif.exists() {
+        show_gif_size(&gif);
+    }
+    let header = gtk::Box::new(gtk::Orientation::Horizontal, 12);
+    header.append(&title);
+    header.append(&info);
+    panel.append(&header);
+
+    // The media, fitted into MAX_W × MAX_H. A picture or video asks for its
+    // full size, so it sits in a viewport that doesn't pass that up: the
+    // viewport's size request is the size, and the media scales to it.
+    let scale = (MAX_W / f64::from(w)).min(MAX_H / f64::from(h)).min(1.0);
+    let frame = gtk::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk::PolicyType::Never)
+        .vscrollbar_policy(gtk::PolicyType::Never)
+        .propagate_natural_width(false)
+        .propagate_natural_height(false)
+        .width_request((f64::from(w) * scale).round() as i32)
+        .height_request((f64::from(h) * scale).round() as i32)
+        .child(&preview)
+        .build();
+    frame.add_css_class("preview-frame");
+    frame.set_overflow(gtk::Overflow::Hidden);
+    panel.append(&frame);
+
+    // The actions
+    let actions = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+    actions.set_homogeneous(true);
+    panel.append(&actions);
+    window.set_child(Some(&panel));
+
+    let close = {
+        let window = window.clone();
+        move || window.close()
+    };
+    let copied = {
+        let close = close.clone();
+        move |button: &gtk::Button| {
+            button.set_label("Copied");
+            let close = close.clone();
+            glib::timeout_add_local_once(Duration::from_millis(600), close);
+        }
+    };
+    let copy_gif = {
+        let (gif, copied) = (gif.clone(), copied.clone());
+        move |button: &gtk::Button| {
+            // the image itself, for pasting into chat or a document
+            if let Ok(f) = File::open(&gif) {
+                spawn(
+                    Command::new("wl-copy")
+                        .args(["--type", "image/gif"])
+                        .stdin(f),
+                );
+                copied(button);
+            }
+        }
+    };
+
+    add_action(&actions, "Show in folder", &[], {
+        let (file, gif, close) = (file.clone(), gif.clone(), close.clone());
+        move |_| {
+            // the recording, and its GIF if there is one
+            let mut uris = vec![file_uri(&file)];
+            if !is_gif && gif.exists() {
+                uris.push(file_uri(&gif));
+            }
+            let count = uris.len().to_string();
+            spawn(
+                Command::new("busctl")
+                    .args([
+                        "--user",
+                        "call",
+                        "org.freedesktop.FileManager1",
+                        "/org/freedesktop/FileManager1",
+                        "org.freedesktop.FileManager1",
+                        "ShowItems",
+                        "ass",
+                        &count,
+                    ])
+                    .args(&uris)
+                    .arg(""),
+            );
+            close();
+        }
+    });
+
+    if is_gif || gif.exists() {
+        add_action(&actions, "Copy GIF", &["suggested"], copy_gif.clone());
+    } else {
+        // Convert, then the same button copies the GIF
+        let gif_size = opts.gif_size.unwrap_or((w, h));
+        let converting: Rc<RefCell<Option<Child>>> = Rc::default();
+        add_action(&actions, "Convert to GIF", &["suggested"], {
+            let (file, gif, show_gif_size) = (file.clone(), gif.clone(), show_gif_size.clone());
+            move |button| {
+                if gif.exists() && converting.borrow().is_none() {
+                    copy_gif(button);
+                    return;
+                }
+                if converting.borrow().is_some() {
+                    return;
+                }
+                let filter = GIF_FILTER
+                    .replace("{w}", &gif_size.0.to_string())
+                    .replace("{h}", &gif_size.1.to_string());
+                let child = Command::new("ffmpeg")
+                    .args(["-y", "-loglevel", "error", "-i"])
+                    .arg(&file)
+                    .args(["-vf", &filter, "-loop", "0"])
+                    .arg(&gif)
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .spawn();
+                let Ok(child) = child else {
+                    button.set_label("Can't convert");
+                    return;
+                };
+                *converting.borrow_mut() = Some(child);
+                button.set_label("Converting…");
+                button.set_sensitive(false);
+                let (button, converting, gif, show_gif_size) = (
+                    button.clone(),
+                    converting.clone(),
+                    gif.clone(),
+                    show_gif_size.clone(),
+                );
+                glib::timeout_add_local(Duration::from_millis(100), move || {
+                    let status = converting.borrow_mut().as_mut().map(Child::try_wait);
+                    match status {
+                        Some(Ok(None)) => glib::ControlFlow::Continue,
+                        Some(Ok(Some(s))) if s.success() => {
+                            *converting.borrow_mut() = None;
+                            button.set_label("Copy GIF");
+                            button.set_sensitive(true);
+                            show_gif_size(&gif);
+                            glib::ControlFlow::Break
+                        }
+                        _ => {
+                            *converting.borrow_mut() = None;
+                            let _ = std::fs::remove_file(&gif);
+                            button.set_label("Convert failed");
+                            button.set_sensitive(true);
+                            glib::ControlFlow::Break
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    add_action(&actions, "Copy file", &[], {
+        let file = file.clone();
+        move |button| {
+            // as a file, for upload fields and file managers
+            spawn(Command::new("wl-copy").args(["--type", "text/uri-list", &file_uri(&file)]));
+            copied(button);
+        }
+    });
+    add_action(&actions, "Open", &[], {
+        let (file, close) = (file.clone(), close.clone());
+        move |_| {
+            spawn(
+                Command::new("setsid")
+                    .args(["-f", "mpv", "--loop", "--title=GIF Preview"])
+                    .arg(&file),
+            );
+            close();
+        }
+    });
+    add_action(&actions, "Delete", &["destructive"], {
+        let (file, close) = (file.clone(), close.clone());
+        move |_| {
+            // the MP4 and its GIF together
+            let _ = std::fs::remove_file(file.with_extension("mp4"));
+            let _ = std::fs::remove_file(file.with_extension("gif"));
+            close();
+        }
+    });
+
+    // Escape closes, and so does a click outside the panel
+    let keys = gtk::EventControllerKey::new();
+    keys.connect_key_pressed({
+        let close = close.clone();
+        move |_, key, _, _| {
+            if key == gdk::Key::Escape {
+                close();
+                glib::Propagation::Stop
+            } else {
+                glib::Propagation::Proceed
+            }
+        }
+    });
+    window.add_controller(keys);
+    let outside = gtk::GestureClick::new();
+    outside.set_button(0);
+    outside.connect_pressed({
+        let (window, panel) = (window.clone(), panel.clone());
+        move |gesture, _, x, y| {
+            let inside = panel
+                .compute_bounds(&window)
+                .is_some_and(|b| b.contains_point(&gtk::graphene::Point::new(x as f32, y as f32)));
+            if !inside {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+                window.close();
+            }
+        }
+    });
+    window.add_controller(outside);
+
+    window.present();
+}
+
+/// Show a GIF's frames in turn until the window closes.
+fn play(player: Rc<RefCell<Player>>, picture: gtk::Picture, window: &gtk::ApplicationWindow) {
+    let playing = Rc::new(Cell::new(true));
+    window.connect_close_request({
+        let playing = playing.clone();
+        move |_| {
+            playing.set(false);
+            glib::Propagation::Proceed
+        }
+    });
+    next_frame(player, picture, playing);
+}
+
+fn next_frame(player: Rc<RefCell<Player>>, picture: gtk::Picture, playing: Rc<Cell<bool>>) {
+    if !playing.get() {
+        return;
+    }
+    let Some((texture, delay)) = player.borrow_mut().next() else {
+        return;
+    };
+    picture.set_paintable(Some(&texture));
+    glib::timeout_add_local_once(delay, move || next_frame(player, picture, playing));
+}
+
+fn fail(app: &gtk::Application, file: &Path, why: &str) {
+    eprintln!("capture-preview: {}: {why}", file.display());
+    app.quit();
+}
+
+fn add_action(
+    row: &gtk::Box,
+    label: &str,
+    classes: &[&str],
+    on_click: impl Fn(&gtk::Button) + 'static,
+) {
+    let button = gtk::Button::with_label(label);
+    button.add_css_class("action");
+    for class in classes {
+        button.add_css_class(class);
+    }
+    button.connect_clicked(on_click);
+    row.append(&button);
+}
+
+/// Run a helper without waiting for it or letting it hold our stdout.
+fn spawn(command: &mut Command) {
+    if let Err(e) = command.stdout(Stdio::null()).stderr(Stdio::null()).spawn() {
+        eprintln!("capture-preview: {command:?}: {e}");
+    }
+}
+
+fn file_uri(path: &Path) -> String {
+    format!("file://{}", path.display())
+}
+
+fn file_size(path: &Path) -> u64 {
+    std::fs::metadata(path).map(|m| m.len()).unwrap_or(0)
+}
+
+fn human_size(bytes: u64) -> String {
+    match bytes {
+        b if b >= 1 << 20 => format!("{:.1} MB", b as f64 / f64::from(1 << 20)),
+        b if b >= 1 << 10 => format!("{:.0} KB", b as f64 / f64::from(1 << 10)),
+        b => format!("{b} B"),
+    }
+}
+
+fn load_css(theme: Option<&Path>) {
+    let Some(display) = gdk::Display::default() else {
+        return;
+    };
+    let base = gtk::CssProvider::new();
+    base.load_from_string(include_str!("style.css"));
+    gtk::style_context_add_provider_for_display(
+        &display,
+        &base,
+        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
+    if let Some(path) = theme {
+        let provider = gtk::CssProvider::new();
+        provider.load_from_path(path);
+        gtk::style_context_add_provider_for_display(
+            &display,
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION + 1,
+        );
+    }
+}

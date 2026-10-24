@@ -1,19 +1,22 @@
-# screen-record: record an area to an MP4 and a GIF in ~/Videos.
+# screen-record: record an area to an MP4 in ~/Videos.
 #
 #   screen-record        start (select, count down, record), or stop or
 #                        cancel the recording in progress: Super+R and the
 #                        bar's record button
 #   screen-record click  the bar's status module: the same, except that a
-#                        finished recording opens its menu
-#   screen-record menu [GIF]
-#                        show in folder, copy, open or delete (the newest
-#                        GIF by default)
+#                        finished recording opens its preview
+#   screen-record menu [MP4]
+#                        the preview (capture-preview): the recording
+#                        playing, with show in folder, convert to GIF, copy,
+#                        open and delete (the newest recording by default)
 #
 # The state for the bar (bar-tools record-watch) is one line in
-# $XDG_RUNTIME_DIR/screen-record/state, replaced by rename.
+# $XDG_RUNTIME_DIR/screen-record/state, replaced by rename. Each recording's
+# on-screen size (slurp's WxH) is kept in sizes/ there, so a GIF made from it
+# later comes out at that size rather than the monitor's 1.25x/1.6x.
 
 dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/screen-record"
-mkdir -p "$dir"
+mkdir -p "$dir/sizes"
 
 set_state() {
   printf '%s\n' "$*" > "$dir/.state"
@@ -29,35 +32,23 @@ notify() {
 }
 
 menu() {
-  local gif=${1:-}
-  if [ -z "$gif" ]; then
-    gif=$(find "$HOME/Videos" -maxdepth 1 -name '*.gif' -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
+  local file=${1:-}
+  if [ -z "$file" ]; then
+    file=$(find "$HOME/Videos" -maxdepth 1 -name '*.mp4' -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
   fi
-  if [ ! -f "$gif" ]; then
-    notify -t 3000 "Recording not found" "${gif:-No GIFs in ~/Videos}"
+  if [ ! -f "$file" ]; then
+    notify -t 3000 "Recording not found" "${file:-No recordings in ~/Videos}"
     return 1
   fi
-  # A small picker, not a search: no input line (typing still filters), as
-  # tall as its items, the GIF's name above them
-  local choice
-  choice=$(printf '%s\n' "Show in folder" "Copy GIF" "Copy file" "Open" "Delete" |
-    fuzzel --dmenu --hide-prompt --minimal-lines --width 24 \
-      --mesg "$(basename "$gif")") || return 0
-  case $choice in
-    "Show in folder")
-      busctl --user call org.freedesktop.FileManager1 /org/freedesktop/FileManager1 \
-        org.freedesktop.FileManager1 ShowItems ass 1 "file://$gif" "" >/dev/null
-      ;;
-    # The image itself, for pasting into chat or a document
-    "Copy GIF") wl-copy --type image/gif < "$gif" ;;
-    # As a file, for upload fields and file managers
-    "Copy file") wl-copy --type text/uri-list "file://$gif" ;;
-    Open) setsid -f mpv --loop --title="GIF Preview" "$gif" >/dev/null 2>&1 ;;
-    Delete)
-      rm -f "$gif" "${gif%.gif}.mp4"
-      if [ "$(get_state)" = "done $gif" ]; then set_state idle; fi
-      ;;
-  esac
+  local size_file
+  size_file="$dir/sizes/$(basename "${file%.*}")"
+  if [ -f "$size_file" ]; then
+    capture-preview --gif-size "$(cat "$size_file")" "$file" || true
+  else
+    capture-preview "$file" || true
+  fi
+  # Deleted from the preview: the bar shouldn't offer it any more
+  if [ ! -f "$file" ] && [ "$(get_state)" = "done $file" ]; then set_state idle; fi
 }
 
 record() {
@@ -79,10 +70,10 @@ record() {
   done
   trap - TERM
 
-  local stamp mp4File gifFile
+  local stamp mp4File
   stamp=$(date +%m-%d-%Y-%H-%M-%S)
   mp4File="$HOME/Videos/$stamp.mp4"
-  gifFile="$HOME/Videos/$stamp.gif"
+  echo "${geometry##* }" > "$dir/sizes/$stamp"
 
   # Just the selected region, encoded on the GPU (VA-API, the Radeon's
   # video engine): frames stay in GPU memory from capture to encode, and
@@ -96,31 +87,20 @@ record() {
     exit 1
   fi
 
-  # At 30 fps and the area's on-screen size (slurp's WxH; the MP4 is at
-  # the monitor's 1.25x/1.6x), with ordered dithering and a palette from
-  # what changes between frames: a 5 s clip converts in ~1 s, against ~14 s
-  # for 60 fps at full size with error diffusion, and text stays as sharp.
-  set_state converting
-  local size=${geometry##* }
-  if ! ffmpeg -loglevel error -i "$mp4File" \
-    -vf "fps=30,scale=${size%x*}:${size#*x}:flags=lanczos,split[s0][s1];[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
-    -loop 0 "$gifFile"; then
-    set_state idle
-    notify -t 5000 "GIF conversion failed" "The MP4 is in ~/Videos"
-    exit 1
-  fi
-
-  # The bar shows "Saved" for a few seconds; the notification (the GIF as
-  # its preview) opens the menu when clicked.
-  set_state "done" "$gifFile"
+  # The bar shows "Saved" for a few seconds; the notification (the first
+  # frame as its thumbnail) opens the preview when clicked. No GIF unless
+  # the preview's Convert to GIF asks for one.
+  set_state "done" "$mp4File"
   (
     sleep 8
-    if [ "$(get_state)" = "done $gifFile" ]; then set_state idle; fi
+    if [ "$(get_state)" = "done $mp4File" ]; then set_state idle; fi
   ) &
+  local thumb="$dir/thumb.png"
+  ffmpeg -y -loglevel error -i "$mp4File" -frames:v 1 -vf "scale=-2:240" "$thumb" || thumb=video-x-generic
   local action
-  action=$(notify -t 20000 -i "$gifFile" -A default=Options --wait \
-    "GIF saved" "$(basename "$gifFile")  (click for options)") || true
-  if [ "$action" = default ]; then menu "$gifFile"; fi
+  action=$(notify -t 20000 -i "$thumb" -A default=Preview --wait \
+    "Recording saved" "$(basename "$mp4File")  (click to preview)") || true
+  if [ "$action" = default ]; then menu "$mp4File"; fi
 }
 
 toggle() {
@@ -143,7 +123,7 @@ case ${1:-} in
     ;;
   menu) menu "${2:-}" ;;
   *)
-    echo "usage: screen-record [click | menu [GIF]]" >&2
+    echo "usage: screen-record [click | menu [MP4]]" >&2
     exit 2
     ;;
 esac

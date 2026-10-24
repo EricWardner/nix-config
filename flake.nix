@@ -94,6 +94,7 @@
       packages.${system} = {
         bar-tools = pkgs.callPackage ./pkgs/bar-tools { };
         net-panel = pkgs.callPackage ./pkgs/net-panel { };
+        capture-preview = pkgs.callPackage ./pkgs/capture-preview { };
       };
       devShells.${system} = {
         default = pkgs.mkShell {

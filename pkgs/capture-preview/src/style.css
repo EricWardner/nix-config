@@ -1,0 +1,76 @@
+/* Defaults; screen-record's Home Manager module loads a stylesheet after this
+   one that redefines these colours from the stylix theme and sets the font,
+   like net-panel's. */
+@define-color cp_fg #eeffff;
+@define-color cp_bg rgba(33, 33, 33, 0.78);
+@define-color cp_accent #82aaff;
+@define-color cp_on_accent #16181c;
+@define-color cp_danger #f07178;
+
+/* The monitor behind the panel, dimmed a touch */
+window.capture-preview {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Glass like net-panel: Hyprland blurs what's behind (the "capture-preview"
+   layer rule); box-shadow lifts it off the screen. */
+.panel {
+  padding: 16px;
+  border-radius: 18px;
+  background-color: @cp_bg;
+  border: 1px solid alpha(@cp_fg, 0.18);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  color: @cp_fg;
+  font-size: 13px;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.dim {
+  color: alpha(@cp_fg, 0.6);
+  font-size: 12px;
+}
+
+.preview-frame {
+  border: none;
+  border-radius: 10px;
+  background-color: alpha(black, 0.3);
+}
+
+.preview-frame picture {
+  border-radius: 10px;
+}
+
+button.action {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 9px;
+  border: none;
+  background: alpha(@cp_fg, 0.1);
+  color: @cp_fg;
+  font-weight: 500;
+}
+
+button.action:hover {
+  background: alpha(@cp_fg, 0.18);
+}
+
+button.action.suggested {
+  background: @cp_accent;
+  color: @cp_on_accent;
+}
+
+button.action.suggested:hover {
+  background: shade(@cp_accent, 1.08);
+}
+
+button.action.destructive {
+  color: @cp_danger;
+}
+
+button.action.destructive:hover {
+  background: alpha(@cp_danger, 0.16);
+}

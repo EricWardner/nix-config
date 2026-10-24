@@ -1,8 +1,15 @@
 hl.layer_rule({ match = { namespace = "waybar" }, blur = true, ignore_alpha = 0.5 })
 -- The glass panels of fuzzel (menus), vicinae (launcher), net-panel (the
--- network panel) and swayosd (volume and brightness popups). Global blur
--- xray is off (hyprland.nix), so they frost the windows under them.
-hl.layer_rule({ match = { namespace = "^(launcher|vicinae|net-panel|swayosd)$" }, blur = true, ignore_alpha = 0.3 })
+-- network panel), swayosd (volume and brightness popups) and
+-- capture-preview (a finished recording). Global blur xray is off
+-- (hyprland.nix), so they frost the windows under them; capture-preview's
+-- 20% dimming around its panel stays under ignore_alpha, so only the panel
+-- frosts.
+hl.layer_rule({
+	match = { namespace = "^(launcher|vicinae|net-panel|swayosd|capture-preview)$" },
+	blur = true,
+	ignore_alpha = 0.3,
+})
 -- mako's notification cards: frosted too, sliding in from the right edge
 -- they're anchored to.
 hl.layer_rule({ match = { namespace = "notifications" }, blur = true, ignore_alpha = 0.3, animation = "slide right" })
