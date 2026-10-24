@@ -263,6 +263,9 @@ fn build(app: &gtk::Application, opts: &Options) {
     title.set_xalign(0.0);
     title.set_hexpand(true);
     title.set_ellipsize(gtk::pango::EllipsizeMode::Middle);
+    // The name takes the room the video leaves it rather than widening the
+    // panel past the video
+    title.set_max_width_chars(1);
     let info_text = format!("{w} × {h}  ·  {details}{}", human_size(file_size(&file)));
     let info = gtk::Label::new(Some(&info_text));
     info.add_css_class("dim");
@@ -285,7 +288,9 @@ fn build(app: &gtk::Application, opts: &Options) {
 
     // The media, fitted into MAX_W × MAX_H. A picture or video asks for its
     // full size, so it sits in a viewport that doesn't pass that up: the
-    // viewport's size request is the size, and the media scales to it.
+    // viewport's size request is the size, and the media scales to it. It
+    // keeps that size in a wider panel (a small recording) instead of
+    // stretching, which GtkVideo fills with black bars.
     let scale = (MAX_W / f64::from(w)).min(MAX_H / f64::from(h)).min(1.0);
     let frame = gtk::ScrolledWindow::builder()
         .hscrollbar_policy(gtk::PolicyType::Never)
@@ -298,11 +303,13 @@ fn build(app: &gtk::Application, opts: &Options) {
         .build();
     frame.add_css_class("preview-frame");
     frame.set_overflow(gtk::Overflow::Hidden);
+    frame.set_halign(gtk::Align::Center);
     panel.append(&frame);
 
-    // The actions
-    let actions = gtk::Box::new(gtk::Orientation::Horizontal, 8);
-    actions.set_homogeneous(true);
+    // The actions: Delete set apart at the left; at the right, icons for the
+    // quick ones, then the GIF button, the one with words. The row is
+    // narrower than most videos, so the video sets the panel's width.
+    let actions = gtk::Box::new(gtk::Orientation::Horizontal, 6);
     panel.append(&actions);
     window.set_child(Some(&panel));
 
@@ -313,7 +320,12 @@ fn build(app: &gtk::Application, opts: &Options) {
     let copied = {
         let close = close.clone();
         move |button: &gtk::Button| {
-            button.set_label("Copied");
+            // a tick in place of the icon, or the word
+            if button.icon_name().is_some() {
+                button.set_icon_name("object-select-symbolic");
+            } else {
+                button.set_label("Copied");
+            }
             let close = close.clone();
             glib::timeout_add_local_once(Duration::from_millis(600), close);
         }
@@ -333,7 +345,7 @@ fn build(app: &gtk::Application, opts: &Options) {
         }
     };
 
-    add_action(&actions, "Show in folder", &[], {
+    let show = icon_action("folder-open-symbolic", "Show in folder", &[], {
         let (file, gif, close) = (file.clone(), gif.clone(), close.clone());
         move |_| {
             // the recording, and its GIF if there is one
@@ -361,13 +373,13 @@ fn build(app: &gtk::Application, opts: &Options) {
         }
     });
 
-    if is_gif || gif.exists() {
-        add_action(&actions, "Copy GIF", &["suggested"], copy_gif.clone());
+    let gif_button = if is_gif || gif.exists() {
+        action("Copy GIF", &["suggested"], copy_gif.clone())
     } else {
         // Convert, then the same button copies the GIF
         let gif_size = opts.gif_size.unwrap_or((w, h));
         let converting: Rc<RefCell<Option<Child>>> = Rc::default();
-        add_action(&actions, "Convert to GIF", &["suggested"], {
+        action("Convert to GIF", &["suggested"], {
             let (file, gif, show_gif_size) = (file.clone(), gif.clone(), show_gif_size.clone());
             move |button| {
                 if gif.exists() && converting.borrow().is_none() {
@@ -422,10 +434,10 @@ fn build(app: &gtk::Application, opts: &Options) {
                     }
                 });
             }
-        });
-    }
+        })
+    };
 
-    add_action(&actions, "Copy file", &[], {
+    let copy = icon_action("edit-copy-symbolic", "Copy file", &[], {
         let file = file.clone();
         move |button| {
             // as a file, for upload fields and file managers
@@ -433,18 +445,7 @@ fn build(app: &gtk::Application, opts: &Options) {
             copied(button);
         }
     });
-    add_action(&actions, "Open", &[], {
-        let (file, close) = (file.clone(), close.clone());
-        move |_| {
-            spawn(
-                Command::new("setsid")
-                    .args(["-f", "mpv", "--loop", "--title=GIF Preview"])
-                    .arg(&file),
-            );
-            close();
-        }
-    });
-    add_action(&actions, "Delete", &["destructive"], {
+    let delete = icon_action("user-trash-symbolic", "Delete", &["destructive"], {
         let (file, close) = (file.clone(), close.clone());
         move |_| {
             // the MP4 and its GIF together
@@ -453,6 +454,14 @@ fn build(app: &gtk::Application, opts: &Options) {
             close();
         }
     });
+    delete.set_hexpand(true);
+    delete.set_halign(gtk::Align::Start);
+    for button in [&delete, &show, &copy, &gif_button] {
+        actions.append(button);
+    }
+    // Enter converts (or copies the GIF); Delete is first in the row, and
+    // GTK would otherwise focus it
+    gif_button.grab_focus();
 
     // Escape closes, and so does a click outside the panel
     let keys = gtk::EventControllerKey::new();
@@ -516,19 +525,29 @@ fn fail(app: &gtk::Application, file: &Path, why: &str) {
     app.quit();
 }
 
-fn add_action(
-    row: &gtk::Box,
-    label: &str,
-    classes: &[&str],
-    on_click: impl Fn(&gtk::Button) + 'static,
-) {
+fn action(label: &str, classes: &[&str], on_click: impl Fn(&gtk::Button) + 'static) -> gtk::Button {
     let button = gtk::Button::with_label(label);
     button.add_css_class("action");
     for class in classes {
         button.add_css_class(class);
     }
     button.connect_clicked(on_click);
-    row.append(&button);
+    button
+}
+
+/// An action shown as an icon, named in its tooltip.
+fn icon_action(
+    icon: &str,
+    name: &str,
+    classes: &[&str],
+    on_click: impl Fn(&gtk::Button) + 'static,
+) -> gtk::Button {
+    let button = action("", classes, on_click);
+    button.set_icon_name(icon);
+    button.add_css_class("icon");
+    button.set_tooltip_text(Some(name));
+    button.update_property(&[gtk::accessible::Property::Label(name)]);
+    button
 }
 
 /// Run a helper without waiting for it or letting it hold our stdout.

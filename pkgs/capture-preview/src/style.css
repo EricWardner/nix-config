@@ -58,7 +58,15 @@ button.action:hover {
   background: alpha(@cp_fg, 0.18);
 }
 
+/* Icon-only actions: square, the icon in the text's colour */
+button.action.icon {
+  min-width: 34px;
+  padding: 0;
+}
+
+/* The GIF button, a little apart from the icons beside it */
 button.action.suggested {
+  margin-left: 4px;
   background: @cp_accent;
   color: @cp_on_accent;
 }

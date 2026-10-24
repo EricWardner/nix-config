@@ -1,15 +1,17 @@
 hl.layer_rule({ match = { namespace = "waybar" }, blur = true, ignore_alpha = 0.5 })
 -- The glass panels of fuzzel (menus), vicinae (launcher), net-panel (the
--- network panel), swayosd (volume and brightness popups) and
--- capture-preview (a finished recording). Global blur xray is off
--- (hyprland.nix), so they frost the windows under them; capture-preview's
--- 20% dimming around its panel stays under ignore_alpha, so only the panel
--- frosts.
+-- network panel) and swayosd (volume and brightness popups). Global blur
+-- xray is off (hyprland.nix), so they frost the windows under them.
 hl.layer_rule({
-	match = { namespace = "^(launcher|vicinae|net-panel|swayosd|capture-preview)$" },
+	match = { namespace = "^(launcher|vicinae|net-panel|swayosd)$" },
 	blur = true,
 	ignore_alpha = 0.3,
 })
+-- capture-preview (a finished recording) covers the monitor: 20% dimming,
+-- the panel's shadow on that (up to 60% together), and the panel (82%).
+-- Only the panel should frost; at 0.3 the shadow frosted too, a blurred
+-- band round the panel with a hard outer edge.
+hl.layer_rule({ match = { namespace = "^capture-preview$" }, blur = true, ignore_alpha = 0.7 })
 -- mako's notification cards: frosted too, sliding in from the right edge
 -- they're anchored to.
 hl.layer_rule({ match = { namespace = "notifications" }, blur = true, ignore_alpha = 0.3, animation = "slide right" })
@@ -47,7 +49,6 @@ hl.window_rule({
 	float = true,
 	move = { "(monitor_w-window_w-10)", 40 },
 })
-hl.window_rule({ match = { title = "^(GIF Preview)$" }, float = true, center = true })
 -- Thunar floats. Its main windows ("<folder> - Thunar") open at a set size
 -- in the middle; its dialogs (copy progress, properties) keep their own size.
 hl.window_rule({ match = { class = "^(Thunar)$" }, float = true })

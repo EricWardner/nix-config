@@ -7,8 +7,8 @@
 #                        finished recording opens its preview
 #   screen-record menu [MP4]
 #                        the preview (capture-preview): the recording
-#                        playing, with show in folder, convert to GIF, copy,
-#                        open and delete (the newest recording by default)
+#                        playing, with show in folder, convert to GIF, copy
+#                        and delete (the newest recording by default)
 #
 # The state for the bar (bar-tools record-watch) is one line in
 # $XDG_RUNTIME_DIR/screen-record/state, replaced by rename. Each recording's
