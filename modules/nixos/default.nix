@@ -78,9 +78,20 @@ in
         enable = true;
         efiSupport = true;
       };
-      loader.systemd-boot.enable = mkIf (!cfg.grub) true;
-      # Plymouth (Theming for booting screen and drive unlock screen)
-      plymouth.enable = mkIf cfg.grub true;
+      loader.systemd-boot = mkIf (!cfg.grub) {
+        enable = true;
+        # A new generation gets 3 tries: one that never reaches
+        # boot-complete.target (systemd-bless-boot) is skipped for the one
+        # before it, which makes the hidden menu below safe.
+        bootCounting.enable = true;
+      };
+      # Boot the default entry straight away; hold Space as the machine
+      # starts to get the menu.
+      loader.timeout = 0;
+      # Themed boot splash (stylix's plymouth target) that also asks for the
+      # disk password. Both hosts load their GPU driver in the initrd
+      # (amdgpu, i915), so it comes up at native resolution.
+      plymouth.enable = true;
       # Disable(quiet) most of the logging that happens during boot
       initrd = {
         verbose = false;
