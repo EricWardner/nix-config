@@ -180,6 +180,10 @@ in
           "systemctl --user stop hyprland-session.target"
           "systemctl --user start hyprland-session.target"
           "systemctl --user restart xdg-desktop-portal.service"
+          # Slack started before the Wi-Fi connected stays broken after the
+          # network comes up, so the apps wait for a connection (offline,
+          # they start after 30s anyway).
+          "${pkgs.networkmanager}/bin/nm-online -q -t 30 || true"
           (launchOnWorkspace slack "special:chat silent")
           (launchOnWorkspace commands.gather "special:chat silent")
           (launchOnWorkspace chrome "1 silent")
