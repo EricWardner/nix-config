@@ -37,6 +37,10 @@
       url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     team-claude-skills = {
       url = "git+ssh://git@github.com/tiberius-grail/team-claude-skills";
       inputs.nixpkgs.follows = "nixpkgs";
