@@ -56,16 +56,23 @@ in
         ];
         substituters = [
           "https://claude-code.cachix.org"
-          "https://ghostty.cachix.org"
         ];
         trusted-substituters = [
           "https://claude-code.cachix.org"
-          "https://ghostty.cachix.org"
         ];
         trusted-public-keys = [
           "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
-          "ghostty.cachix.org-1:QB389yTa6gTyneehvqG58y0WnHjQOqgnA+wBnpWWxns="
         ];
+        # Give up on an unreachable cache after 5s instead of hanging, and
+        # build locally when substituting fails instead of erroring out.
+        connect-timeout = 5;
+        fallback = true;
+      };
+      # Hard-link identical files across the store, weekly at low priority
+      # (catches up after the laptop was asleep).
+      optimise = {
+        automatic = true;
+        dates = [ "weekly" ];
       };
     };
 
@@ -84,6 +91,8 @@ in
         # boot-complete.target (systemd-bless-boot) is skipped for the one
         # before it, which makes the hidden menu below safe.
         bootCounting.enable = true;
+        # No editing the kernel command line from the boot menu.
+        editor = false;
       };
       # Boot the default entry straight away; hold Space as the machine
       # starts to get the menu.
@@ -212,6 +221,15 @@ in
       udisks2.enable = true;
       tumbler.enable = true;
       printing.enable = true;
+      # Monthly checksum pass over the disk, an early warning of a failing
+      # SSD (metadata is DUP, so its errors get repaired; data is single,
+      # so data errors are only reported). "/" alone: the other mounts are
+      # subvolumes of the same filesystem and would scrub it again.
+      btrfs.autoScrub = {
+        enable = true;
+        interval = "monthly";
+        fileSystems = [ "/" ];
+      };
       blueman.enable = true;
       pcscd.enable = true;
       gnome.gnome-keyring.enable = true;
