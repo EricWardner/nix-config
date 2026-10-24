@@ -3,6 +3,9 @@ hl.layer_rule({ match = { namespace = "waybar" }, blur = true, ignore_alpha = 0.
 -- network panel) and swayosd (volume and brightness popups). Global blur
 -- xray is off (hyprland.nix), so they frost the windows under them.
 hl.layer_rule({ match = { namespace = "^(launcher|vicinae|net-panel|swayosd)$" }, blur = true, ignore_alpha = 0.3 })
+-- mako's notification cards: the same frosted glass, sliding in from the
+-- right edge they're anchored to.
+hl.layer_rule({ match = { namespace = "notifications" }, blur = true, ignore_alpha = 0.3, animation = "slide right" })
 
 hl.window_rule({ match = { class = ".*" }, suppress_event = "maximize" })
 hl.window_rule({

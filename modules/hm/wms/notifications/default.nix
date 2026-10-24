@@ -6,6 +6,7 @@
 }:
 let
   inherit (lib) mkIf;
+  inherit (config.lib.stylix) colors;
 
   # Do Not Disturb: `mako-dnd toggle` (Super+N) flips mako's do-not-disturb
   # mode, `mako-dnd off` (clicking the bar's moon) leaves it, and both tell
@@ -57,17 +58,53 @@ in
       on-click = "${makoDnd}/bin/mako-dnd off";
     };
 
+    # Styled here instead (stylix's target draws an opaque box with a 2px
+    # border), in the palette, to match net-panel and swayosd.
+    stylix.targets.mako.enable = false;
+
     services.mako.enable = true;
     services.mako.settings = {
       "default-timeout" = 5000;
-      border-radius = 12;
-      padding = "12";
-      margin = "12";
       anchor = "top-right";
-      border-size = 2;
+      width = 360;
+      # tall enough for a few lines of body (the default 100px cuts it to one)
+      height = 160;
+      margin = "10";
+
+      # Frosted glass like the bar's tray island and net-panel: translucent
+      # (Hyprland blurs behind it, the "notifications" layer rule in
+      # hypr/lua/rules.lua), a faint 1px edge, rounded corners.
+      background-color = "#${colors.base00}b8";
+      border-color = "#${colors.base05}1a";
+      border-size = 1;
+      border-radius = 14;
+      padding = "14,16";
+      text-color = "#${colors.base05}";
+      progress-color = "over #${colors.base0D}33";
+
+      # The app's name small and dimmed over a bold title, like iOS
+      font = "${config.stylix.fonts.sansSerif.name} 11";
+      format = "<span size='85%%' alpha='60%%'>%a</span>\\n<b>%s</b>\\n%b";
+
+      # mako looks icons up only in these directories (themes by hand, no
+      # inheritance); its default is /usr/share, which NixOS doesn't have.
+      icon-path = lib.concatMapStringsSep ":" (d: "${config.home.profileDirectory}/share/${d}") [
+        "icons/Papirus-Dark"
+        "icons/hicolor"
+        "pixmaps"
+      ];
+      max-icon-size = 40;
+      icon-border-radius = 10;
+
       # Dismissed notifications Super+Shift+N (makoctl restore) can bring
       # back, newest first
       max-history = 20;
+
+      "urgency=low".text-color = "#${colors.base04}";
+      "urgency=critical" = {
+        border-color = "#${colors.base08}";
+        default-timeout = 0;
+      };
 
       # Do Not Disturb hides popups; they still arrive and go to history.
       # Critical ones and the YubiKey touch prompt (without it, sudo and
