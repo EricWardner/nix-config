@@ -16,6 +16,12 @@
   };
   stylix = {
     targets.k9s.enable = true;
+    # The gtksourceview target also patches the library itself (its overlay),
+    # which changes the hash of everything built on it: Inkscape then misses
+    # cache.nixos.org and compiles from source on every nixpkgs update. The
+    # target still installs its style under ~/.local/share/gtksourceview-*,
+    # where GtkSourceView finds it without the patch.
+    overlays.enable = false;
     cursor.package = pkgs.rose-pine-cursor;
     cursor.name = "BreezeX-RosePine-Linux";
     cursor.size = 24;
