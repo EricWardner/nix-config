@@ -38,7 +38,6 @@
   home.packages = with pkgs; [
     mpv
     stremio-linux-shell
-    gimp3
     inkscape
     brave
     discord
@@ -53,13 +52,6 @@
     pcsc-tools
     v4l-utils
     cameractrls
-    (wrapOBS {
-      plugins = with obs-studio-plugins; [
-        wlrobs
-        obs-pipewire-audio-capture
-        obs-backgroundremoval
-      ];
-    })
     (pkgs.writeShellScriptBin "setup-browser-CAC" ''
       NSSDB="''${HOME}/.pki/nssdb"
       mkdir -p ''${NSSDB}
@@ -83,10 +75,6 @@
   ];
 
   programs = {
-    kitty.settings = {
-      scrollback_lines = 100000;
-      copy_on_select = "clipboard";
-    };
     google-chrome = {
       enable = true;
       package = pkgs.google-chrome;
