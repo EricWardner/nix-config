@@ -4,5 +4,6 @@
     ./waybar
     ./notifications
     ./launchers
+    ./net-panel
   ];
 }

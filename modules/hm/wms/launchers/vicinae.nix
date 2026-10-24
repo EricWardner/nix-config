@@ -16,7 +16,7 @@
       target = "hyprland-session.target";
     };
     settings = {
-      # The bar's tray island holds nm-applet and blueman; no vicinae icon.
+      # The bar's tray island holds net-panel and blueman; no vicinae icon.
       tray.enabled = false;
       # Translucent so Hyprland's blur shows through (the "vicinae" layer
       # rule in hypr/lua/rules.lua), matching fuzzel's glass panel.

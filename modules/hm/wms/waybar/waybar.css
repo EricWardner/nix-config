@@ -97,7 +97,7 @@ window#waybar {
   font-size: 20px;
 }
 
-/* The always-open tray (nm-applet, blueman, ...) sits on a light-glass
+/* The always-open tray (net-panel, blueman, ...) sits on a light-glass
    island, apart from the status icons on the bare bar: a faint
    white-tinted rounded surface with a rim and top highlight, so it reads
    as glass catching light. It's inset just 2px from the bar's top and
@@ -121,7 +121,7 @@ window#waybar {
   border-radius: 4px;
 }
 
-/* nm-applet and tray menu styling */
+/* Tray menus (blueman's; net-panel has none) */
 window > menu {
   background: @base00;
 }

@@ -27,13 +27,6 @@ let
   btop = "${pkgs.btop}/bin/btop";
   slack = "${pkgs.slack}/bin/slack";
   chrome = "${pkgs.google-chrome}/bin/google-chrome-stable";
-  # nm-applet with nearby networks in its main menu instead of an
-  # "Available networks" submenu, which closes on diagonal pointer moves
-  # (see the patch). Installed below too, so the nm-applet and
-  # nm-connection-editor on PATH match the applet Hyprland starts.
-  nmApplet = pkgs.networkmanagerapplet.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [ ./nm-applet-inline-networks.patch ];
-  });
   toLua = lib.generators.toLua { };
   commands = {
     terminal = ghostty;
@@ -160,8 +153,6 @@ in
     };
   };
   config = mkIf cfg.enable {
-    home.packages = [ nmApplet ];
-
     wayland.windowManager.hyprland = {
       enable = true;
       # Explicit because home.stateVersion predates Home Manager's Lua default.
@@ -200,9 +191,9 @@ in
         };
       };
       extraConfig = ''
-        -- Waybar and hyprpaper are supervised by their systemd user services.
+        -- Waybar, hyprpaper and net-panel are supervised by their systemd
+        -- user services.
         hl.on("hyprland.start", function()
-          hl.exec_cmd(${toLua "${nmApplet}/bin/nm-applet --indicator"})
           hl.exec_cmd(${toLua ghostty}, { workspace = "1 silent" })
         end)
       '';

@@ -203,7 +203,7 @@ in
             "clock"
           ];
           # The always-open tray sits on a glass island (waybar.css); its
-          # applets, nm-applet and blueman, cover network and bluetooth, so
+          # applets, net-panel and blueman, cover network and bluetooth, so
           # those have no modules of their own. The status icons stay on the
           # bare bar.
           modules-right = [
