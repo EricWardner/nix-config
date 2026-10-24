@@ -16,6 +16,11 @@
   ];
   config = {
     stylix.targets.gnome.enable = false;
+    # No Plasma session: the target builds a look-and-feel package with the
+    # wallpaper inside it, tries to apply it on every switch, and puts its
+    # kdeglobals first in XDG_CONFIG_DIRS. Qt apps are themed by the qt
+    # target (qtct + Kvantum), not this.
+    stylix.targets.kde.enable = false;
     stylix.targets.waybar.enable = true;
     stylix.targets.hyprlock.enable = lib.mkForce false;
     stylix.targets.hyprpaper.enable = lib.mkForce false;
