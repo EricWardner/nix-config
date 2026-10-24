@@ -39,6 +39,8 @@ let
     keyboardDimmer = "${brightnessctl} -d '*::kbd_backlight' set 33%-";
     screenshot = ''${grim} -g "$(${slurp})" - | ${swappy} -f -'';
     record = "wf-recorder-toggle";
+    doNotDisturb = "mako-dnd toggle"; # from wms/notifications
+    notificationRestore = "${pkgs.mako}/bin/makoctl restore";
     # swayosd-client makes the change and shows the popup (wms/swayosd.nix,
     # which caps volume at 150%); the bar's volume-watch also flashes the
     # new level

@@ -169,6 +169,19 @@ tooltip label {
   margin-left: 8px;
 }
 
+/* The Do Not Disturb moon is its own item after the clock, set off by the
+   same 33px as the window title before it (21px plus the clock's padding
+   and the glyph's bearing). It keeps its space while off, only transparent,
+   so the centre doesn't shift when it turns on. */
+#custom-dnd {
+  margin: 0 0 0 21px;
+  padding: 0;
+}
+
+#custom-dnd.off {
+  color: transparent;
+}
+
 /* Battery states */
 #battery.charging,
 #battery.plugged {

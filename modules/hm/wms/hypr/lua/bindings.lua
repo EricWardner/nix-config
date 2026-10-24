@@ -21,6 +21,8 @@ local applications = {
 	{ "F3", cmd.keyboardBrighter },
 	{ "F2", cmd.keyboardDimmer },
 	{ "R", cmd.record },
+	{ "N", cmd.doNotDisturb },
+	{ "SHIFT + N", cmd.notificationRestore },
 }
 for _, binding in ipairs(applications) do
 	hl.bind(mod .. " + " .. binding[1], dsp.exec_cmd(binding[2]))

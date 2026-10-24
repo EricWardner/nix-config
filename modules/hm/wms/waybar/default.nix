@@ -220,9 +220,11 @@ in
             "custom/nix"
             "hyprland/workspaces"
           ];
+          # The Do Not Disturb moon (wms/notifications) follows the clock.
           modules-center = [
             "hyprland/window"
             "clock"
+            "custom/dnd"
           ];
           # The always-open tray sits on a glass island (waybar.css); its
           # applets, net-panel and blueman, cover network and bluetooth, so
