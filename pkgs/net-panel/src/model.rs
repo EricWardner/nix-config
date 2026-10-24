@@ -58,7 +58,47 @@ impl Security {
     pub fn secured(self) -> bool {
         !matches!(self, Self::Open | Self::EnhancedOpen)
     }
+
+    pub fn access(self) -> Access {
+        match self {
+            Self::Open => Access::Open,
+            Self::EnhancedOpen => Access::EnhancedOpen,
+            Self::Wep => Access::Wep,
+            Self::Wpa2 | Self::Wpa3 | Self::Wpa2Wpa3 => Access::Password,
+            Self::Enterprise => Access::Login,
+        }
+    }
 }
+
+/// What joining takes, which is what tells two networks with the same name
+/// apart (an open "Free WiFi" beside a password one). WPA2 and WPA3 are one
+/// kind: a mesh mixing them is still one network.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
+pub enum Access {
+    #[default]
+    Open,
+    EnhancedOpen,
+    Wep,
+    Password,
+    Login,
+}
+
+impl Access {
+    /// From a saved connection's 802-11-wireless-security.key-mgmt; an empty
+    /// one means the connection has no security setting at all.
+    pub fn from_key_mgmt(key_mgmt: &str) -> Self {
+        match key_mgmt {
+            "" => Self::Open,
+            "owe" => Self::EnhancedOpen,
+            "none" => Self::Wep,
+            "wpa-psk" | "sae" => Self::Password,
+            _ => Self::Login,
+        }
+    }
+}
+
+/// A row's identity: the SSID and what joining it takes.
+pub type NetworkKey = (Vec<u8>, Access);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Band {
@@ -154,6 +194,7 @@ pub struct Saved {
     pub ssid: Vec<u8>,
     pub mode: String,
     pub timestamp: u64,
+    pub access: Access,
 }
 
 impl Saved {
@@ -174,7 +215,8 @@ pub enum NetState {
     Active,
 }
 
-/// Every access point broadcasting one SSID, shown as one row.
+/// Every access point broadcasting one SSID with one kind of access, shown
+/// as one row.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Network {
     pub ssid: String,
@@ -189,18 +231,32 @@ pub struct Network {
     pub state: NetState,
 }
 
-/// Groups access points by SSID, attaches saved connections and sorts:
-/// the active network first, then saved ones, then the rest, each by signal.
-/// Hidden networks (empty SSID) are dropped; they're joined by name.
+impl Network {
+    pub fn key(&self) -> NetworkKey {
+        (self.ssid_bytes.clone(), self.security.access())
+    }
+}
+
+/// The network that is up or coming up: its SSID, its access if known, and
+/// how far along it is.
+pub type ActiveNetwork<'a> = (&'a [u8], Option<Access>, NetState);
+
+/// Groups access points by SSID and access, attaches saved connections and
+/// sorts: the active network first, then saved ones, then the rest, each by
+/// signal. Hidden networks (empty SSID) are dropped; they're joined by name.
 pub fn group_networks(
     aps: &[AccessPoint],
     saved: &[Saved],
-    active: Option<(&[u8], NetState)>,
+    active: Option<ActiveNetwork>,
 ) -> Vec<Network> {
     let mut networks: Vec<Network> = Vec::new();
     for ap in aps.iter().filter(|ap| !ap.ssid.is_empty()) {
         let band = Band::from_frequency(ap.frequency);
-        match networks.iter_mut().find(|n| n.ssid_bytes == ap.ssid) {
+        let access = ap.security.access();
+        match networks
+            .iter_mut()
+            .find(|n| n.ssid_bytes == ap.ssid && n.security.access() == access)
+        {
             Some(network) => {
                 network.ap_count += 1;
                 if ap.strength > network.strength {
@@ -230,13 +286,15 @@ pub fn group_networks(
 
     for network in &mut networks {
         network.bands.sort();
+        let access = network.security.access();
         network.saved = saved
             .iter()
-            .filter(|s| s.is_wifi_client() && s.ssid == network.ssid_bytes)
+            .filter(|s| s.is_wifi_client() && s.ssid == network.ssid_bytes && s.access == access)
             .max_by_key(|s| s.timestamp)
             .map(|s| s.path.clone());
-        if let Some((ssid, state)) = active
+        if let Some((ssid, active_access, state)) = active
             && ssid == network.ssid_bytes.as_slice()
+            && active_access.is_none_or(|a| a == access)
         {
             network.state = state;
         }
@@ -275,6 +333,8 @@ pub struct Current {
     pub strength: u8,
     pub frequency: u32,
     pub security: Option<Security>,
+    /// From the saved connection, which may outlive its access point.
+    pub access: Option<Access>,
     /// Link rate in kbit/s.
     pub bitrate: u32,
     pub ip4: Option<String>,
@@ -283,6 +343,14 @@ pub struct Current {
     pub ip6: Option<String>,
     pub active_path: String,
     pub settings_path: String,
+}
+
+impl Current {
+    /// Whether `network` is this connection's row.
+    pub fn is(&self, network: &Network) -> bool {
+        network.ssid_bytes == self.ssid_bytes
+            && self.access.is_none_or(|a| a == network.security.access())
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -529,6 +597,7 @@ mod tests {
             ssid: ssid.as_bytes().to_vec(),
             mode: "infrastructure".into(),
             timestamp,
+            access: Access::Password,
         }
     }
 
@@ -595,6 +664,63 @@ mod tests {
     }
 
     #[test]
+    fn splits_same_name_by_access() {
+        let aps = [
+            ap("/open", "Free WiFi", 40, 2437, Security::Open),
+            ap("/wpa2", "Free WiFi", 60, 2437, Security::Wpa2),
+            // A mesh mixing WPA2 and WPA2/WPA3 nodes is still one network.
+            ap("/mixed", "Free WiFi", 50, 5180, Security::Wpa2Wpa3),
+        ];
+        let networks = group_networks(&aps, &[], None);
+        assert_eq!(networks.len(), 2);
+        let password = networks.iter().find(|n| n.security.secured()).unwrap();
+        assert_eq!(password.ap_count, 2);
+        assert_eq!(password.best_ap, "/wpa2");
+        let open = networks.iter().find(|n| !n.security.secured()).unwrap();
+        assert_eq!(open.ap_count, 1);
+        assert_ne!(password.key(), open.key());
+    }
+
+    #[test]
+    fn matches_saved_and_active_by_access() {
+        let aps = [
+            ap("/open", "Free WiFi", 40, 2437, Security::Open),
+            ap("/wpa2", "Free WiFi", 60, 2437, Security::Wpa2),
+        ];
+        let mut open_profile = saved("/s-open", "Free WiFi", 1);
+        open_profile.access = Access::from_key_mgmt("");
+        let networks = group_networks(
+            &aps,
+            &[open_profile],
+            Some((b"Free WiFi", Some(Access::Open), NetState::Active)),
+        );
+        let open = networks.iter().find(|n| !n.security.secured()).unwrap();
+        let password = networks.iter().find(|n| n.security.secured()).unwrap();
+        assert_eq!(open.saved.as_deref(), Some("/s-open"));
+        assert_eq!(open.state, NetState::Active);
+        assert_eq!(password.saved, None);
+        assert_eq!(password.state, NetState::Idle);
+
+        let current = Current {
+            ssid_bytes: b"Free WiFi".to_vec(),
+            access: Some(Access::Open),
+            ..Current::default()
+        };
+        assert!(current.is(open));
+        assert!(!current.is(password));
+    }
+
+    #[test]
+    fn access_from_key_mgmt() {
+        assert_eq!(Access::from_key_mgmt(""), Access::Open);
+        assert_eq!(Access::from_key_mgmt("owe"), Access::EnhancedOpen);
+        assert_eq!(Access::from_key_mgmt("none"), Access::Wep);
+        assert_eq!(Access::from_key_mgmt("wpa-psk"), Access::Password);
+        assert_eq!(Access::from_key_mgmt("sae"), Access::Password);
+        assert_eq!(Access::from_key_mgmt("wpa-eap"), Access::Login);
+    }
+
+    #[test]
     fn sorts_active_then_saved_then_others() {
         let aps = [
             ap("/1", "Royal Jelly", 70, 2437, Security::Wpa2),
@@ -608,7 +734,11 @@ mod tests {
             saved("/s2", "LML622", 2),
             saved("/s3", "Shermans Hotspot", 3),
         ];
-        let networks = group_networks(&aps, &saved, Some((b"Shermans Hotspot", NetState::Active)));
+        let networks = group_networks(
+            &aps,
+            &saved,
+            Some((b"Shermans Hotspot", None, NetState::Active)),
+        );
         let order: Vec<&str> = networks.iter().map(|n| n.ssid.as_str()).collect();
         assert_eq!(
             order,

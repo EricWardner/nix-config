@@ -9,7 +9,7 @@
 
 use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::time::{Duration, Instant};
 
 use gtk::prelude::*;
@@ -18,7 +18,9 @@ use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use zbus::Connection;
 
 use crate::agent::{AgentEvent, Kind, SecretRequest};
-use crate::model::{self, Connectivity, NetState, Network, Security, Snapshot, TrayIcon};
+use crate::model::{
+    self, Connectivity, NetState, Network, NetworkKey, Security, Snapshot, TrayIcon,
+};
 use crate::nm::{self, Eap, Secret};
 use crate::notify::Notifier;
 use crate::rfkill::Rfkill;
@@ -33,6 +35,8 @@ const SIDE_MARGIN: i32 = 14;
 const SCAN_TIMEOUT: Duration = Duration::from_secs(10);
 /// Panel-initiated changes don't also raise notifications for this long.
 const QUIET: Duration = Duration::from_secs(20);
+/// "Other networks" rows shown before "Show more" (all of them when searching).
+const OTHER_LIMIT: i32 = 8;
 
 fn label(text: &str, classes: &[&str]) -> gtk::Label {
     // Wrapped and ellipsized labels ask for their whole text as natural width;
@@ -115,18 +119,26 @@ impl Toggle {
     }
 }
 
-/// A row of a network list, with its join form folded under it.
-struct NetRow {
-    row: gtk::ListBoxRow,
-    icon: SignalIcon,
-    name: gtk::Label,
-    note: gtk::Label,
-    lock: gtk::DrawingArea,
+/// A network row's join form, built the first time the row opens: crowded
+/// places list hundreds of networks, and most are never joined.
+struct JoinForm {
     revealer: gtk::Revealer,
     identity_label: gtk::Label,
     identity: gtk::Entry,
     password: gtk::PasswordEntry,
     error: gtk::Label,
+}
+
+/// A row of a network list, with its join form folded under it.
+struct NetRow {
+    ui: Weak<Ui>,
+    row: gtk::ListBoxRow,
+    body: gtk::Box,
+    icon: SignalIcon,
+    name: gtk::Label,
+    note: gtk::Label,
+    lock: gtk::DrawingArea,
+    form: RefCell<Option<JoinForm>>,
     network: RefCell<Network>,
     /// Which list it sits in: Some(true) for known networks.
     placed: Cell<Option<bool>>,
@@ -151,7 +163,30 @@ impl NetRow {
         line.append(&icon.area);
         line.append(&text);
         line.append(&lock);
+        let body = vbox(0);
+        body.append(&line);
+        let row = gtk::ListBoxRow::builder()
+            .child(&body)
+            .activatable(true)
+            .build();
+        let this = Rc::new(Self {
+            ui: Rc::downgrade(ui),
+            row,
+            body,
+            icon,
+            name,
+            note,
+            lock,
+            form: RefCell::default(),
+            network: RefCell::new(network.clone()),
+            placed: Cell::new(None),
+            failed: Cell::new(false),
+        });
+        this.update(network);
+        this
+    }
 
+    fn build_form(self: &Rc<Self>) -> JoinForm {
         let identity_label = label("Username", &["dim", "small"]);
         let identity = gtk::Entry::new();
         let password = gtk::PasswordEntry::builder().show_peek_icon(true).build();
@@ -179,53 +214,39 @@ impl NetRow {
             .transition_duration(160)
             .child(&form)
             .build();
+        self.body.append(&revealer);
 
-        let body = vbox(0);
-        body.append(&line);
-        body.append(&revealer);
-        let row = gtk::ListBoxRow::builder()
-            .child(&body)
-            .activatable(true)
-            .build();
-
-        let this = Rc::new(Self {
-            row,
-            icon,
-            name,
-            note,
-            lock,
-            revealer,
-            identity_label,
-            identity,
-            password,
-            error,
-            network: RefCell::new(network.clone()),
-            placed: Cell::new(None),
-            failed: Cell::new(false),
-        });
-
-        let weak = Rc::downgrade(&this);
+        let weak = Rc::downgrade(self);
         cancel.connect_clicked(move |_| {
             if let Some(row) = weak.upgrade() {
                 row.collapse();
             }
         });
-        let (ui_weak, row_weak) = (Rc::downgrade(ui), Rc::downgrade(&this));
-        let submit = move || {
-            if let (Some(ui), Some(row)) = (ui_weak.upgrade(), row_weak.upgrade()) {
+        let weak = Rc::downgrade(self);
+        let submit = Rc::new(move || {
+            if let Some(row) = weak.upgrade()
+                && let Some(ui) = row.ui.upgrade()
+            {
                 ui.join_row(&row);
             }
-        };
-        let submit = Rc::new(submit);
+        });
         let on_click = submit.clone();
         join.connect_clicked(move |_| on_click());
-        this.password.connect_activate(move |_| submit());
-        let to_password = this.password.clone();
-        this.identity.connect_activate(move |_| {
+        password.connect_activate(move |_| submit());
+        let to_password = password.clone();
+        identity.connect_activate(move |_| {
             to_password.grab_focus();
         });
-        this.update(network);
-        this
+        let login = self.network.borrow().security == Security::Enterprise;
+        identity_label.set_visible(login);
+        identity.set_visible(login);
+        JoinForm {
+            revealer,
+            identity_label,
+            identity,
+            password,
+            error,
+        }
     }
 
     fn update(&self, network: &Network) {
@@ -248,49 +269,67 @@ impl NetRow {
             self.note.set_text(&notes.join(" · "));
             self.note.set_visible(!notes.is_empty());
         }
-        let login = network.security == Security::Enterprise;
-        self.identity_label.set_visible(login);
-        self.identity.set_visible(login);
+        if let Some(form) = self.form.borrow().as_ref() {
+            let login = network.security == Security::Enterprise;
+            form.identity_label.set_visible(login);
+            form.identity.set_visible(login);
+        }
+        let secured = if network.security.secured() {
+            ", secured"
+        } else {
+            ""
+        };
         self.row
             .update_property(&[gtk::accessible::Property::Label(&format!(
-                "{}, {} signal{}",
+                "{}, {} signal{secured}",
                 network.ssid,
                 model::signal_label(network.strength),
-                if network.security.secured() {
-                    ", secured"
-                } else {
-                    ""
-                }
             ))]);
         *self.network.borrow_mut() = network.clone();
     }
 
     fn expanded(&self) -> bool {
-        self.revealer.reveals_child()
+        self.form
+            .borrow()
+            .as_ref()
+            .is_some_and(|f| f.revealer.reveals_child())
     }
 
-    fn expand(&self) {
+    fn expand(self: &Rc<Self>) {
+        if self.form.borrow().is_none() {
+            let form = self.build_form();
+            *self.form.borrow_mut() = Some(form);
+        }
+        let form = self.form.borrow();
+        let Some(form) = form.as_ref() else { return };
         self.row.add_css_class("expanded");
-        self.revealer.set_reveal_child(true);
-        if WidgetExt::is_visible(&self.identity) && self.identity.text().is_empty() {
-            self.identity.grab_focus();
+        form.revealer.set_reveal_child(true);
+        if WidgetExt::is_visible(&form.identity) && form.identity.text().is_empty() {
+            form.identity.grab_focus();
         } else {
-            self.password.grab_focus();
+            form.password.grab_focus();
         }
     }
 
     fn collapse(&self) {
         self.row.remove_css_class("expanded");
-        self.revealer.set_reveal_child(false);
-        self.password.set_text("");
-        self.error.set_visible(false);
-        self.password.remove_css_class("warn");
+        if let Some(form) = self.form.borrow().as_ref() {
+            form.revealer.set_reveal_child(false);
+            form.password.set_text("");
+            form.error.set_visible(false);
+            form.password.remove_css_class("warn");
+        }
     }
 
-    fn show_error(&self, message: &str) {
-        self.error.set_text(message);
-        self.error.set_visible(true);
-        self.password.add_css_class("warn");
+    fn show_error(self: &Rc<Self>, message: &str) {
+        if !self.expanded() {
+            self.expand();
+        }
+        if let Some(form) = self.form.borrow().as_ref() {
+            form.error.set_text(message);
+            form.error.set_visible(true);
+            form.password.add_css_class("warn");
+        }
     }
 
     /// A failed attempt, noted on the folded row until it's tried again.
@@ -312,7 +351,12 @@ impl NetRow {
     /// What the form holds, or why it can't be sent.
     fn secret(&self) -> Result<Secret, &'static str> {
         let security = self.network.borrow().security;
-        secret_for(security, &self.identity.text(), &self.password.text())
+        let form = self.form.borrow();
+        let (identity, password) = form
+            .as_ref()
+            .map(|f| (f.identity.text().to_string(), f.password.text().to_string()))
+            .unwrap_or_default();
+        secret_for(security, &identity, &password)
     }
 }
 
@@ -1013,8 +1057,10 @@ pub struct Ui {
     hotspot: Rc<HotspotForm>,
     hotspot_button: gtk::Button,
     airplane_toggle: Toggle,
-    networking_toggle: Toggle,
-    rows: RefCell<HashMap<Vec<u8>, Rc<NetRow>>>,
+    rows: RefCell<HashMap<NetworkKey, Rc<NetRow>>>,
+    /// Whether "Other networks" lists everything, not just the strongest.
+    show_all: Rc<Cell<bool>>,
+    show_more: gtk::Button,
     rendered_extras: RefCell<(Vec<model::Wired>, Vec<model::Vpn>)>,
     snapshot: RefCell<Snapshot>,
     started: Cell<bool>,
@@ -1099,6 +1145,12 @@ impl Ui {
         other_empty.set_margin_start(6);
         other_empty.set_visible(false);
         other_box.append(&other_empty);
+        let show_more = button("", &["footer-item", "show-more"]);
+        if let Some(child) = show_more.child().and_downcast::<gtk::Label>() {
+            child.set_xalign(0.0);
+        }
+        show_more.set_visible(false);
+        other_box.append(&show_more);
         let (wired_box, _, wired_list) = section("Wired");
         let (vpn_box, _, vpn_list) = section("VPN");
 
@@ -1123,7 +1175,6 @@ impl Ui {
             }
         }
         let (airplane_toggle, airplane_label) = Toggle::new("Airplane mode");
-        let (networking_toggle, networking_label) = Toggle::new("Networking");
         let toggle_row = |label: &gtk::Label, toggle: &Toggle| {
             let row = hbox(8);
             row.set_margin_start(8);
@@ -1141,7 +1192,6 @@ impl Ui {
         footer.append(&hotspot_button);
         footer.append(&hotspot.revealer);
         footer.append(&toggle_row(&airplane_label, &airplane_toggle));
-        footer.append(&toggle_row(&networking_label, &networking_toggle));
         footer.append(&settings_button);
 
         let panel = vbox(12);
@@ -1185,8 +1235,9 @@ impl Ui {
             hotspot,
             hotspot_button,
             airplane_toggle,
-            networking_toggle,
             rows: RefCell::default(),
+            show_all: Rc::default(),
+            show_more,
             rendered_extras: RefCell::default(),
             snapshot: RefCell::default(),
             started: Cell::new(false),
@@ -1233,13 +1284,6 @@ impl Ui {
         self.airplane_toggle.on_toggle(move |on| {
             if let Some(ui) = weak.upgrade() {
                 ui.set_airplane(on);
-            }
-        });
-        let weak = Rc::downgrade(self);
-        self.networking_toggle.on_toggle(move |on| {
-            if let Some(ui) = weak.upgrade() {
-                ui.quiet();
-                ui.run(move |conn| async move { nm::set_networking(&conn, on).await });
             }
         });
 
@@ -1289,19 +1333,33 @@ impl Ui {
         let f = with(|ui| ui.prompt.answer(None));
         self.prompt.cancel.connect_clicked(move |_| f());
 
-        for list in [&self.known_list, &self.other_list] {
+        for (list, limited) in [(&self.known_list, false), (&self.other_list, true)] {
             let weak = Rc::downgrade(self);
             list.connect_row_activated(move |_, row| {
                 if let Some(ui) = weak.upgrade() {
                     ui.row_activated(row);
                 }
             });
-            let search = self.search.clone();
+            // Typing searches every network; otherwise "Other networks" shows
+            // only its strongest few until "Show more".
+            let (search, show_all) = (self.search.clone(), self.show_all.clone());
             list.set_filter_func(move |row| {
                 let query = search.text().to_lowercase();
-                query.is_empty() || row.widget_name().contains(query.as_str())
+                if !query.is_empty() {
+                    return row.widget_name().contains(query.as_str());
+                }
+                !limited
+                    || show_all.get()
+                    || row.index() < OTHER_LIMIT
+                    || row.has_css_class("expanded")
             });
         }
+        let f = with(|ui| {
+            ui.show_all.set(true);
+            ui.other_list.invalidate_filter();
+            ui.update_show_more();
+        });
+        self.show_more.connect_clicked(move |_| f());
 
         self.search.set_key_capture_widget(Some(&self.window));
         let weak = Rc::downgrade(self);
@@ -1311,6 +1369,7 @@ impl Ui {
                     .set_reveal_child(!entry.text().is_empty());
                 ui.known_list.invalidate_filter();
                 ui.other_list.invalidate_filter();
+                ui.update_show_more();
             }
         });
         let weak = Rc::downgrade(self);
@@ -1471,8 +1530,35 @@ impl Ui {
                 let _ = nm::delete(&conn, &created).await;
             });
         }
-        if let Some(row) = self.rows.borrow().get(&failed.ssid) {
+        if let Some(row) = self.row_for_ssid(&failed.ssid) {
             row.mark_failed("Couldn't connect");
+        }
+    }
+
+    /// The row an attempt by SSID belongs to (pending joins know no more).
+    fn row_for_ssid(&self, ssid: &[u8]) -> Option<Rc<NetRow>> {
+        self.rows
+            .borrow()
+            .values()
+            .find(|r| r.network.borrow().ssid_bytes == ssid)
+            .cloned()
+    }
+
+    fn update_show_more(&self) {
+        let others = self
+            .rows
+            .borrow()
+            .values()
+            .filter(|r| r.placed.get() == Some(false))
+            .count();
+        let hidden = others.saturating_sub(OTHER_LIMIT as usize);
+        let show = hidden > 0 && !self.show_all.get() && self.search.text().is_empty();
+        self.show_more.set_visible(show);
+        if show {
+            self.show_more.set_label(&format!(
+                "Show {hidden} more network{}",
+                if hidden == 1 { "" } else { "s" }
+            ));
         }
     }
 
@@ -1494,7 +1580,6 @@ impl Ui {
         self.airplane_toggle
             .switch
             .set_sensitive(self.rfkill.borrow().is_some());
-        self.networking_toggle.set(snapshot.networking);
 
         let notice = if airplane {
             Some(("Airplane mode is on.", Some("Turn off")))
@@ -1570,6 +1655,7 @@ impl Ui {
             .count();
         self.other_empty.set_visible(others == 0 && !scanning);
         self.other_list.set_visible(others > 0);
+        self.update_show_more();
     }
 
     fn show_notice(&self, text: &str, action: Option<&str>) {
@@ -1592,30 +1678,30 @@ impl Ui {
     /// Updates rows in place, and re-sorts them only while the panel is hidden
     /// or when a network moves between lists.
     fn sync_rows(self: &Rc<Self>, snapshot: &Snapshot) {
-        let current = snapshot.current.as_ref().map(|c| c.ssid_bytes.clone());
         let networks: Vec<&Network> = snapshot
             .networks
             .iter()
-            .filter(|n| Some(&n.ssid_bytes) != current.as_ref())
+            .filter(|n| !snapshot.current.as_ref().is_some_and(|c| c.is(n)))
             .collect();
         let mut rows = self.rows.borrow_mut();
         let mut relayout = !self.window.is_visible();
         let mut seen = HashSet::new();
         for network in &networks {
-            seen.insert(network.ssid_bytes.clone());
-            match rows.get(&network.ssid_bytes) {
+            let key = network.key();
+            match rows.get(&key) {
                 Some(row) => {
                     row.update(network);
                     relayout |= row.placed.get() != Some(network.saved.is_some());
                 }
                 None => {
-                    rows.insert(network.ssid_bytes.clone(), NetRow::new(self, network));
+                    rows.insert(key.clone(), NetRow::new(self, network));
                     relayout = true;
                 }
             }
+            seen.insert(key);
         }
         let before = rows.len();
-        rows.retain(|ssid, row| seen.contains(ssid) || row.expanded());
+        rows.retain(|key, row| seen.contains(key) || row.expanded());
         relayout |= rows.len() != before;
         if !relayout {
             return;
@@ -1623,10 +1709,10 @@ impl Ui {
         self.known_list.remove_all();
         self.other_list.remove_all();
         // Network order from the snapshot, then any expanded leftovers.
-        let mut order: Vec<Vec<u8>> = networks.iter().map(|n| n.ssid_bytes.clone()).collect();
+        let mut order: Vec<NetworkKey> = networks.iter().map(|n| n.key()).collect();
         order.extend(rows.keys().filter(|k| !seen.contains(*k)).cloned());
-        for ssid in order {
-            let Some(row) = rows.get(&ssid) else { continue };
+        for key in order {
+            let Some(row) = rows.get(&key) else { continue };
             let known = row.network.borrow().saved.is_some();
             if known {
                 self.known_list.append(&row.row);
@@ -1827,7 +1913,7 @@ impl Ui {
         glib::spawn_future_local(async move {
             if let Err(e) = nm::activate(&conn, &saved, &device).await {
                 ui.pending.borrow_mut().take();
-                if let Some(row) = ui.rows.borrow().get(&ssid) {
+                if let Some(row) = ui.row_for_ssid(&ssid) {
                     row.mark_failed(&friendly(&e));
                 }
             }
@@ -2099,6 +2185,8 @@ impl Ui {
         self.collapse_forms();
         self.search.set_text("");
         self.card.hide_shared();
+        self.show_all.set(false);
+        self.other_list.invalidate_filter();
         self.window.set_visible(false);
         self.notice.set_visible(false);
         self.render();

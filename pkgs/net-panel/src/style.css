@@ -286,6 +286,10 @@ window.net-panel {
   color: alpha(@np_fg, 0.88);
 }
 
+.panel button.show-more {
+  color: @np_accent;
+}
+
 .key {
   font-family: monospace;
   font-size: 13px;

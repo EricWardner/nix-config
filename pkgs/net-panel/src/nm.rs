@@ -15,7 +15,7 @@ use zbus::zvariant::{ObjectPath, OwnedObjectPath, OwnedValue, Value};
 use zbus::{Connection, MatchRule, MessageStream};
 
 use crate::model::{
-    AccessPoint, Connectivity, Current, NetState, Primary, Saved, Security, Snapshot, Vpn,
+    Access, AccessPoint, Connectivity, Current, NetState, Primary, Saved, Security, Snapshot, Vpn,
     WifiDevice, Wired, group_networks,
 };
 
@@ -159,6 +159,11 @@ fn parse_saved(path: &str, settings: &SettingsMap) -> Saved {
         ssid: as_bytes(setting(settings, "802-11-wireless", "ssid")),
         mode: as_string(setting(settings, "802-11-wireless", "mode")),
         timestamp: as_u64(setting(settings, "connection", "timestamp")),
+        access: Access::from_key_mgmt(&as_string(setting(
+            settings,
+            "802-11-wireless-security",
+            "key-mgmt",
+        ))),
     }
 }
 
@@ -217,7 +222,7 @@ fn snapshot(objects: &Objects, saved: &[Saved]) -> Snapshot {
 
     let saved_by_path: HashMap<&str, &Saved> = saved.iter().map(|s| (s.path.as_str(), s)).collect();
     let mut aps = Vec::new();
-    let mut active_wifi: Option<(Vec<u8>, NetState)> = None;
+    let mut active_wifi: Option<(Vec<u8>, Option<Access>, NetState)> = None;
 
     for device_path in as_paths(value(nm, "Devices")) {
         let Some(device) = index.props(&device_path, IFACE_DEVICE) else {
@@ -275,9 +280,12 @@ fn snapshot(objects: &Objects, saved: &[Saved]) -> Snapshot {
                     .or_else(|| ap.map(|a| a.ssid.clone()))
                     .unwrap_or_default();
                 let hotspot = saved.is_some_and(|s| s.mode == "ap");
+                let access = saved
+                    .map(|s| s.access)
+                    .or_else(|| ap.map(|a| a.security.access()));
                 let (ip4, gateway, dns) = ip4_details(&index, as_path(value(device, "Ip4Config")));
                 if !hotspot {
-                    active_wifi = Some((ssid_bytes.clone(), conn_state));
+                    active_wifi = Some((ssid_bytes.clone(), access, conn_state));
                 }
                 snap.current = Some(Current {
                     ssid: if ssid_bytes.is_empty() {
@@ -291,6 +299,7 @@ fn snapshot(objects: &Objects, saved: &[Saved]) -> Snapshot {
                     strength: ap.map_or(0, |a| a.strength),
                     frequency: ap.map_or(0, |a| a.frequency),
                     security: ap.map(|a| a.security),
+                    access,
                     bitrate: as_u32(value(wireless, "Bitrate")),
                     ip4,
                     gateway,
@@ -345,7 +354,7 @@ fn snapshot(objects: &Objects, saved: &[Saved]) -> Snapshot {
 
     let active = active_wifi
         .as_ref()
-        .map(|(ssid, state)| (ssid.as_slice(), *state));
+        .map(|(ssid, access, state)| (ssid.as_slice(), *access, *state));
     snap.networks = group_networks(&aps, saved, active);
     snap
 }
