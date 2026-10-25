@@ -55,6 +55,8 @@ record() {
   echo $$ > "$dir/pid"
   # Cancelled during the countdown (see toggle)
   trap 'set_state idle; exit 130' TERM
+  # Out any other way before the recording's saved: the bar goes back to idle
+  trap 'case $(get_state) in selecting* | countdown* | recording*) set_state idle ;; esac' EXIT
 
   pkill -x slurp 2>/dev/null || true
   set_state selecting
@@ -104,7 +106,16 @@ record() {
 }
 
 toggle() {
-  case $(get_state) in
+  local state
+  state=$(get_state)
+  # A recorder killed outright (SIGKILL, a crash) leaves its state behind,
+  # with nothing to stop: start over instead
+  case $state in
+    selecting* | countdown* | recording*)
+      kill -0 "$(cat "$dir/pid" 2>/dev/null)" 2>/dev/null || state=idle
+      ;;
+  esac
+  case $state in
     recording*) pkill -INT -x wl-screenrec ;;
     selecting*) pkill -x slurp ;;
     countdown*) kill "$(cat "$dir/pid")" 2>/dev/null || set_state idle ;;
