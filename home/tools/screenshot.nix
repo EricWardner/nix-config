@@ -9,7 +9,7 @@ let
     runtimeInputs = with pkgs; [
       grimblast
       hyprpicker
-      wl-clipboard
+      wl-clipboard-rs
       libnotify
       findutils
       qrtool
@@ -31,7 +31,7 @@ in
     enable = true;
     settings = {
       general = {
-        copy-command = "${pkgs.wl-clipboard}/bin/wl-copy";
+        copy-command = "${pkgs.wl-clipboard-rs}/bin/wl-copy";
         actions-on-enter = [
           "save-to-clipboard"
           "exit"
