@@ -20,6 +20,11 @@ in
     programs.hyprland = {
       enable = true;
       xwayland.enable = true;
+      # Not for UWSM itself (the greeter starts Hyprland as before): the
+      # module rebuilds the package with withUWSM = this option, and the
+      # package defaults it on, so off meant a Hyprland (and portal) the
+      # binary cache never has, compiled on each update.
+      withUWSM = true;
     };
     xdg.portal = {
       enable = true;
