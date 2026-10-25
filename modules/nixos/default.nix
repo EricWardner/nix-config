@@ -101,11 +101,8 @@ in
       # disk password. Both hosts load their GPU driver in the initrd
       # (amdgpu, i915), so it comes up at native resolution.
       plymouth.enable = true;
-      # Disable(quiet) most of the logging that happens during boot
-      initrd = {
-        verbose = false;
-        systemd.enable = mkIf (!cfg.grub) true;
-      };
+      # Disable(quiet) most of the logging that happens during boot. The
+      # initrd is systemd's (nixpkgs dropped the scripted one).
       consoleLogLevel = 0;
       kernelParams = [
         "quiet"
