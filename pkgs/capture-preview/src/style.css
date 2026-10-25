@@ -75,6 +75,17 @@ button.action.suggested:hover {
   background: shade(@cp_accent, 1.08);
 }
 
+/* Keyboard focus, as in net-panel: Enter presses the focused button. On the
+   accent-filled GIF button the ring is dark. */
+button.action:focus-visible {
+  outline: 2px solid alpha(@cp_accent, 0.8);
+  outline-offset: -2px;
+}
+
+button.action.suggested:focus-visible {
+  outline-color: alpha(@cp_on_accent, 0.6);
+}
+
 button.action.destructive {
   color: @cp_danger;
 }

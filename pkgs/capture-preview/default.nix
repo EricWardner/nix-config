@@ -8,9 +8,7 @@
   gst_all_1,
   ffmpeg,
   wl-clipboard-rs,
-  mpv,
   systemd,
-  util-linux,
 }:
 let
   manifest = (lib.importTOML ./Cargo.toml).package;
@@ -41,16 +39,14 @@ rustPlatform.buildRustPackage {
     gst_all_1.gst-plugins-bad
     gst_all_1.gst-libav
   ];
-  # ffprobe and the GIF conversion, and the actions: wl-copy, mpv, busctl
-  # (Thunar's FileManager1), setsid
+  # ffprobe and the GIF conversion, and the actions: wl-copy and busctl
+  # (Thunar's FileManager1)
   preFixup = ''
     gappsWrapperArgs+=(--prefix PATH : ${
       lib.makeBinPath [
         ffmpeg
         wl-clipboard-rs
-        mpv
         systemd
-        util-linux
       ]
     })
   '';

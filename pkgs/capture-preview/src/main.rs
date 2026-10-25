@@ -97,6 +97,8 @@ struct Player {
     path: PathBuf,
     decoder: gif::Decoder<BufReader<File>>,
     screen: gif_dispose::Screen,
+    /// Whether this pass through the file has shown a frame.
+    played: bool,
 }
 
 impl Player {
@@ -109,6 +111,7 @@ impl Player {
             path: path.to_owned(),
             decoder,
             screen,
+            played: false,
         })
     }
 
@@ -120,15 +123,19 @@ impl Player {
     }
 
     /// The next frame as a texture and how long to show it; at the end the
-    /// file is opened again, so the GIF loops.
+    /// file is opened again, so the GIF loops (unless it has no frames).
     fn next(&mut self) -> Option<(gdk::MemoryTexture, Duration)> {
         let delay = match self.decoder.read_next_frame() {
             Ok(Some(frame)) => {
                 let delay = frame.delay;
                 self.screen.blit_frame(frame).ok()?;
+                self.played = true;
                 delay
             }
             Ok(None) => {
+                if !self.played {
+                    return None;
+                }
                 *self = Self::open(&self.path).ok()?;
                 return self.next();
             }
@@ -230,6 +237,9 @@ fn build(app: &gtk::Application, opts: &Options) {
         };
         let video = gtk::Video::for_file(Some(&gio::File::for_path(&file)));
         video.set_autoplay(true);
+        // Its controls show only on hover; Tab would otherwise move the focus
+        // into them while hidden, where it can't be seen
+        video.set_can_focus(false);
         // GtkVideo's own loop doesn't take with the GStreamer backend on
         // these files (the stream just ends), so start it over by hand
         if let Some(stream) = video.media_stream() {
@@ -376,9 +386,28 @@ fn build(app: &gtk::Application, opts: &Options) {
     let gif_button = if is_gif || gif.exists() {
         action("Copy GIF", &["suggested"], copy_gif.clone())
     } else {
-        // Convert, then the same button copies the GIF
+        // Convert, then the same button copies the GIF. ffmpeg writes beside
+        // it under a hidden name, renamed once it's done, so a GIF that
+        // exists is a whole one.
         let gif_size = opts.gif_size.unwrap_or((w, h));
         let converting: Rc<RefCell<Option<Child>>> = Rc::default();
+        let mut part_name = std::ffi::OsString::from(".");
+        part_name.push(gif.file_name().unwrap_or_default());
+        part_name.push(".part");
+        let part = gif.with_file_name(part_name);
+        // A conversion still running when the panel closes would have no one
+        // to rename its file: stop it
+        window.connect_close_request({
+            let (converting, part) = (converting.clone(), part.clone());
+            move |_| {
+                if let Some(mut child) = converting.borrow_mut().take() {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    let _ = std::fs::remove_file(&part);
+                }
+                glib::Propagation::Proceed
+            }
+        });
         action("Convert to GIF", &["suggested"], {
             let (file, gif, show_gif_size) = (file.clone(), gif.clone(), show_gif_size.clone());
             move |button| {
@@ -395,8 +424,8 @@ fn build(app: &gtk::Application, opts: &Options) {
                 let child = Command::new("ffmpeg")
                     .args(["-y", "-loglevel", "error", "-i"])
                     .arg(&file)
-                    .args(["-vf", &filter, "-loop", "0"])
-                    .arg(&gif)
+                    .args(["-vf", &filter, "-loop", "0", "-f", "gif"])
+                    .arg(&part)
                     .stdout(Stdio::null())
                     .stderr(Stdio::null())
                     .spawn();
@@ -407,17 +436,20 @@ fn build(app: &gtk::Application, opts: &Options) {
                 *converting.borrow_mut() = Some(child);
                 button.set_label("Converting…");
                 button.set_sensitive(false);
-                let (button, converting, gif, show_gif_size) = (
+                let (button, converting, gif, part, show_gif_size) = (
                     button.clone(),
                     converting.clone(),
                     gif.clone(),
+                    part.clone(),
                     show_gif_size.clone(),
                 );
                 glib::timeout_add_local(Duration::from_millis(100), move || {
                     let status = converting.borrow_mut().as_mut().map(Child::try_wait);
                     match status {
                         Some(Ok(None)) => glib::ControlFlow::Continue,
-                        Some(Ok(Some(s))) if s.success() => {
+                        Some(Ok(Some(s)))
+                            if s.success() && std::fs::rename(&part, &gif).is_ok() =>
+                        {
                             *converting.borrow_mut() = None;
                             button.set_label("Copy GIF");
                             button.set_sensitive(true);
@@ -426,7 +458,7 @@ fn build(app: &gtk::Application, opts: &Options) {
                         }
                         _ => {
                             *converting.borrow_mut() = None;
-                            let _ = std::fs::remove_file(&gif);
+                            let _ = std::fs::remove_file(&part);
                             button.set_label("Convert failed");
                             button.set_sensitive(true);
                             glib::ControlFlow::Break
@@ -446,11 +478,13 @@ fn build(app: &gtk::Application, opts: &Options) {
         }
     });
     let delete = icon_action("user-trash-symbolic", "Delete", &["destructive"], {
-        let (file, close) = (file.clone(), close.clone());
+        let (file, gif, close) = (file.clone(), gif.clone(), close.clone());
         move |_| {
-            // the MP4 and its GIF together
-            let _ = std::fs::remove_file(file.with_extension("mp4"));
-            let _ = std::fs::remove_file(file.with_extension("gif"));
+            // what's shown, and the GIF made from a recording
+            let _ = std::fs::remove_file(&file);
+            if !is_gif {
+                let _ = std::fs::remove_file(&gif);
+            }
             close();
         }
     });
@@ -463,12 +497,23 @@ fn build(app: &gtk::Application, opts: &Options) {
     // GTK would otherwise focus it
     gif_button.grab_focus();
 
-    // Escape closes, and so does a click outside the panel
+    // Hyprland's keybinds act on the window underneath, so Super+Q closed
+    // that rather than the panel: they're held off while the panel has the
+    // keyboard (keyboard-shortcuts-inhibit), and Super+Q closes the panel
+    window.connect_map(|window| {
+        if let Some(toplevel) = window.surface().and_downcast::<gdk::Toplevel>() {
+            toplevel.inhibit_system_shortcuts(None::<&gdk::Event>);
+        }
+    });
+
+    // Escape and Super+Q close, and so does a click outside the panel
     let keys = gtk::EventControllerKey::new();
     keys.connect_key_pressed({
         let close = close.clone();
-        move |_, key, _, _| {
-            if key == gdk::Key::Escape {
+        move |_, key, _, state| {
+            let super_q =
+                key.to_lower() == gdk::Key::q && state.contains(gdk::ModifierType::SUPER_MASK);
+            if key == gdk::Key::Escape || super_q {
                 close();
                 glib::Propagation::Stop
             } else {
@@ -558,7 +603,7 @@ fn spawn(command: &mut Command) {
 }
 
 fn file_uri(path: &Path) -> String {
-    format!("file://{}", path.display())
+    gio::File::for_path(path).uri().into()
 }
 
 fn file_size(path: &Path) -> u64 {
