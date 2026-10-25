@@ -425,6 +425,20 @@ pub async fn watch(conn: Connection, tx: Sender<crate::Event>) {
     // GetManagedObjects left it waiting for a reply that never came, and the
     // panel showed that moment's networks for good.
     let (changed, changes) = async_channel::unbounded::<bool>();
+    // A NetworkManager restart, which the bus announces rather than
+    // NetworkManager, brings new settings paths: reload the saved connections.
+    if let Ok(dbus) = zbus::fdo::DBusProxy::new(&conn).await
+        && let Ok(mut owners) = dbus.receive_name_owner_changed_with_args(&[(0, NM)]).await
+    {
+        let changed = changed.clone();
+        glib::spawn_future_local(async move {
+            while owners.next().await.is_some() {
+                if changed.send(true).await.is_err() {
+                    return;
+                }
+            }
+        });
+    }
     glib::spawn_future_local(async move {
         while let Some(msg) = stream.next().await {
             if changed
@@ -477,14 +491,12 @@ fn touches_settings(msg: Option<&zbus::Message>) -> bool {
     let Some(msg) = msg else { return true };
     let header = msg.header();
     let iface = header.interface().map(|i| i.as_str()).unwrap_or_default();
-    let member = header.member().map(|m| m.as_str()).unwrap_or_default();
     iface == IFACE_SETTINGS
         || iface == IFACE_CONNECTION
         || (iface == "org.freedesktop.DBus.Properties"
             && header
                 .path()
                 .is_some_and(|p| p.as_str().starts_with(SETTINGS_PATH)))
-        || member == "NameOwnerChanged"
 }
 
 pub async fn request_scan(conn: &Connection, device: &str) -> zbus::Result<()> {
