@@ -9,6 +9,7 @@
   ffmpeg,
   wl-clipboard-rs,
   systemd,
+  satty,
 }:
 let
   manifest = (lib.importTOML ./Cargo.toml).package;
@@ -39,14 +40,15 @@ rustPlatform.buildRustPackage {
     gst_all_1.gst-plugins-bad
     gst_all_1.gst-libav
   ];
-  # ffprobe and the GIF conversion, and the actions: wl-copy and busctl
-  # (Thunar's FileManager1)
+  # ffprobe and the GIF conversion, and the actions: wl-copy, busctl
+  # (Thunar's FileManager1) and satty (Annotate)
   preFixup = ''
     gappsWrapperArgs+=(--prefix PATH : ${
       lib.makeBinPath [
         ffmpeg
         wl-clipboard-rs
         systemd
+        satty
       ]
     })
   '';

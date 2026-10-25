@@ -3,7 +3,7 @@ name = "capture-preview"
 version = "0.1.0"
 edition = "2024"
 publish = false
-description = "A screen recording's preview, with show in folder, convert to GIF, copy and delete"
+description = "A screen recording's or screenshot's preview, with show in folder, convert to GIF or annotate, copy and delete"
 
 [dependencies]
 gif = "0.13"
