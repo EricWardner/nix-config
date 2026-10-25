@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   lib,
   ...
@@ -27,6 +28,25 @@
     # The hyprland target would also turn hyprpaper on to show stylix.image;
     # the wallpaper is swaybg (wms/hypr/wallpaper.nix).
     stylix.targets.hyprland.hyprpaper.enable = false;
+
+    # Fonts from home.packages are found through ~/.nix-profile (NixOS's
+    # fontconfig lists it), but every store path is dated 1970, so
+    # fontconfig's cache for the folder never looks out of date and goes on
+    # listing an older generation's fonts. Rebuild it (~2 s) when the font
+    # files change.
+    home.activation.fontconfigCache = lib.hm.dag.entryAfter [ "installPackages" ] ''
+      fonts="${config.home.profileDirectory}/share/fonts"
+      stamp="${config.xdg.cacheHome}/fontconfig/nix-profile-fonts"
+      if [[ -d $fonts ]]; then
+        now=$(find "$fonts/" -type l -printf '%l\n' | sort | sha256sum)
+        if [[ $(cat "$stamp" 2>/dev/null) != "$now" ]]; then
+          run ${lib.getBin pkgs.fontconfig}/bin/fc-cache -f "$fonts"
+          run mkdir -p "$(dirname "$stamp")"
+          [[ -v DRY_RUN ]] || printf '%s\n' "$now" > "$stamp"
+        fi
+      fi
+    '';
+
     xdg = {
       enable = true;
       mimeApps = {
