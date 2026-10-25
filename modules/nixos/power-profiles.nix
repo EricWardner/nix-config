@@ -67,11 +67,15 @@ in
       SUBSYSTEM=="power_supply", ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start --no-block power-profile-battery-check.service"
     '';
 
-    # Poll battery percentage every minute for power-saver threshold
+    # Poll battery percentage every minute for power-saver threshold, and
+    # check once at boot. power-profiles-daemon (0.30+) starts after
+    # multi-user.target, for graphical.target, so this hangs off the same
+    # target: from multi-user.target it was an ordering cycle.
     systemd.services."power-profile-battery-check" = {
       description = "Check battery level and adjust power profile";
       after = [ "power-profiles-daemon.service" ];
       requires = [ "power-profiles-daemon.service" ];
+      wantedBy = [ "graphical.target" ];
       serviceConfig = {
         Type = "oneshot";
         ExecStart = "${batteryCheckScript}/bin/power-profile-battery-check";
@@ -83,18 +87,6 @@ in
       timerConfig = {
         OnCalendar = "minutely";
         Unit = "power-profile-battery-check.service";
-      };
-    };
-
-    # Set correct profile on boot
-    systemd.services."power-profile-boot" = {
-      description = "Set power profile based on AC state at boot";
-      after = [ "power-profiles-daemon.service" ];
-      requires = [ "power-profiles-daemon.service" ];
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = "${batteryCheckScript}/bin/power-profile-battery-check";
       };
     };
   };
