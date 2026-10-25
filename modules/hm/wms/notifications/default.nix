@@ -119,10 +119,8 @@ in
         icon-path = "${claudeIcon}";
         format = "${label "Claude Code"}\\n<b>%b</b>";
       };
-      # screen-record's "Recording saved" carries the first frame as its
-      # image, and the colour picker's "Colour copied" the colour: bigger
-      # than an app icon.
-      "app-name=\"Screen recording\"".max-icon-size = 96;
+      # The colour picker's "Colour copied" carries the colour as its image:
+      # a bigger swatch than an app icon.
       "app-name=Screenshot".max-icon-size = 96;
 
       "urgency=low".text-color = "#${colors.base03}";

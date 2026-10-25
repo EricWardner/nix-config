@@ -89,20 +89,15 @@ record() {
     exit 1
   fi
 
-  # The bar shows "Saved" for a few seconds; the notification (the first
-  # frame as its thumbnail) opens the preview when clicked. No GIF unless
-  # the preview's Convert to GIF asks for one.
+  # The preview opens straight away; the bar shows "Saved" for a few
+  # seconds, which opens it again. No GIF unless the preview's Convert to
+  # GIF asks for one.
   set_state "done" "$mp4File"
   (
     sleep 8
     if [ "$(get_state)" = "done $mp4File" ]; then set_state idle; fi
   ) &
-  local thumb="$dir/thumb.png"
-  ffmpeg -y -loglevel error -i "$mp4File" -frames:v 1 -vf "scale=-2:240" "$thumb" || thumb=video-x-generic
-  local action
-  action=$(notify -t 20000 -i "$thumb" -A default=Preview --wait \
-    "Recording saved" "$(basename "$mp4File")  (click to preview)") || true
-  if [ "$action" = default ]; then menu "$mp4File"; fi
+  menu "$mp4File"
 }
 
 toggle() {

@@ -1,7 +1,7 @@
 //! capture-preview: a screen recording or screenshot in a glass panel in the
-//! middle of the screen, with what to do with it. screen-record opens it
-//! when its "Recording saved" notification (or the bar's "Saved") is clicked,
-//! and screenshot as soon as a shot is taken.
+//! middle of the screen, with what to do with it. screen-record and
+//! screenshot open it as soon as a recording or shot is done (and the bar's
+//! "Saved" opens a recording again).
 //!
 //! An MP4 plays in GtkVideo (GStreamer, decoded on the GPU through VA-API),
 //! with play/pause and a seek bar on hover; Convert to GIF makes the GIF next

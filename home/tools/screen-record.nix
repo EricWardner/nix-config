@@ -8,7 +8,6 @@ let
 
     runtimeInputs = with pkgs; [
       wl-screenrec
-      ffmpeg
       procps
       libnotify
       slurp
