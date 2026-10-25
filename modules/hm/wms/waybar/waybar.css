@@ -94,8 +94,13 @@ window#waybar {
   padding: 0 1px;
 }
 
+/* The icon is Symbols Nerd Font's alone, which centres a little high in the
+   bar (the line takes that font's shorter height, not SF Pro's): the top
+   padding brings it back down. It has no side bearings either; 3px each
+   side is what the old Nerd-patched SF Pro built in. */
 #custom-nix {
   font-size: 20px;
+  padding: 2px 3px 0;
 }
 
 /* The applets (the Do Not Disturb moon while it's on, then the tray:

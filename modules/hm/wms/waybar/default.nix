@@ -24,6 +24,11 @@ let
 
   # The Gather logo, a one-glyph font at U+FFF00 for Gather's workspace icon
   gatherSymbol = pkgs.callPackage ../../../../pkgs/gather-symbol { };
+
+  # U+2002 EN SPACE between a workspace's number and its app icons: the icons
+  # (Symbols Nerd Font) have no side bearings, and an en space spaces them as
+  # the old Nerd-patched SF Pro did with a plain space
+  enSpace = builtins.fromJSON ''"\u2002"'';
   wpctl = "${pkgs.wireplumber}/bin/wpctl";
 
   # Status icons are SF Symbols, Apple's icon set drawn to match SF Pro:
@@ -287,8 +292,8 @@ in
             on-click = "activate";
             show-special = true;
             all-outputs = false;
-            format = "{name} {windows}";
-            format-window-separator = " ";
+            format = "{name}${enSpace}{windows}";
+            format-window-separator = enSpace;
             window-rewrite-default = "";
             window-rewrite = {
               "class<google-chrome>" = "";

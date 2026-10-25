@@ -24,9 +24,10 @@ font.descent = 410
 
 glyph = font.createChar(CODEPOINT, "gather")
 glyph.importOutlines(svg)
-# One em wide with the logo centred, like the Nerd Font icons beside it
+# As wide as the logo, with no side bearings, like Symbols Nerd Font's icons
+# beside it (waybar spaces them out)
 xmin, _, xmax, _ = glyph.boundingBox()
-glyph.transform((1, 0, 0, 1, (font.em - (xmax - xmin)) / 2 - xmin, 0))
-glyph.width = font.em
+glyph.transform((1, 0, 0, 1, -xmin, 0))
+glyph.width = round(xmax - xmin)
 
 font.generate(out)

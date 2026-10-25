@@ -55,10 +55,10 @@ in
         let
           sfPro = {
             # Plain SF Pro, unpacked from Apple's image in seconds. Nerd Font
-            # icons come from Symbols Nerd Font (the emoji font below) by
-            # fontconfig fallback, and the Gather logo from pkgs/gather-symbol
-            # (waybar), where a Nerd-patched build with the logo patched in
-            # took ~13 minutes on every nixpkgs update.
+            # icons come from Symbols Nerd Font by fontconfig fallback (the
+            # HM fontconfig rules in modules/hm), and the Gather logo from
+            # pkgs/gather-symbol (waybar), where a Nerd-patched build with the
+            # logo patched in took ~13 minutes on every nixpkgs update.
             package = inputs.apple-fonts.packages.${pkgs.stdenv.hostPlatform.system}.sf-pro;
             # SF Pro Text is Apple's optical variant hinted for small UI sizes
             # (vs the variable "SF Pro"/Display family, tuned for large headings).
@@ -73,10 +73,7 @@ in
           serif = sfPro;
           sansSerif = sfPro;
           monospace = mono;
-          emoji = {
-            package = pkgs.nerd-fonts.symbols-only;
-            name = "Symbols Nerd Font Mono";
-          };
+          # emoji: stylix's default, Noto Color Emoji
 
           sizes = {
             desktop = 9;

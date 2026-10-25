@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   lib,
   ...
@@ -35,18 +36,27 @@
       # all dated 1970), so a font change didn't show until fc-cache -f.
       enable = true;
 
-      # The icon fonts have only a Regular face, so in bold text (waybar's
-      # workspace labels) fontconfig fakes bold by thickening their outlines,
-      # which runs the Gather logo's rings together. 90-synthetic.conf does
-      # that to a font no heavier than medium; user rules come before it
-      # (50-user.conf), so this calls them bold when bold is asked for.
-      configFile.icon-fonts-no-fake-bold = {
+      # The icon fonts: Nerd Font icons in text come from Symbols Nerd Font
+      # (the Gather logo from gather-symbol, which nothing else covers).
+      # - Symbols Nerd Font goes straight after the UI font, ahead of
+      #   Cascadia Code NF, whose icons are sized for a terminal cell and came
+      #   out far smaller in the bar.
+      # - They have only a Regular face, so in bold text (waybar's workspace
+      #   labels) fontconfig fakes bold by thickening their outlines, which
+      #   ran the Gather logo's rings together. 90-synthetic.conf does that
+      #   to a font no heavier than medium; user rules come before it
+      #   (50-user.conf), so this calls them bold when bold is asked for.
+      configFile.icon-fonts = {
         enable = true;
         priority = 60;
         text = ''
           <?xml version="1.0"?>
           <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
           <fontconfig>
+            <match target="pattern">
+              <test name="family"><string>${config.stylix.fonts.sansSerif.name}</string></test>
+              <edit name="family" mode="append" binding="strong"><string>Symbols Nerd Font</string></edit>
+            </match>
           ${
             lib.concatMapStrings
               (family: ''
@@ -112,6 +122,10 @@
 
         # Dev Tools
         hyprpicker
+
+        # Fonts: Nerd Font icons for text in any font (fonts.fontconfig
+        # above), and Ghostty's font-codepoint-map
+        nerd-fonts.symbols-only
 
         # Chat
         slack
