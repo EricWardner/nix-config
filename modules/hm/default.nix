@@ -1,5 +1,4 @@
 {
-  config,
   pkgs,
   lib,
   ...
@@ -29,49 +28,43 @@
     # the wallpaper is swaybg (wms/hypr/wallpaper.nix).
     stylix.targets.hyprland.hyprpaper.enable = false;
 
-    # Fonts from home.packages are found through ~/.nix-profile (NixOS's
-    # fontconfig lists it), but every store path is dated 1970, so
-    # fontconfig's cache for the folder never looks out of date and goes on
-    # listing an older generation's fonts. Rebuild it (~2 s) when the font
-    # files change.
-    home.activation.fontconfigCache = lib.hm.dag.entryAfter [ "installPackages" ] ''
-      fonts="${config.home.profileDirectory}/share/fonts"
-      stamp="${config.xdg.cacheHome}/fontconfig/nix-profile-fonts"
-      if [[ -d $fonts ]]; then
-        now=$(find "$fonts/" -type l -printf '%l\n' | sort | sha256sum)
-        if [[ $(cat "$stamp" 2>/dev/null) != "$now" ]]; then
-          run ${lib.getBin pkgs.fontconfig}/bin/fc-cache -f "$fonts"
-          run mkdir -p "$(dirname "$stamp")"
-          [[ -v DRY_RUN ]] || printf '%s\n' "$now" > "$stamp"
-        fi
-      fi
-    '';
+    fonts.fontconfig = {
+      # Fonts from home.packages, through each generation's own font folder
+      # and a cache built with it. Otherwise they're only found through
+      # ~/.nix-profile, whose cache never looks out of date (store paths are
+      # all dated 1970), so a font change didn't show until fc-cache -f.
+      enable = true;
 
-    # The icon fonts have only a Regular face, so in bold text (waybar's
-    # workspace labels) fontconfig fakes bold by thickening their outlines,
-    # which runs the Gather logo's rings together. 90-synthetic.conf does
-    # that to a font no heavier than medium; this runs before it (user rules
-    # come in at 50-user.conf) and calls them bold when bold is asked for.
-    xdg.configFile."fontconfig/conf.d/60-icon-fonts-no-fake-bold.conf".text = ''
-      <?xml version="1.0"?>
-      <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
-      <fontconfig>
-      ${
-        lib.concatMapStrings
-          (family: ''
-            <match target="font">
-              <test name="family"><string>${family}</string></test>
-              <test target="pattern" name="weight" compare="more_eq"><const>bold</const></test>
-              <edit name="weight" mode="assign"><const>bold</const></edit>
-            </match>
-          '')
-          [
-            "Symbols Nerd Font"
-            "Symbols Nerd Font Mono"
-            "Gather Symbol"
-          ]
-      }</fontconfig>
-    '';
+      # The icon fonts have only a Regular face, so in bold text (waybar's
+      # workspace labels) fontconfig fakes bold by thickening their outlines,
+      # which runs the Gather logo's rings together. 90-synthetic.conf does
+      # that to a font no heavier than medium; user rules come before it
+      # (50-user.conf), so this calls them bold when bold is asked for.
+      configFile.icon-fonts-no-fake-bold = {
+        enable = true;
+        priority = 60;
+        text = ''
+          <?xml version="1.0"?>
+          <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+          <fontconfig>
+          ${
+            lib.concatMapStrings
+              (family: ''
+                <match target="font">
+                  <test name="family"><string>${family}</string></test>
+                  <test target="pattern" name="weight" compare="more_eq"><const>bold</const></test>
+                  <edit name="weight" mode="assign"><const>bold</const></edit>
+                </match>
+              '')
+              [
+                "Symbols Nerd Font"
+                "Symbols Nerd Font Mono"
+                "Gather Symbol"
+              ]
+          }</fontconfig>
+        '';
+      };
+    };
 
     xdg = {
       enable = true;
