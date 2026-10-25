@@ -45,18 +45,23 @@ let
         exit 2
       fi
 
-      # "NixOS programs.steam" etc. for each module named after $1
+      # "NixOS programs.steam" etc. for each module named after $1. A config
+      # that doesn't evaluate is skipped with a warning (errexit would
+      # otherwise end nix-keep silently, stderr being hidden).
       modules() {
-        local kind attr
+        local kind attr out
         for kind in NixOS "Home Manager"; do
           if [ "$kind" = NixOS ]; then
             attr="nixosConfigurations.$host.options"
           else
             attr="homeConfigurations.\"$USER@$host\".options"
           fi
-          NIX_KEEP_NAME=$1 nix eval --impure --json "${repo}#$attr" \
-            --apply "import ${moduleCheck}" 2>/dev/null |
-            jq -r --arg kind "$kind" --arg name "$1" '.[] | "\($kind) \(.).\($name)"'
+          if ! out=$(NIX_KEEP_NAME=$1 nix eval --impure --json "${repo}#$attr" \
+            --apply "import ${moduleCheck}" 2>/dev/null); then
+            echo "nix-keep: couldn't evaluate the $kind config to look for a $1 module" >&2
+            continue
+          fi
+          jq -r --arg kind "$kind" --arg name "$1" '.[] | "\($kind) \(.).\($name)"' <<<"$out"
         done
       }
 
