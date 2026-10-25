@@ -93,8 +93,8 @@ pub mod inotify {
     }
 }
 
-/// Log a line to stderr (the journal under systemd), ignoring failures: with
-/// `panic = "abort"`, `eprintln!` on a broken stderr would kill the process.
+/// Log a line to stderr (the journal under systemd), ignoring failures:
+/// `eprintln!` panics on a broken stderr, which would kill the process.
 #[macro_export]
 macro_rules! warn {
     ($($arg:tt)*) => {{

@@ -13,9 +13,3 @@ gtk4-layer-shell = "0.8"
 qrcode = { version = "0.14", default-features = false }
 serde = "1"
 zbus = "5.19"
-
-[profile.release]
-opt-level = "s"
-lto = true
-codegen-units = 1
-strip = true
