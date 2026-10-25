@@ -49,6 +49,10 @@ hl.window_rule({
 	float = true,
 	move = { "(monitor_w-window_w-10)", 40 },
 })
+-- Satty, annotating a screenshot, floats in the middle at the size it picks,
+-- as does the preview's save dialog (it has no parent window to float over)
+hl.window_rule({ match = { class = "^(com.gabm.satty)$" }, float = true, center = true })
+hl.window_rule({ match = { title = "^(Save Screenshot)$" }, float = true, center = true })
 -- Thunar floats. Its main windows ("<folder> - Thunar") open at a set size
 -- in the middle; its dialogs (copy progress, properties) keep their own size.
 hl.window_rule({ match = { class = "^(Thunar)$" }, float = true })

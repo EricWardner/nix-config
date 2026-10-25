@@ -120,8 +120,10 @@ in
         format = "${label "Claude Code"}\\n<b>%b</b>";
       };
       # screen-record's "Recording saved" carries the first frame as its
-      # image: a bigger preview than an app icon.
+      # image, and the colour picker's "Colour copied" the colour: bigger
+      # than an app icon.
       "app-name=\"Screen recording\"".max-icon-size = 96;
+      "app-name=Screenshot".max-icon-size = 96;
 
       "urgency=low".text-color = "#${colors.base03}";
       "urgency=critical" = {

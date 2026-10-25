@@ -28,6 +28,10 @@ for _, binding in ipairs(applications) do
 	hl.bind(mod .. " + " .. binding[1], dsp.exec_cmd(binding[2]))
 end
 hl.bind("Print", dsp.exec_cmd(cmd.screenshot))
+hl.bind("SHIFT + Print", dsp.exec_cmd(cmd.screenshotWindow))
+hl.bind("CTRL + Print", dsp.exec_cmd(cmd.screenshotScreen))
+hl.bind(mod .. " + Print", dsp.exec_cmd(cmd.screenshotText))
+hl.bind(mod .. " + SHIFT + Print", dsp.exec_cmd(cmd.colorPicker))
 -- hypridle handles the lock request; spawning a second locker can race it.
 hl.bind("ALT + CTRL + SHIFT + L", dsp.exec_cmd(cmd.lock))
 

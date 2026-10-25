@@ -3,6 +3,7 @@
   imports = [
     ./tools/oath.nix
     ./tools/screen-record.nix
+    ./tools/screenshot.nix
     ../modules/hm
   ];
   dconf.settings = {

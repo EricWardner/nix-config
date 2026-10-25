@@ -19,9 +19,6 @@ let
   thunar = "${pkgs.thunar}/bin/thunar";
   vicinae = "${config.programs.vicinae.package}/bin/vicinae";
   brightnessctl = "${pkgs.brightnessctl}/bin/brightnessctl";
-  grim = "${pkgs.grim}/bin/grim";
-  slurp = "${pkgs.slurp}/bin/slurp";
-  swappy = "${pkgs.swappy}/bin/swappy";
   swayosd = "${config.services.swayosd.package}/bin/swayosd-client";
   btop = "${pkgs.btop}/bin/btop";
   slack = "${pkgs.slack}/bin/slack";
@@ -37,7 +34,12 @@ let
     lock = "${pkgs.systemd}/bin/loginctl lock-session";
     keyboardBrighter = "${brightnessctl} -d '*::kbd_backlight' set +33%";
     keyboardDimmer = "${brightnessctl} -d '*::kbd_backlight' set 33%-";
-    screenshot = ''${grim} -g "$(${slurp})" - | ${swappy} -f -'';
+    # home/tools/screenshot
+    screenshot = "screenshot area";
+    screenshotWindow = "screenshot window";
+    screenshotScreen = "screenshot output";
+    screenshotText = "screenshot text";
+    colorPicker = "screenshot color";
     record = "screen-record";
     doNotDisturb = "mako-dnd toggle"; # from wms/notifications
     notificationRestore = "${pkgs.mako}/bin/makoctl restore";

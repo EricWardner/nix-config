@@ -69,7 +69,6 @@
         # Clipboard
         grim
         slurp
-        swappy
         wl-clipboard-rs
 
         # Dev Tools
