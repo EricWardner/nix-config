@@ -497,23 +497,12 @@ fn build(app: &gtk::Application, opts: &Options) {
     // GTK would otherwise focus it
     gif_button.grab_focus();
 
-    // Hyprland's keybinds act on the window underneath, so Super+Q closed
-    // that rather than the panel: they're held off while the panel has the
-    // keyboard (keyboard-shortcuts-inhibit), and Super+Q closes the panel
-    window.connect_map(|window| {
-        if let Some(toplevel) = window.surface().and_downcast::<gdk::Toplevel>() {
-            toplevel.inhibit_system_shortcuts(None::<&gdk::Event>);
-        }
-    });
-
-    // Escape and Super+Q close, and so does a click outside the panel
+    // Escape closes, and so does a click outside the panel
     let keys = gtk::EventControllerKey::new();
     keys.connect_key_pressed({
         let close = close.clone();
-        move |_, key, _, state| {
-            let super_q =
-                key.to_lower() == gdk::Key::q && state.contains(gdk::ModifierType::SUPER_MASK);
-            if key == gdk::Key::Escape || super_q {
+        move |_, key, _, _| {
+            if key == gdk::Key::Escape {
                 close();
                 glib::Propagation::Stop
             } else {
