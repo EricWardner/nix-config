@@ -23,7 +23,7 @@ in
         # no oversized icon when only a few apps match
         image-size-ratio = 0;
         icon-theme = "Papirus-Dark";
-        font = lib.mkForce "SFProText Nerd Font:size=13";
+        font = lib.mkForce "SF Pro Text:size=13";
       };
       # Replaces stylix's opaque palette; still drawn from the theme.
       colors = lib.mkForce {

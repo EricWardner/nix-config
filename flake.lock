@@ -253,26 +253,6 @@
         "type": "github"
       }
     },
-    "font-patcher": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1754349261,
-        "narHash": "sha256-LuWeh8PzyRnoUSkvRiXB+UOimz9rRFj2MWtcuVljppk=",
-        "owner": "ericwardner",
-        "repo": "font-patcher",
-        "rev": "8c5ae88ec405cce5007c77ef7b14f115d4f025f5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "ericwardner",
-        "repo": "font-patcher",
-        "type": "github"
-      }
-    },
     "fromYaml": {
       "flake": false,
       "locked": {
@@ -538,7 +518,6 @@
         "apple-fonts": "apple-fonts",
         "claude-code": "claude-code",
         "disko": "disko",
-        "font-patcher": "font-patcher",
         "home-manager": "home-manager",
         "nix-index-database": "nix-index-database",
         "nixos-hardware": "nixos-hardware",

@@ -53,17 +53,16 @@ in
 
       fonts =
         let
-          sf-pro-nerd-patched = inputs.font-patcher.lib.${pkgs.stdenv.hostPlatform.system}.patchFont {
-            baseFont = inputs.apple-fonts.packages.${pkgs.stdenv.hostPlatform.system}.sf-pro-nerd;
-            svgGlyph = ./assets/uniF1045_Gather.svg;
-            unicodePoint = "0xF1045";
-          };
           sfPro = {
-            package = sf-pro-nerd-patched;
+            # Plain SF Pro, unpacked from Apple's image in seconds. Nerd Font
+            # icons come from Symbols Nerd Font (the emoji font below) by
+            # fontconfig fallback, and the Gather logo from pkgs/gather-symbol
+            # (waybar), where a Nerd-patched build with the logo patched in
+            # took ~13 minutes on every nixpkgs update.
+            package = inputs.apple-fonts.packages.${pkgs.stdenv.hostPlatform.system}.sf-pro;
             # SF Pro Text is Apple's optical variant hinted for small UI sizes
-            # (vs the variable "SFPro"/Display family, tuned for large headings).
-            # Both ship in sf-pro-nerd and the Gather glyph patch covers Text too.
-            name = "SFProText Nerd Font";
+            # (vs the variable "SF Pro"/Display family, tuned for large headings).
+            name = "SF Pro Text";
           };
           mono = {
             package = pkgs.cascadia-code;

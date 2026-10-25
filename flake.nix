@@ -21,10 +21,6 @@
       url = "github:Lyndeno/apple-fonts.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    font-patcher = {
-      url = "github:ericwardner/font-patcher";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -95,6 +91,7 @@
         bar-tools = pkgs.callPackage ./pkgs/bar-tools { };
         net-panel = pkgs.callPackage ./pkgs/net-panel { };
         capture-preview = pkgs.callPackage ./pkgs/capture-preview { };
+        gather-symbol = pkgs.callPackage ./pkgs/gather-symbol { };
       };
       devShells.${system} = {
         default = pkgs.mkShell {

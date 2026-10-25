@@ -21,6 +21,9 @@ let
   # long-running exec that prints a line only when its state changes and
   # otherwise sleeps, so the bar polls nothing.
   barTools = pkgs.callPackage ../../../../pkgs/bar-tools { };
+
+  # The Gather logo, a one-glyph font at U+FFF00 for Gather's workspace icon
+  gatherSymbol = pkgs.callPackage ../../../../pkgs/gather-symbol { };
   wpctl = "${pkgs.wireplumber}/bin/wpctl";
 
   # Status icons are SF Symbols, Apple's icon set drawn to match SF Pro:
@@ -155,7 +158,10 @@ in
   };
   config = mkIf cfg.enable {
     # micctl for keybinds; the rest are handy to run by hand when debugging
-    home.packages = [ barTools ];
+    home.packages = [
+      barTools
+      gatherSymbol
+    ];
 
     # waybar runs as a systemd --user service so the session manager keeps it
     # alive no matter how it dies (Restart=always recovers from crashes and the
@@ -292,8 +298,9 @@ in
               "class<code>" = "󰨞";
               "class<slack>" = "󰒱";
               "class<spotify>" = "󰓇";
-              "title<.* Gather .*>" = "󱁅";
-              "class<.*gather.*>" = "󱁅";
+              # U+FFF00, the Gather logo (gatherSymbol)
+              "title<.* Gather .*>" = "󿼀";
+              "class<.*gather.*>" = "󿼀";
               "title<(.*) - (.*) - Visual Studio Code>" = "[󰨞 $2]";
             };
           };

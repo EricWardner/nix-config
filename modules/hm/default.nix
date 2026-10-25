@@ -47,6 +47,32 @@
       fi
     '';
 
+    # The icon fonts have only a Regular face, so in bold text (waybar's
+    # workspace labels) fontconfig fakes bold by thickening their outlines,
+    # which runs the Gather logo's rings together. 90-synthetic.conf does
+    # that to a font no heavier than medium; this runs before it (user rules
+    # come in at 50-user.conf) and calls them bold when bold is asked for.
+    xdg.configFile."fontconfig/conf.d/60-icon-fonts-no-fake-bold.conf".text = ''
+      <?xml version="1.0"?>
+      <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+      <fontconfig>
+      ${
+        lib.concatMapStrings
+          (family: ''
+            <match target="font">
+              <test name="family"><string>${family}</string></test>
+              <test target="pattern" name="weight" compare="more_eq"><const>bold</const></test>
+              <edit name="weight" mode="assign"><const>bold</const></edit>
+            </match>
+          '')
+          [
+            "Symbols Nerd Font"
+            "Symbols Nerd Font Mono"
+            "Gather Symbol"
+          ]
+      }</fontconfig>
+    '';
+
     xdg = {
       enable = true;
       mimeApps = {
