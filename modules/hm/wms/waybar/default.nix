@@ -330,8 +330,8 @@ in
           # Screen recording (home/tools/screen-record), started in its own
           # scope so a waybar restart can't kill a recording. The button
           # starts or stops; the status module after the clock shows the
-          # selection, countdown, timer and conversion, and a finished GIF
-          # opens its preview.
+          # selection, countdown and timer, and a finished recording opens
+          # its preview.
           "custom/record" = {
             exec = "${barTools}/bin/record-watch button";
             return-type = "json";

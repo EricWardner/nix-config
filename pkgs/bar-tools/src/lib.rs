@@ -33,15 +33,13 @@ pub mod sf {
     pub const ONE_CIRCLE_FILL: &str = "\u{10003B}"; // 1.circle.fill
     pub const TWO_CIRCLE_FILL: &str = "\u{10003D}"; // 2.circle.fill
     pub const THREE_CIRCLE_FILL: &str = "\u{10003F}"; // 3.circle.fill
-    pub const HOURGLASS_BOTTOM: &str = "\u{100588}"; // hourglass.bottomhalf.filled
-    pub const HOURGLASS_TOP: &str = "\u{100589}"; // hourglass.tophalf.filled
     pub const CHECKMARK_CIRCLE_FILL: &str = "\u{100063}"; // checkmark.circle.fill
 }
 
 /// What screen-record (home/tools/screen-record) is doing, for the bar: one
 /// line in `$XDG_RUNTIME_DIR/screen-record/state`, a state and its argument
-/// (`selecting`, `countdown 3`, `recording <unix ms>`, `converting`,
-/// `done <gif>`, `idle`). The script replaces the file by rename, so an
+/// (`selecting`, `countdown 3`, `recording <unix ms>`, `done <mp4>`,
+/// `idle`). The script replaces the file by rename, so an
 /// inotify watch on the directory sees each change whole.
 pub mod record {
     use std::path::PathBuf;

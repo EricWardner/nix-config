@@ -7,8 +7,7 @@
 //!   idle, otherwise the active state, with a timer while recording.
 //!
 //! Changes arrive through inotify. The status module also ticks once a
-//! second while recording (the timer) or converting (the hourglass flips),
-//! and sleeps otherwise.
+//! second while recording (the timer), and sleeps otherwise.
 
 use std::fs;
 use std::os::fd::OwnedFd;
@@ -30,7 +29,6 @@ enum State {
     Countdown(u8),
     /// Started at this Unix time, in milliseconds.
     Recording(u64),
-    Converting,
     Done,
 }
 
@@ -56,16 +54,14 @@ fn main() {
     .ok();
 
     let mut out = Emitter::default();
-    let mut flip = false;
     loop {
         let state = read(&dir);
         let timeout = if button {
             render_button(&mut out, &state);
             None
         } else {
-            render_status(&mut out, &state, flip)
+            render_status(&mut out, &state)
         };
-        flip = !flip;
         wait(events.as_ref(), timeout);
     }
 }
@@ -83,7 +79,6 @@ fn read(dir: &Path) -> State {
         Some("recording") => {
             State::Recording(arg.and_then(|a| a.parse().ok()).unwrap_or_else(now_ms))
         }
-        Some("converting") => State::Converting,
         Some("done") => State::Done,
         _ => State::Idle,
     }
@@ -99,7 +94,7 @@ fn render_button(out: &mut Emitter, state: &State) {
 }
 
 /// Returns how long until the next redraw is due, if one is.
-fn render_status(out: &mut Emitter, state: &State, flip: bool) -> Option<Duration> {
+fn render_status(out: &mut Emitter, state: &State) -> Option<Duration> {
     let label = |icon: &str, text: &str| format!("{icon} {}", waybar::number(text));
     match state {
         State::Idle => {
@@ -138,18 +133,9 @@ fn render_status(out: &mut Emitter, state: &State, flip: bool) -> Option<Duratio
             // wake on the next whole second of the recording
             Some(Duration::from_millis(1000 - elapsed % 1000))
         }
-        State::Converting => {
-            let icon = if flip {
-                sf::HOURGLASS_TOP
-            } else {
-                sf::HOURGLASS_BOTTOM
-            };
-            out.emit_markup(&label(icon, "GIF"), "Converting to GIF", "converting");
-            Some(Duration::from_secs(1))
-        }
         State::Done => {
             let text = label(sf::CHECKMARK_CIRCLE_FILL, "Saved");
-            out.emit_markup(&text, "GIF saved (click for options)", "done");
+            out.emit_markup(&text, "Recording saved (click to preview)", "done");
             None
         }
     }

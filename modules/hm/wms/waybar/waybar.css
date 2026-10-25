@@ -182,8 +182,7 @@ tooltip label {
 /* A screen recording's progress is its own item after the clock, set off by
    the same 33px as the window title before it (21px plus the clock's
    padding and the glyph's bearing); hidden while idle. Red while counting
-   down and recording (the dot and timer), dimmed while converting, green
-   once saved. */
+   down and recording (the dot and timer), green once saved. */
 #custom-recording {
   margin: 0 0 0 21px;
   padding: 0;
@@ -193,10 +192,6 @@ tooltip label {
 #custom-recording.recording,
 #custom-record.active {
   color: @base08;
-}
-
-#custom-recording.converting {
-  color: @base04;
 }
 
 #custom-recording.done {
