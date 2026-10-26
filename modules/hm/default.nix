@@ -129,6 +129,7 @@
 
         # Chat
         slack
+        signal-desktop
       ];
       file."Wallpapers" = {
         recursive = true;
