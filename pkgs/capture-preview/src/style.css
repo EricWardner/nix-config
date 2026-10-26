@@ -44,6 +44,11 @@ window.capture-preview {
   border-radius: 10px;
 }
 
+/* A recording's trim bar, drawn by hand: its colour is the handles' */
+.trim {
+  color: @cp_accent;
+}
+
 button.action {
   min-height: 34px;
   padding: 0 14px;

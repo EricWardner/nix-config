@@ -5,7 +5,9 @@
 //!
 //! An MP4 plays in GtkVideo (GStreamer, decoded on the GPU through VA-API),
 //! with play/pause and a seek bar on hover; Convert to GIF makes the GIF next
-//! to it, after which Copy GIF takes the button's place. A GIF is decoded
+//! to it, after which Copy GIF takes the button's place. The bar under it
+//! has a handle at each end: drag them in and Trim cuts the recording down
+//! to the part between them, in place. A GIF is decoded
 //! frame by frame as it plays (gif + gif-dispose), so a long one costs one
 //! frame of memory, not all of them. A screenshot (PNG, JPEG or WebP) offers
 //! Annotate, which opens it in Satty.
@@ -38,6 +40,15 @@ const MAX_H: f64 = 440.0;
 const GIF_FILTER: &str = "fps=30,scale={w}:{h}:flags=lanczos,split[s0][s1];\
     [s0]palettegen=stats_mode=diff[p];\
     [s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle";
+
+/// The shortest part a trim keeps, in seconds.
+const MIN_KEEP: f64 = 0.2;
+/// The trim bar's handles, in logical pixels.
+const HANDLE_W: f64 = 8.0;
+
+/// The ffmpeg job running for Convert to GIF or Trim, with the hidden file it
+/// writes. Only one runs at a time.
+type Job = Rc<RefCell<Option<(Child, PathBuf)>>>;
 
 /// What the file is, from its extension.
 #[derive(Clone, Copy, PartialEq)]
@@ -258,8 +269,9 @@ fn build(app: &gtk::Application, opts: &Options) {
     // A recording's GIF, from Convert to GIF (or a GIF itself)
     let gif = file.with_extension("gif");
 
-    // The media and what to say about it
-    let (preview, (w, h), details): (gtk::Widget, _, String) = match kind {
+    // The media, its size and a recording's length
+    let mut recording = None;
+    let (preview, (w, h), secs): (gtk::Widget, _, f64) = match kind {
         Kind::Gif => {
             let player = match Player::open(&file) {
                 Ok(player) => player,
@@ -270,7 +282,7 @@ fn build(app: &gtk::Application, opts: &Options) {
             picture.set_content_fit(gtk::ContentFit::Contain);
             picture.set_can_shrink(true);
             play(Rc::new(RefCell::new(player)), picture.clone(), &window);
-            (picture.upcast(), size, String::new())
+            (picture.upcast(), size, 0.0)
         }
         Kind::Image => {
             let texture = match gdk::Texture::from_filename(&file) {
@@ -284,7 +296,7 @@ fn build(app: &gtk::Application, opts: &Options) {
             let picture = gtk::Picture::for_paintable(&texture);
             picture.set_content_fit(gtk::ContentFit::Contain);
             picture.set_can_shrink(true);
-            (picture.upcast(), size, String::new())
+            (picture.upcast(), size, 0.0)
         }
         Kind::Video => {
             let Some((w, h, secs)) = probe(&file) else {
@@ -295,24 +307,12 @@ fn build(app: &gtk::Application, opts: &Options) {
             // Its controls show only on hover; Tab would otherwise move the
             // focus into them while hidden, where it can't be seen
             video.set_can_focus(false);
-            // GtkVideo's own loop doesn't take with the GStreamer backend on
-            // these files (the stream just ends), so start it over by hand
-            if let Some(stream) = video.media_stream() {
-                stream.connect_ended_notify(|stream| {
-                    if stream.is_ended() {
-                        stream.seek(0);
-                        stream.play();
-                    }
-                });
-            }
-            let secs = secs.round() as u64;
-            (
-                video.upcast(),
-                (w, h),
-                format!("{}:{:02}  ·  ", secs / 60, secs % 60),
-            )
+            // (the trim bar loops it)
+            recording = Some(video.clone());
+            (video.upcast(), (w, h), secs)
         }
     };
+    let length = Rc::new(Cell::new(secs));
 
     let panel = gtk::Box::new(gtk::Orientation::Vertical, 12);
     panel.add_css_class("panel");
@@ -332,21 +332,26 @@ fn build(app: &gtk::Application, opts: &Options) {
     // The name takes the room the video leaves it rather than widening the
     // panel past the video
     title.set_max_width_chars(1);
-    let info_text = format!("{w} × {h}  ·  {details}{}", human_size(file_size(&file)));
-    let info = gtk::Label::new(Some(&info_text));
+    let info = gtk::Label::new(None);
     info.add_css_class("dim");
-    let show_gif_size = {
-        let (info, info_text) = (info.clone(), info_text.clone());
-        move |gif: &Path| {
-            info.set_text(&format!(
-                "{info_text}  ·  GIF {}",
-                human_size(file_size(gif))
-            ))
+    // The size, a recording's length, the file's size and its GIF's; again
+    // after a conversion or a trim
+    let describe = {
+        let (info, file, gif, length) = (info.clone(), file.clone(), gif.clone(), length.clone());
+        move || {
+            let mut text = format!("{w} × {h}  ·  ");
+            if is_video {
+                let secs = length.get().round() as u64;
+                text += &format!("{}:{:02}  ·  ", secs / 60, secs % 60);
+            }
+            text += &human_size(file_size(&file));
+            if is_video && gif.exists() {
+                text += &format!("  ·  GIF {}", human_size(file_size(&gif)));
+            }
+            info.set_text(&text);
         }
     };
-    if is_video && gif.exists() {
-        show_gif_size(&gif);
-    }
+    describe();
     let header = gtk::Box::new(gtk::Orientation::Horizontal, 12);
     header.append(&title);
     header.append(&info);
@@ -506,6 +511,21 @@ fn build(app: &gtk::Application, opts: &Options) {
         }
     });
 
+    // A job still running when the panel closes would have no one to rename
+    // its file: stop it
+    let job: Job = Rc::default();
+    window.connect_close_request({
+        let job = job.clone();
+        move |_| {
+            if let Some((mut child, part)) = job.borrow_mut().take() {
+                let _ = child.kill();
+                let _ = child.wait();
+                let _ = std::fs::remove_file(&part);
+            }
+            glib::Propagation::Proceed
+        }
+    });
+
     let primary = match kind {
         Kind::Image => action("Annotate", &["suggested"], {
             let (file, close) = (file.clone(), close.clone());
@@ -516,43 +536,31 @@ fn build(app: &gtk::Application, opts: &Options) {
             }
         }),
         Kind::Gif => action("Copy GIF", &["suggested"], copy_gif.clone()),
-        Kind::Video if gif.exists() => action("Copy GIF", &["suggested"], copy_gif.clone()),
         Kind::Video => {
             // Convert, then the same button copies the GIF. ffmpeg writes beside
             // it under a hidden name, renamed once it's done, so a GIF that
             // exists is a whole one.
             let gif_size = opts.gif_size.unwrap_or((w, h));
-            let converting: Rc<RefCell<Option<Child>>> = Rc::default();
-            let mut part_name = std::ffi::OsString::from(".");
-            part_name.push(gif.file_name().unwrap_or_default());
-            part_name.push(".part");
-            let part = gif.with_file_name(part_name);
-            // A conversion still running when the panel closes would have no one
-            // to rename its file: stop it
-            window.connect_close_request({
-                let (converting, part) = (converting.clone(), part.clone());
-                move |_| {
-                    if let Some(mut child) = converting.borrow_mut().take() {
-                        let _ = child.kill();
-                        let _ = child.wait();
-                        let _ = std::fs::remove_file(&part);
-                    }
-                    glib::Propagation::Proceed
-                }
-            });
-            action("Convert to GIF", &["suggested"], {
-                let (file, gif, show_gif_size) = (file.clone(), gif.clone(), show_gif_size.clone());
+            let label = if gif.exists() {
+                "Copy GIF"
+            } else {
+                "Convert to GIF"
+            };
+            action(label, &["suggested"], {
+                let (file, gif, job, describe) =
+                    (file.clone(), gif.clone(), job.clone(), describe.clone());
                 move |button| {
-                    if gif.exists() && converting.borrow().is_none() {
-                        copy_gif(button);
+                    if job.borrow().is_some() {
                         return;
                     }
-                    if converting.borrow().is_some() {
+                    if gif.exists() {
+                        copy_gif(button);
                         return;
                     }
                     let filter = GIF_FILTER
                         .replace("{w}", &gif_size.0.to_string())
                         .replace("{h}", &gif_size.1.to_string());
+                    let part = part_path(&gif);
                     let child = Command::new("ffmpeg")
                         .args(["-y", "-loglevel", "error", "-i"])
                         .arg(&file)
@@ -565,42 +573,114 @@ fn build(app: &gtk::Application, opts: &Options) {
                         button.set_label("Can't convert");
                         return;
                     };
-                    *converting.borrow_mut() = Some(child);
+                    *job.borrow_mut() = Some((child, part.clone()));
                     button.set_label("Converting…");
                     button.set_sensitive(false);
-                    let (button, converting, gif, part, show_gif_size) = (
-                        button.clone(),
-                        converting.clone(),
-                        gif.clone(),
-                        part.clone(),
-                        show_gif_size.clone(),
-                    );
-                    glib::timeout_add_local(Duration::from_millis(100), move || {
-                        let status = converting.borrow_mut().as_mut().map(Child::try_wait);
-                        match status {
-                            Some(Ok(None)) => glib::ControlFlow::Continue,
-                            Some(Ok(Some(s)))
-                                if s.success() && std::fs::rename(&part, &gif).is_ok() =>
-                            {
-                                *converting.borrow_mut() = None;
-                                button.set_label("Copy GIF");
-                                button.set_sensitive(true);
-                                show_gif_size(&gif);
-                                glib::ControlFlow::Break
-                            }
-                            _ => {
-                                *converting.borrow_mut() = None;
-                                let _ = std::fs::remove_file(&part);
-                                button.set_label("Convert failed");
-                                button.set_sensitive(true);
-                                glib::ControlFlow::Break
-                            }
+                    let (button, gif, describe) = (button.clone(), gif.clone(), describe.clone());
+                    watch(&job, move |done| {
+                        if done && std::fs::rename(&part, &gif).is_ok() {
+                            button.set_label("Copy GIF");
+                            describe();
+                        } else {
+                            let _ = std::fs::remove_file(&part);
+                            button.set_label("Convert failed");
                         }
+                        button.set_sensitive(true);
                     });
                 }
             })
         }
     };
+
+    // A recording's trim: the bar under the video picks the part to keep,
+    // and Trim, there once that's less than all of it, cuts the recording
+    // down to it in place. The GIF of the whole recording goes with it.
+    let trim = recording.as_ref().map(|video| {
+        let range = Rc::new(Cell::new((0.0, length.get())));
+        let button = action("Trim", &[], {
+            let (file, gif, job, length, range, video, primary, describe) = (
+                file.clone(),
+                gif.clone(),
+                job.clone(),
+                length.clone(),
+                range.clone(),
+                video.clone(),
+                primary.clone(),
+                describe.clone(),
+            );
+            move |button| {
+                if job.borrow().is_some() {
+                    return;
+                }
+                let (start, end) = range.get();
+                let part = part_path(&file);
+                // Re-encoded, so it starts on the frame the handle showed
+                // rather than the keyframe before it (wl-screenrec's are about
+                // a second apart); frame times stay as recorded
+                let (ss, t) = (format!("{start:.3}"), format!("{:.3}", end - start));
+                let child = Command::new("ffmpeg")
+                    .args(["-y", "-loglevel", "error", "-ss", &ss, "-i"])
+                    .arg(&file)
+                    .args(["-t", &t])
+                    .args(["-c:v", "libx264", "-preset", "veryfast", "-crf", "18"])
+                    .args(["-fps_mode", "passthrough"])
+                    .args(["-movflags", "+faststart", "-f", "mp4"])
+                    .arg(&part)
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .spawn();
+                let Ok(child) = child else {
+                    button.set_label("Can't trim");
+                    return;
+                };
+                *job.borrow_mut() = Some((child, part.clone()));
+                button.set_label("Trimming…");
+                button.set_sensitive(false);
+                primary.set_sensitive(false);
+                let (button, file, gif, length, range, video, primary, describe) = (
+                    button.clone(),
+                    file.clone(),
+                    gif.clone(),
+                    length.clone(),
+                    range.clone(),
+                    video.clone(),
+                    primary.clone(),
+                    describe.clone(),
+                );
+                watch(&job, move |done| {
+                    if done && std::fs::rename(&part, &file).is_ok() {
+                        let _ = std::fs::remove_file(&gif);
+                        primary.set_label("Convert to GIF");
+                        let secs = probe(&file).map_or(end - start, |(_, _, secs)| secs);
+                        length.set(secs);
+                        range.set((0.0, secs));
+                        video.set_file(Some(&gio::File::for_path(&file)));
+                        describe();
+                        button.set_visible(false);
+                    } else {
+                        let _ = std::fs::remove_file(&part);
+                        button.set_label("Trim failed");
+                    }
+                    button.set_sensitive(true);
+                    primary.set_sensitive(true);
+                });
+            }
+        });
+        button.set_visible(false);
+        let bar = trim_bar(video, &length, &range, {
+            let (button, length, range) = (button.clone(), length.clone(), range.clone());
+            move || {
+                let (start, end) = range.get();
+                button.set_visible(start > 0.0 || end < length.get());
+                button.set_label(&format!("Trim to {}", short_time(end - start)));
+            }
+        });
+        // as wide as the video
+        bar.set_width_request(frame.width_request());
+        bar.set_halign(gtk::Align::Center);
+        panel.insert_child_after(&bar, Some(&frame));
+        button
+    });
 
     let copy = if kind == Kind::Image {
         icon_action("edit-copy-symbolic", "Copy image", &[], {
@@ -628,7 +708,10 @@ fn build(app: &gtk::Application, opts: &Options) {
             close();
         }
     });
-    place_actions(&actions, &[delete, show, copy, primary]);
+    let mut buttons = vec![delete, show, copy];
+    buttons.extend(trim);
+    buttons.push(primary);
+    place_actions(&actions, &buttons);
     window.present();
 }
 
@@ -656,6 +739,201 @@ fn next_frame(player: Rc<RefCell<Player>>, picture: gtk::Picture, playing: Rc<Ce
     glib::timeout_add_local_once(delay, move || next_frame(player, picture, playing));
 }
 
+/// The trim bar under a recording: its whole length, with a handle at each
+/// end of `range` (the part to keep, in seconds). Dragging a handle shows
+/// the frame there; playback loops over the part kept. `changed` hears of
+/// each move.
+fn trim_bar(
+    video: &gtk::Video,
+    length: &Rc<Cell<f64>>,
+    range: &Rc<Cell<(f64, f64)>>,
+    changed: impl Fn() + 'static,
+) -> gtk::DrawingArea {
+    let bar = gtk::DrawingArea::new();
+    bar.add_css_class("trim");
+    bar.set_content_height(26);
+    // The handle being dragged: false the start, true the end
+    let held: Rc<Cell<Option<bool>>> = Rc::default();
+
+    bar.set_draw_func({
+        let (video, length, range) = (video.clone(), length.clone(), range.clone());
+        move |bar, cr, w, h| {
+            let (w, h) = (f64::from(w), f64::from(h));
+            let len = length.get();
+            if len <= 0.0 {
+                return;
+            }
+            let x = |t: f64| HANDLE_W / 2.0 + (w - HANDLE_W) * (t / len).clamp(0.0, 1.0);
+            // The handles in the bar's colour (the accent, from CSS), the rest
+            // in the panel's text colour
+            let accent = bar.color();
+            let fg = bar.parent().map_or(accent, |p| p.color());
+            let paint = |c: &gdk::RGBA, alpha: f32| {
+                cr.set_source_rgba(
+                    c.red().into(),
+                    c.green().into(),
+                    c.blue().into(),
+                    (c.alpha() * alpha).into(),
+                );
+            };
+            let (start, end) = range.get();
+            // the whole recording, then the part kept
+            paint(&fg, 0.1);
+            rounded_rect(cr, 0.0, 0.0, w, h, 6.0);
+            let _ = cr.fill();
+            paint(&accent, 0.3);
+            cr.rectangle(x(start), 0.0, x(end) - x(start), h);
+            let _ = cr.fill();
+            paint(&accent, 1.0);
+            for t in [start, end] {
+                rounded_rect(cr, x(t) - HANDLE_W / 2.0, 0.0, HANDLE_W, h, 3.0);
+                let _ = cr.fill();
+            }
+            // where playback is
+            if let Some(stream) = video.media_stream() {
+                paint(&fg, 0.9);
+                cr.rectangle(x(stream.timestamp() as f64 / 1e6) - 1.0, 4.0, 2.0, h - 8.0);
+                let _ = cr.fill();
+            }
+        }
+    });
+
+    let time_at = {
+        let (bar, length) = (bar.clone(), length.clone());
+        move |x: f64| {
+            let span = (f64::from(bar.width()) - HANDLE_W).max(1.0);
+            (x - HANDLE_W / 2.0) / span * length.get()
+        }
+    };
+    // Moves a handle to `t`, keeping at least MIN_KEEP between them, and
+    // shows the frame there
+    let move_to = Rc::new({
+        let (video, length, range) = (video.clone(), length.clone(), range.clone());
+        move |end: bool, t: f64| {
+            let (start, stop) = range.get();
+            let (start, stop) = if end {
+                (start, t.max(start + MIN_KEEP).min(length.get()))
+            } else {
+                (t.min(stop - MIN_KEEP).max(0.0), stop)
+            };
+            range.set((start, stop));
+            if let Some(stream) = video.media_stream() {
+                stream.pause();
+                stream.seek(micros(if end { stop } else { start }));
+            }
+            changed();
+        }
+    });
+    // A press takes the nearer handle there; a drag moves it
+    let drag = gtk::GestureDrag::new();
+    drag.connect_drag_begin({
+        let (held, range, move_to, time_at) = (
+            held.clone(),
+            range.clone(),
+            move_to.clone(),
+            time_at.clone(),
+        );
+        move |gesture, x, _| {
+            gesture.set_state(gtk::EventSequenceState::Claimed);
+            let t = time_at(x);
+            let (start, end) = range.get();
+            let end = (t - end).abs() < (t - start).abs();
+            held.set(Some(end));
+            move_to(end, t);
+        }
+    });
+    drag.connect_drag_update({
+        let held = held.clone();
+        move |gesture, dx, _| {
+            if let (Some(end), Some((x, _))) = (held.get(), gesture.start_point()) {
+                move_to(end, time_at(x + dx));
+            }
+        }
+    });
+    drag.connect_drag_end({
+        let (video, range, held) = (video.clone(), range.clone(), held.clone());
+        move |_, _, _| {
+            held.set(None);
+            if let Some(stream) = video.media_stream() {
+                stream.seek(micros(range.get().0));
+                stream.play();
+            }
+        }
+    });
+    bar.add_controller(drag);
+
+    // Each frame: loop playback over the part kept (GtkVideo's own loop
+    // doesn't take with the GStreamer backend on these files: the stream
+    // just ends) and move the playhead. The stream is looked up each time,
+    // as a trim loads a new one.
+    bar.add_tick_callback({
+        let (video, length, range) = (video.clone(), length.clone(), range.clone());
+        move |bar, _| {
+            if let (Some(stream), None) = (video.media_stream(), held.get()) {
+                let (start, end) = range.get();
+                let past_end =
+                    stream.is_playing() && end < length.get() && stream.timestamp() >= micros(end);
+                if !stream.is_seeking() && (stream.is_ended() || past_end) {
+                    stream.seek(micros(start));
+                    stream.play();
+                }
+            }
+            bar.queue_draw();
+            glib::ControlFlow::Continue
+        }
+    });
+    bar
+}
+
+fn micros(secs: f64) -> i64 {
+    (secs * 1e6).round() as i64
+}
+
+/// A length for the Trim button: 3.6 s, or 1:05 from a minute up.
+fn short_time(secs: f64) -> String {
+    if secs < 60.0 {
+        format!("{secs:.1} s")
+    } else {
+        let secs = secs.round() as u64;
+        format!("{}:{:02}", secs / 60, secs % 60)
+    }
+}
+
+fn rounded_rect(cr: &gtk::cairo::Context, x: f64, y: f64, w: f64, h: f64, r: f64) {
+    use std::f64::consts::{FRAC_PI_2, PI};
+    cr.new_sub_path();
+    cr.arc(x + w - r, y + r, r, -FRAC_PI_2, 0.0);
+    cr.arc(x + w - r, y + h - r, r, 0.0, FRAC_PI_2);
+    cr.arc(x + r, y + h - r, r, FRAC_PI_2, PI);
+    cr.arc(x + r, y + r, r, PI, 3.0 * FRAC_PI_2);
+    cr.close_path();
+}
+
+/// Waits for the job to finish, then clears it and tells `done` whether it
+/// succeeded (false too if the panel stopped it).
+fn watch(job: &Job, done: impl FnOnce(bool) + 'static) {
+    let job = job.clone();
+    let mut done = Some(done);
+    glib::timeout_add_local(Duration::from_millis(100), move || {
+        let status = job.borrow_mut().as_mut().map(|(child, _)| child.try_wait());
+        if let Some(Ok(None)) = status {
+            return glib::ControlFlow::Continue;
+        }
+        *job.borrow_mut() = None;
+        if let Some(done) = done.take() {
+            done(matches!(status, Some(Ok(Some(s))) if s.success()));
+        }
+        glib::ControlFlow::Break
+    });
+}
+
+/// The hidden name a job writes `path` under until it's done: .NAME.part
+fn part_path(path: &Path) -> PathBuf {
+    let mut name = std::ffi::OsString::from(".");
+    name.push(path.file_name().unwrap_or_default());
+    name.push(".part");
+    path.with_file_name(name)
+}
 fn fail(app: &gtk::Application, file: &Path, why: &str) {
     eprintln!("capture-preview: {}: {why}", file.display());
     app.quit();
