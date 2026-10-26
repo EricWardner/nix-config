@@ -312,6 +312,8 @@ fn build(app: &gtk::Application, opts: &Options) {
             (video.upcast(), (w, h), secs)
         }
     };
+    // (a trim can take a pixel off)
+    let size = Rc::new(Cell::new((w, h)));
     let length = Rc::new(Cell::new(secs));
 
     let panel = gtk::Box::new(gtk::Orientation::Vertical, 12);
@@ -337,8 +339,15 @@ fn build(app: &gtk::Application, opts: &Options) {
     // The size, a recording's length, the file's size and its GIF's; again
     // after a conversion or a trim
     let describe = {
-        let (info, file, gif, length) = (info.clone(), file.clone(), gif.clone(), length.clone());
+        let (info, file, gif, size, length) = (
+            info.clone(),
+            file.clone(),
+            gif.clone(),
+            size.clone(),
+            length.clone(),
+        );
         move || {
+            let (w, h) = size.get();
             let mut text = format!("{w} × {h}  ·  ");
             if is_video {
                 let secs = length.get().round() as u64;
@@ -598,10 +607,11 @@ fn build(app: &gtk::Application, opts: &Options) {
     let trim = recording.as_ref().map(|video| {
         let range = Rc::new(Cell::new((0.0, length.get())));
         let button = action("Trim", &[], {
-            let (file, gif, job, length, range, video, primary, describe) = (
+            let (file, gif, job, size, length, range, video, primary, describe) = (
                 file.clone(),
                 gif.clone(),
                 job.clone(),
+                size.clone(),
                 length.clone(),
                 range.clone(),
                 video.clone(),
@@ -616,12 +626,14 @@ fn build(app: &gtk::Application, opts: &Options) {
                 let part = part_path(&file);
                 // Re-encoded, so it starts on the frame the handle showed
                 // rather than the keyframe before it (wl-screenrec's are about
-                // a second apart); frame times stay as recorded
+                // a second apart); frame times stay as recorded. x264 needs
+                // an even width and height, and a region often isn't, so an
+                // odd one loses its last column or row.
                 let (ss, t) = (format!("{start:.3}"), format!("{:.3}", end - start));
                 let child = Command::new("ffmpeg")
                     .args(["-y", "-loglevel", "error", "-ss", &ss, "-i"])
                     .arg(&file)
-                    .args(["-t", &t])
+                    .args(["-t", &t, "-vf", "crop=trunc(iw/2)*2:trunc(ih/2)*2"])
                     .args(["-c:v", "libx264", "-preset", "veryfast", "-crf", "18"])
                     .args(["-fps_mode", "passthrough"])
                     .args(["-movflags", "+faststart", "-f", "mp4"])
@@ -637,10 +649,11 @@ fn build(app: &gtk::Application, opts: &Options) {
                 button.set_label("Trimming…");
                 button.set_sensitive(false);
                 primary.set_sensitive(false);
-                let (button, file, gif, length, range, video, primary, describe) = (
+                let (button, file, gif, size, length, range, video, primary, describe) = (
                     button.clone(),
                     file.clone(),
                     gif.clone(),
+                    size.clone(),
                     length.clone(),
                     range.clone(),
                     video.clone(),
@@ -651,7 +664,10 @@ fn build(app: &gtk::Application, opts: &Options) {
                     if done && std::fs::rename(&part, &file).is_ok() {
                         let _ = std::fs::remove_file(&gif);
                         primary.set_label("Convert to GIF");
-                        let secs = probe(&file).map_or(end - start, |(_, _, secs)| secs);
+                        let (w, h, secs) = probe(&file).unwrap_or((0, 0, end - start));
+                        if w > 0 {
+                            size.set((w, h));
+                        }
                         length.set(secs);
                         range.set((0.0, secs));
                         video.set_file(Some(&gio::File::for_path(&file)));
