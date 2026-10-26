@@ -26,7 +26,9 @@ hl.window_rule({ match = { class = "com.mitchellh.ghostty" }, scroll_touchpad = 
 
 hl.window_rule({ match = { title = "^(MainPicker)$" }, float = true })
 hl.window_rule({ match = { title = "^(Sign in to Security Device)$" }, float = true })
-hl.window_rule({ match = { title = "^(app.v2.gather.town is sharing)(.*)$" }, workspace = "10" })
+-- Chrome's screen-share bar is titled "<host> is sharing your screen."; any
+-- Gather host matches, as the host has changed before (app.v2.gather.town).
+hl.window_rule({ match = { title = "^([^ ]*gather[^ ]* is sharing)(.*)$" }, workspace = "10" })
 -- The group effect takes an option string; "set" opens the window in a group.
 hl.window_rule({ match = { class = "signal" }, group = "set" })
 hl.window_rule({ match = { class = "Slack" }, group = "set" })
