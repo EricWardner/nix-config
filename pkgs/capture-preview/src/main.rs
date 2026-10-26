@@ -447,7 +447,8 @@ fn build(app: &gtk::Application, opts: &Options) {
     };
 
     // A screenshot not kept yet (screenshot passes --save-dir): Copy, or
-    // Save… where you choose; Annotate; Discard
+    // Save… where you choose; Annotate; Discard. Copy is the same icon as a
+    // saved shot's, and Enter still presses it, so Save… isn't the accent.
     if let Some(dir) = opts.save_dir.clone().filter(|_| kind == Kind::Image) {
         let discard = icon_action("user-trash-symbolic", "Discard", &["destructive"], {
             let (file, close) = (file.clone(), close.clone());
@@ -463,15 +464,16 @@ fn build(app: &gtk::Application, opts: &Options) {
                 close();
             }
         });
+        let copy = icon_action("edit-copy-symbolic", "Copy image", &[], {
+            let (file, copy_image) = (file.clone(), copy_image.clone());
+            move |button| copy_image(&file, button)
+        });
         let save = action("Save…", &[], {
             let (window, file) = (window.clone(), file.clone());
             move |_| save_as(&window, &file, &dir)
         });
-        let copy = action("Copy", &["suggested"], {
-            let (file, copy_image) = (file.clone(), copy_image.clone());
-            move |button| copy_image(&file, button)
-        });
-        place_actions(&actions, &[discard, annotate, save, copy]);
+        place_actions(&actions, &[discard, annotate, copy.clone(), save]);
+        copy.grab_focus();
         window.present();
         return;
     }
