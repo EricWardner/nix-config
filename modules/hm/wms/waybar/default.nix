@@ -303,8 +303,9 @@ in
               "class<code>" = "󰨞";
               "class<slack>" = "󰒱";
               "class<spotify>" = "󰓇";
-              # U+FFF00, the Gather logo (gatherSymbol)
-              "title<.* Gather .*>" = "󿼀";
+              # U+FFF00, the Gather logo (gatherSymbol). By class only: a
+              # title rule also caught any window titled with the word
+              # Gather (a terminal, a doc).
               "class<.*(gather|work\\.tiberius\\.com).*>" = "󿼀";
               "title<(.*) - (.*) - Visual Studio Code>" = "[󰨞 $2]";
             };
