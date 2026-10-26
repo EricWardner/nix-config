@@ -305,7 +305,7 @@ in
               "class<spotify>" = "󰓇";
               # U+FFF00, the Gather logo (gatherSymbol)
               "title<.* Gather .*>" = "󿼀";
-              "class<.*gather.*>" = "󿼀";
+              "class<.*(gather|work\\.tiberius\\.com).*>" = "󿼀";
               "title<(.*) - (.*) - Visual Studio Code>" = "[󰨞 $2]";
             };
           };

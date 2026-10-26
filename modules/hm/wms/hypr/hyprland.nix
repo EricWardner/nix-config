@@ -30,7 +30,9 @@ let
     launcher = "${vicinae} toggle";
     clipboard = "${vicinae} deeplink vicinae://launch/clipboard/history";
     oath = "oath 19125157";
-    gather = "launch-webapp https://app.gather.town/app/V383EJ8uFnnNFtez/Grail";
+    # Redirects to the current Gather space, so a new Gather link needs no
+    # config change (the window class comes from this URL too: lua/rules.lua)
+    gather = "launch-webapp https://work.tiberius.com";
     lock = "${pkgs.systemd}/bin/loginctl lock-session";
     keyboardBrighter = "${brightnessctl} -d '*::kbd_backlight' set +33%";
     keyboardDimmer = "${brightnessctl} -d '*::kbd_backlight' set 33%-";

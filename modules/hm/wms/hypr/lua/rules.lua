@@ -30,7 +30,13 @@ hl.window_rule({ match = { title = "^(app.v2.gather.town is sharing)(.*)$" }, wo
 -- The group effect takes an option string; "set" opens the window in a group.
 hl.window_rule({ match = { class = "signal" }, group = "set" })
 hl.window_rule({ match = { class = "Slack" }, group = "set" })
-hl.window_rule({ match = { class = ".*gather.*" }, workspace = "special:chat", group = "set" })
+-- Chrome names --app windows after the launch URL, and cmd.gather opens
+-- work.tiberius.com (a redirect to Gather), so its class has no "gather".
+hl.window_rule({
+	match = { class = ".*(gather|work\\.tiberius\\.com).*" },
+	workspace = "special:chat",
+	group = "set",
+})
 hl.window_rule({
 	match = { class = "^(dropdown)$" },
 	float = true,
