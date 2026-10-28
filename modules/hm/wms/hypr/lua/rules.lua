@@ -9,9 +9,6 @@ hl.layer_rule({
 	blur = true,
 	ignore_alpha = 0.3,
 })
--- Sky's cards (wms/islands) frost the wallpaper; its big clock's shadow
--- stays unblurred
-hl.layer_rule({ match = { namespace = "^islands-sky$" }, blur = true, ignore_alpha = 0.25 })
 -- The capture overlay opens on a picture of the screen as it is, and
 -- animates its own dim and toolbar; a fade would hide the toolbar growing
 hl.layer_rule({ match = { namespace = "^islands-capture$" }, no_anim = true })

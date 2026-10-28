@@ -40,6 +40,18 @@ PanelWindow {
 		precision: SystemClock.Minutes
 	}
 
+	// The wallpaper as swaybg draws it ("fill"), never on screen itself:
+	// only blurred into the glass of the cards. Half size, as it's blurred.
+	Image {
+		id: wallpaper
+
+		anchors.fill: parent
+		source: Host.wallpaper !== "" ? "file://" + Host.wallpaper : ""
+		sourceSize: Qt.size(root.width / 2, root.height / 2)
+		fillMode: Image.PreserveAspectCrop
+		asynchronous: true
+	}
+
 	Column {
 		anchors.horizontalCenter: parent.horizontalCenter
 		y: Math.round(root.height * 0.12)
@@ -79,12 +91,14 @@ PanelWindow {
 		SkyMedia {
 			id: media
 
+			backdrop: wallpaper
 			height: root.cardHeight
 		}
 
 		SkyCaptures {
 			id: captures
 
+			backdrop: wallpaper
 			shown: root.visible
 			height: root.cardHeight
 		}
@@ -92,6 +106,7 @@ PanelWindow {
 		SkyApps {
 			id: apps
 
+			backdrop: wallpaper
 			height: root.cardHeight
 		}
 	}
@@ -99,6 +114,7 @@ PanelWindow {
 	SkyStatus {
 		id: status
 
+		backdrop: wallpaper
 		shown: root.visible
 		anchors.horizontalCenter: parent.horizontalCenter
 		anchors.bottom: parent.bottom

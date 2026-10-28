@@ -15,6 +15,7 @@ Singleton {
 	readonly property string backlightDir: backlight.path
 	// For the YubiKey touch prompt
 	readonly property string attentionSound: config.attentionSound ?? ""
+	readonly property string wallpaper: config.wallpaper ?? ""
 
 	FileView {
 		path: Quickshell.env("HOME") + "/.config/islands/config.json"
