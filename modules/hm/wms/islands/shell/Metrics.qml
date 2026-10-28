@@ -5,19 +5,13 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 
-// CPU, memory, temperature and screen brightness for the bar's icons. The
-// CPU and memory are read only while their numbers show, on the bar or on
-// Sky; the temperature
-// every 10 s, for its critical colour; the brightness whenever udev reports
-// a change (the keys, idle dimming), so nothing polls it.
+// CPU, memory, temperature and screen brightness. The CPU and memory are
+// read only while Sky shows them; the temperature every 10 s, for the status
+// island's warning; the brightness whenever udev reports a change (the
+// keys, idle dimming), for the popup, so nothing polls it.
 Singleton {
 	id: root
 
-	// Whether each number shows; a left click on its icon toggles it
-	property bool showCpu: false
-	property bool showMemory: false
-	property bool showTemperature: false
-	property bool showBacklight: false
 	readonly property bool onSky: Quickshell.screens.some(s => Desktop.workspaceEmpty(Hyprland.monitorFor(s)))
 
 	property int cpu: 0 // % busy
@@ -108,7 +102,7 @@ Singleton {
 		interval: root.lastCpu ? 2000 : 1000
 		repeat: true
 		triggeredOnStart: true
-		running: root.showCpu || root.onSky
+		running: root.onSky
 		onRunningChanged: if (!running)
 			root.lastCpu = null
 		onTriggered: root.readCpu()
@@ -118,7 +112,7 @@ Singleton {
 		interval: 5000
 		repeat: true
 		triggeredOnStart: true
-		running: root.showMemory || root.onSky
+		running: root.onSky
 		onTriggered: root.readMemory()
 	}
 

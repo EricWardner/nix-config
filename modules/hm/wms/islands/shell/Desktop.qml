@@ -34,6 +34,18 @@ Singleton {
 		return monitor !== null && !Hyprland.toplevels.values.some(t => t.workspace === monitor.activeWorkspace);
 	}
 
+	// A panel on a page ("" for its first), or closed if it's already open
+	// there
+	function openPanel(name: string, page: string, monitor: HyprlandMonitor) {
+		if (panel === name && panelOn === monitor && panelPage === page) {
+			closePanel();
+			return;
+		}
+		panelPage = page;
+		panel = name;
+		panelOn = monitor;
+	}
+
 	function closePanel() {
 		panel = "";
 		panelOn = null;
@@ -51,9 +63,7 @@ Singleton {
 		}
 
 		function open(name: string, page: string): void {
-			root.panelPage = page;
-			root.panel = name;
-			root.panelOn = Hyprland.focusedMonitor;
+			root.openPanel(name, page, Hyprland.focusedMonitor);
 		}
 	}
 

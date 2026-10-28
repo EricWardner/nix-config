@@ -9,8 +9,6 @@ import Quickshell
 // icons are Nerd Font glyphs, and Gather's is the one-glyph gather-symbol
 // font at U+FFF00.
 Singleton {
-	readonly property string cpu: String.fromCodePoint(0x100AE5)
-	readonly property string memory: String.fromCodePoint(0x100AE6)
 	readonly property string thermometer: String.fromCodePoint(0x1001EC)
 	readonly property string sunMin: String.fromCodePoint(0x1001AB)
 	readonly property string sunMax: String.fromCodePoint(0x1001AD)
@@ -31,12 +29,10 @@ Singleton {
 	readonly property string speakerWave2: String.fromCodePoint(0x1002A6)
 	readonly property string speakerWave3: String.fromCodePoint(0x1002A8)
 	readonly property string circle: String.fromCodePoint(0x100000)
-	readonly property string recordCircle: String.fromCodePoint(0x10075C)
 	readonly property string bellSlash: String.fromCodePoint(0x1002DD)
 	readonly property string terminal: String.fromCodePoint(0x100A7C)
 	readonly property string globe: String.fromCodePoint(0x1001AA)
 	readonly property string folder: String.fromCodePoint(0x100215)
-	readonly property string stopCircle: String.fromCodePoint(0x10072A)
 	readonly property string rectangleDashed: String.fromCodePoint(0x100941)
 	readonly property string display: String.fromCodePoint(0x1008B9)
 	readonly property string camera: String.fromCodePoint(0x10031E)

@@ -3,17 +3,13 @@ import Quickshell
 import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 
-// The tray island at rest: the Do Not Disturb moon while it's on, the
-// network and Bluetooth (a click on either opens the control centre), then
-// the applets' tray icons. A left click activates an applet, a middle click
-// its secondary action, a right click opens its menu.
+// The tray island: the applets' tray icons. A left click activates an
+// applet, a middle click its secondary action, a right click opens its menu.
 IslandMode {
 	id: root
 
 	// The bar's window, which the menus open from
 	required property QsWindow window
-
-	signal controlRequested
 
 	// By id: apps register in whatever order they start, so the icons would
 	// otherwise move between sessions
@@ -29,45 +25,8 @@ IslandMode {
 		id: row
 
 		anchors.centerIn: parent
-		// 16px icons 24px apart: the 40px pitch of the status icons beside
-		// the island
-		spacing: 24
-
-		BarText {
-			visible: Inbox.dnd
-			text: Glyphs.moonFill
-			anchors.verticalCenter: parent.verticalCenter
-
-			MouseArea {
-				anchors.fill: parent
-				onClicked: Inbox.dnd = false
-			}
-		}
-
-		// Ethernet while it's connected, else Wi-Fi: its signal, or slashed
-		// when off or not connected; amber behind a login page
-		BarText {
-			anchors.verticalCenter: parent.verticalCenter
-			text: Net.wired ? Glyphs.ethernet : Net.current ? Glyphs.wifi : Glyphs.wifiSlash
-			color: Net.limited ? Theme.yellow : Net.wired || Net.current ? Theme.fg : Theme.dim
-
-			MouseArea {
-				anchors.fill: parent
-				onClicked: root.controlRequested()
-			}
-		}
-
-		BarText {
-			visible: Net.adapter !== null
-			anchors.verticalCenter: parent.verticalCenter
-			text: !Net.bluetoothOn ? Glyphs.bluetoothOff : Net.bluetoothConnected.length > 0 ? Glyphs.bluetoothConnected : Glyphs.bluetooth
-			color: Net.bluetoothOn ? Theme.fg : Theme.dim
-
-			MouseArea {
-				anchors.fill: parent
-				onClicked: root.controlRequested()
-			}
-		}
+		// 16px icons 14px apart: the status island's 30px pitch
+		spacing: 14
 
 		Repeater {
 			model: root.sorted

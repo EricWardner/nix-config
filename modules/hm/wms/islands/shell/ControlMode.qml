@@ -1,10 +1,10 @@
 import QtQuick
 
-// The control centre: the tray island grown into tiles and sliders (the
+// The control centre: the status island grown into tiles and sliders (the
 // main page), with pages for Wi-Fi, Bluetooth and sound devices that the
-// island resizes to. A click on the network or Bluetooth opens it (or `qs
-// ipc -c islands call panel toggle control`); Esc goes back a page, then
-// closes it, and so does a click outside.
+// island resizes to. The network, Bluetooth and volume open it on their
+// page (or `qs ipc -c islands call panel open control wifi`); Esc goes back
+// a page, then closes it, and so does a click outside.
 IslandMode {
 	id: root
 
