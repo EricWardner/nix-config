@@ -62,6 +62,13 @@ impl Item {
         self.theme_path.clone()
     }
 
+    /// None: the icon is the themed one named above. Quickshell's tray asks
+    /// for this with every new icon and logs a warning when it's missing.
+    #[zbus(property)]
+    fn icon_pixmap(&self) -> Vec<(i32, i32, Vec<u8>)> {
+        Vec::new()
+    }
+
     #[zbus(property)]
     fn item_is_menu(&self) -> bool {
         false

@@ -2232,8 +2232,13 @@ impl Ui {
     }
 
     /// Opens on the monitor that was clicked, centred under the click where
-    /// it fits; without a click, wherever the compositor puts it.
+    /// it fits; without a click, wherever the compositor puts it (Hyprland:
+    /// the focused monitor, at its right edge).
     fn place(&self, at: Option<(i32, i32)>) {
+        // Quickshell's tray activates every item at (0, 0), which is no click
+        // position at all: taken at its word, the panel always opened on the
+        // laptop's screen, whichever monitor's bar was clicked
+        let at = at.filter(|&position| position != (0, 0));
         let monitors = gdk::Display::default().map(|d| d.monitors());
         let found = at.zip(monitors).and_then(|((x, y), monitors)| {
             (0..monitors.n_items())
