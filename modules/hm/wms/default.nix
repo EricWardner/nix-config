@@ -1,7 +1,7 @@
 {
   imports = [
     ./hypr
-    ./waybar
+    ./islands
     ./notifications
     ./launchers
     ./net-panel

@@ -46,12 +46,12 @@ let
     doNotDisturb = "mako-dnd toggle"; # from wms/notifications
     notificationRestore = "${pkgs.mako}/bin/makoctl restore";
     # swayosd-client makes the change and shows the popup (wms/swayosd.nix,
-    # which caps volume at 150%); the bar's volume-watch also flashes the
+    # which caps volume at 150%); the bar's volume icon also flashes the
     # new level
     volumeUp = "${swayosd} --output-volume raise";
     volumeDown = "${swayosd} --output-volume lower";
     volumeMute = "${swayosd} --output-volume mute-toggle";
-    micMute = "micctl mute"; # from bar-tools (waybar module)
+    micMute = "micctl mute"; # from bar-tools (islands module)
     brighter = "${swayosd} --brightness raise";
     dimmer = "${swayosd} --brightness lower";
     mediaNext = "${swayosd} --playerctl next";

@@ -9,38 +9,31 @@ let
   inherit (config.lib.stylix) colors;
 
   # Do Not Disturb: `mako-dnd toggle` (Super+N) flips mako's do-not-disturb
-  # mode, `mako-dnd off` (clicking the bar's moon) leaves it, and both tell
-  # waybar to redraw the moon (signal 11); `mako-dnd status` is that
-  # module's output.
+  # mode and `mako-dnd off` (clicking the bar's moon) leaves it. Each writes
+  # the result, "on" or "off", to $XDG_RUNTIME_DIR/islands/dnd, which the
+  # islands bar watches for its moon; `mako-dnd sync` only writes it (the
+  # bar runs it as it starts).
   makoDnd = pkgs.writeShellScriptBin "mako-dnd" ''
     makoctl=${pkgs.mako}/bin/makoctl
-    redraw() {
-      ${pkgs.systemd}/bin/systemctl --user kill --kill-whom=main \
-        --signal=SIGRTMIN+11 waybar.service
+    publish() {
+      dir="''${XDG_RUNTIME_DIR:?}/islands"
+      mkdir -p "$dir"
+      if $makoctl mode | ${pkgs.gnugrep}/bin/grep -qx do-not-disturb; then
+        echo on >"$dir/dnd"
+      else
+        echo off >"$dir/dnd"
+      fi
     }
     case "$1" in
-      toggle)
-        $makoctl mode -t do-not-disturb >/dev/null
-        redraw
-        ;;
-      off)
-        $makoctl mode -r do-not-disturb >/dev/null
-        redraw
-        ;;
-      status)
-        # The moon (moon.fill, SF Symbols U+1001BA, like Apple's Focus),
-        # or nothing: an empty module hides.
-        if $makoctl mode | ${pkgs.gnugrep}/bin/grep -qx do-not-disturb; then
-          printf '{"text":"\U001001BA","tooltip":"Do Not Disturb (click to turn off)","class":"on"}\n'
-        else
-          printf '{"text":""}\n'
-        fi
-        ;;
+      toggle) $makoctl mode -t do-not-disturb >/dev/null ;;
+      off) $makoctl mode -r do-not-disturb >/dev/null ;;
+      sync) ;;
       *)
-        echo "usage: mako-dnd toggle|off|status" >&2
+        echo "usage: mako-dnd toggle|off|sync" >&2
         exit 2
         ;;
     esac
+    publish
   '';
 
   # Claude Code notifies through Ghostty, so its notifications carry
@@ -56,16 +49,6 @@ in
 {
   config = mkIf config.modules.hyprland.enable {
     home.packages = [ makoDnd ];
-
-    # The bar's moon, first on the tray island (wms/waybar), shown only
-    # while Do Not Disturb is on.
-    programs.waybar.settings.mainBar."custom/dnd" = {
-      exec = "${makoDnd}/bin/mako-dnd status";
-      return-type = "json";
-      interval = "once";
-      signal = 11;
-      on-click = "${makoDnd}/bin/mako-dnd off";
-    };
 
     # Styled here instead (stylix's target draws an opaque box with a 2px
     # border), in the palette, to match net-panel and swayosd.

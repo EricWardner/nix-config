@@ -74,7 +74,7 @@ in
       # keyd grabs every keyboard — including hotplugged ones, its core
       # competence — and re-emits events through one virtual device that is
       # created at boot and outlives any hardware coming or going. The
-      # push-to-talk daemon (pttd, HM waybar module) then always has a stable
+      # push-to-talk daemon (pttd, HM islands module) then always has a stable
       # device to read instead of chasing hardware hotplug; it reopens the
       # device only if keyd itself restarts (e.g. on a rebuild). Pure
       # passthrough — no remapping — so Right Alt stays a real Alt everywhere.
@@ -85,7 +85,7 @@ in
 
       # keyd's virtual keyboard is created fresh at every keyd start, so its
       # /dev/input/eventN number isn't stable across boots. Give it a fixed
-      # by-id path so pttd (waybar's push-to-talk daemon) can target it
+      # by-id path so pttd (the push-to-talk daemon) can target it
       # directly instead of globbing every input device.
       services.udev.extraRules = ''
         SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="keyd virtual keyboard", SYMLINK+="input/by-id/keyd-virtual-keyboard-event-kbd"

@@ -47,11 +47,11 @@ gradient remains a fallback: Stylix overrides it, just as it did before.
   avoids racing hypridle with a second direct hyprlock launch.
 - Hypridle's DPMS commands and the system menu's logout command use Lua
   dispatchers. Hypridle, Hyprlock, and Hyprpaper retain their own config formats.
-- Waybar 0.15's built-in workspace buttons also send legacy dispatchers. The
-  Waybar module backports upstream Lua IPC support and detects the running
-  compositor's config provider. Its Home Manager package and systemd service
-  use the same patched executable. Remove the patch when the pinned Waybar
-  includes these fixes; see `../waybar/hyprland-lua-ipc.patch` for upstream commits.
+- The islands bar (Quickshell) switches workspaces with
+  `HyprlandWorkspace.activate()`, which sends `hl.dsp.focus` in a Lua session.
+  Anything it passes to `Hyprland.dispatch()` must be a Lua dispatcher
+  expression; Quickshell doesn't translate legacy strings. (Waybar 0.15 needed
+  a patch for this; it was replaced by the islands bar.)
 - `nix fmt` now includes StyLua. Lua language server settings reference Hyprland's
   NixOS stubs in this repository and the pinned package stubs in the generated
   Hyprland config directory.

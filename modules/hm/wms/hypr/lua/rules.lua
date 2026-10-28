@@ -1,4 +1,6 @@
-hl.layer_rule({ match = { namespace = "waybar" }, blur = true, ignore_alpha = 0.5 })
+-- The islands bar (modules/hm/wms/islands): blurred only where it's over
+-- 50% opaque, so the text on the bare bar gets no halo
+hl.layer_rule({ match = { namespace = "^islands-bar$" }, blur = true, ignore_alpha = 0.5 })
 -- The glass panels of fuzzel (menus), vicinae (the launcher and its HUD),
 -- net-panel (the network panel) and swayosd (volume and brightness popups).
 -- Global blur xray is off (hyprland.nix), so they frost the windows under
@@ -42,7 +44,7 @@ hl.window_rule({
 	center = true,
 	animation = "slide",
 })
--- Apps opened from waybar float in the top-right corner, below the bar.
+-- Apps opened from the bar float in the top-right corner, below it.
 -- Check classes with `hyprctl clients` when one tiles: blueman's changed
 -- from .blueman-manager-wrapped, and ghostty ignores a --class that isn't a
 -- valid app ID (needs a dot), as the bare "btop" once was.

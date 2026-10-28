@@ -22,7 +22,6 @@
     # kdeglobals first in XDG_CONFIG_DIRS. Qt apps are themed by the qt
     # target (qtct + Kvantum), not this.
     stylix.targets.kde.enable = false;
-    stylix.targets.waybar.enable = true;
     stylix.targets.hyprlock.enable = lib.mkForce false;
     stylix.targets.hyprpaper.enable = lib.mkForce false;
     # The hyprland target would also turn hyprpaper on to show stylix.image;
@@ -41,9 +40,11 @@
       # - Symbols Nerd Font goes straight after the UI font, ahead of
       #   Cascadia Code NF, whose icons are sized for a terminal cell and came
       #   out far smaller in the bar.
-      # - They have only a Regular face, so in bold text (waybar's workspace
-      #   labels) fontconfig fakes bold by thickening their outlines, which
-      #   ran the Gather logo's rings together. 90-synthetic.conf does that
+      # - They have only a Regular face, so in bold GTK text (waybar's
+      #   workspace labels were) fontconfig fakes bold by thickening their
+      #   outlines, which ran the Gather logo's rings together. Qt fakes its
+      #   own bold and ignores this, so the islands bar sets the icons
+      #   apart in the regular weight. 90-synthetic.conf does that
       #   to a font no heavier than medium; user rules come before it
       #   (50-user.conf), so this calls them bold when bold is asked for.
       configFile.icon-fonts = {

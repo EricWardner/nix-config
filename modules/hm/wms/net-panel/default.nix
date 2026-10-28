@@ -34,8 +34,9 @@ in
       pkgs.networkmanagerapplet
     ];
 
-    # Like waybar: kept alive by systemd, only under a Hyprland session. It
-    # re-registers its tray icon whenever waybar (the tray host) restarts.
+    # Like the bar: kept alive by systemd, only under a Hyprland session. It
+    # re-registers its tray icon whenever the tray host (the islands bar)
+    # restarts.
     systemd.user.services.net-panel = {
       Unit = {
         Description = "Network panel and tray icon";
