@@ -14,7 +14,8 @@ import Quickshell.Services.Notifications
 // All of them stay in the history, the newest 20, until dismissed.
 //
 // Do Not Disturb keeps them from popping up, except critical ones and the
-// YubiKey prompt: without that one, sudo and signing would look hung.
+// YubiKey prompt: without that one, sudo and signing would look hung. While
+// the screen is shared, the rest are held back, and pop up once it ends.
 Singleton {
 	id: root
 
@@ -22,6 +23,8 @@ Singleton {
 	// The notification popping up, and those waiting their turn
 	property Notification popup: null
 	property var queue: []
+	// Held back while the screen is shared
+	property var held: []
 	// The popup is under the pointer: hold it there
 	property bool hovered: false
 
@@ -36,6 +39,38 @@ Singleton {
 
 	function breaksThrough(n: Notification): bool {
 		return n.urgency === NotificationUrgency.Critical || isYubiKey(n);
+	}
+
+	// The app a notification is from. Claude Code notifies through Ghostty
+	// under its own title, and Ghostty sends no app name.
+	function appName(n: Notification): string {
+		if (!n)
+			return "";
+		if (n.summary === "Claude Code")
+			return "Claude Code";
+		if (isYubiKey(n))
+			return "YubiKey";
+		if (n.appName !== "")
+			return n.appName;
+		return n.desktopEntry === "com.mitchellh.ghostty" ? "Ghostty" : "Notification";
+	}
+
+	// A path, an image:// URL, or a name to look up in the icon theme
+	function iconSource(source: string): string {
+		if (!source)
+			return "";
+		if (source.startsWith("/"))
+			return "file://" + source;
+		if (source.includes("://"))
+			return source;
+		return Quickshell.iconPath(source, true);
+	}
+
+	// The app's icon, never the notification's own image
+	function appIcon(n: Notification): string {
+		if (n?.summary === "Claude Code")
+			return Qt.resolvedUrl("icons/claude.svg");
+		return iconSource(n?.appIcon ?? "") || iconSource(n?.desktopEntry ?? "");
 	}
 
 	// How long the popup shows, in ms; 0 for until it's closed
@@ -60,6 +95,10 @@ Singleton {
 		// The open notification centre lists it already
 		if (Desktop.panel === "centre" && !breaksThrough(n))
 			return;
+		if (Sharing.active && !breaksThrough(n)) {
+			held = held.concat([n]);
+			return;
+		}
 		if (isYubiKey(n) && Host.attentionSound !== "")
 			Quickshell.execDetached(["pw-play", Host.attentionSound]);
 		queue = queue.concat([n]);
@@ -86,6 +125,7 @@ Singleton {
 
 	function forget(n: Notification) {
 		queue = queue.filter(q => q !== n && q !== null);
+		held = held.filter(h => h !== n);
 		if (popup === n)
 			next();
 	}
@@ -126,6 +166,28 @@ Singleton {
 			n.dismiss();
 		else if (popup === n)
 			next();
+	}
+
+	// A share starting takes what's showing and waiting off the screen; one
+	// ending lets them pop up
+	Connections {
+		target: Sharing
+
+		function onActiveChanged() {
+			if (Sharing.active) {
+				const holdable = n => n !== null && !root.breaksThrough(n);
+				root.held = root.held.concat([root.popup].concat(root.queue).filter(holdable));
+				root.queue = root.queue.filter(n => n !== null && root.breaksThrough(n));
+				if (holdable(root.popup))
+					root.next();
+			} else {
+				if (!root.dnd)
+					root.queue = root.queue.concat(root.held);
+				root.held = [];
+				if (!root.popup)
+					root.next();
+			}
+		}
 	}
 
 	NotificationServer {

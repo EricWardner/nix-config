@@ -20,6 +20,7 @@ Singleton {
 	readonly property color green: colours.base0B ?? "#c3e88d"
 	readonly property color yellow: colours.base0A ?? "#ffcb6b"
 	readonly property color red: colours.base08 ?? "#f07178"
+	readonly property color orange: colours.base09 ?? "#f78c6c"
 	readonly property string sans: fonts.sans ?? "sans-serif"
 
 	// The islands at rest: the faint glass of waybar's tray island, a light
@@ -32,6 +33,8 @@ Singleton {
 	readonly property color ink: bg
 	readonly property color inkDim: alpha(bg, 0.75)
 	readonly property color inkTrack: alpha(bg, 0.14)
+	// The palette's green is too pale to read on the light glass
+	readonly property color inkGreen: "#3f8f3a"
 	// The bar's window reaches this far down, transparent and letting clicks
 	// through below the bar, so islands have room to grow
 	readonly property int windowHeight: 560

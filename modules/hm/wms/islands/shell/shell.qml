@@ -9,7 +9,8 @@ import Quickshell
 
 // islands: the desktop shell. One bar per monitor; Quickshell adds and
 // removes bars as monitors come and go, so a hotplug restarts nothing. The
-// capture overlays are built once per monitor and shown for each capture.
+// capture overlays are built once per monitor and shown for each capture;
+// a frame goes round a screen while it's shared.
 ShellRoot {
 	Variants {
 		model: Quickshell.screens
@@ -21,5 +22,11 @@ ShellRoot {
 		model: Quickshell.screens
 
 		CaptureOverlay {}
+	}
+
+	Variants {
+		model: Quickshell.screens
+
+		ShareFrame {}
 	}
 }

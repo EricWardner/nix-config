@@ -22,41 +22,13 @@ Item {
 	readonly property bool claude: n?.summary === "Claude Code"
 	readonly property bool yubikey: Inbox.isYubiKey(n)
 	readonly property bool low: n?.urgency === NotificationUrgency.Low
-	readonly property string label: {
-		if (!n)
-			return "";
-		if (claude)
-			return "Claude Code";
-		if (yubikey)
-			return "YubiKey";
-		if (n.appName !== "")
-			return n.appName;
-		// Ghostty sends no app name
-		return n.desktopEntry === "com.mitchellh.ghostty" ? "Ghostty" : "Notification";
-	}
+	readonly property string label: Inbox.appName(n)
 	readonly property string title: claude ? n?.body ?? "" : n?.summary ?? ""
 	readonly property string body: claude || yubikey ? "" : n?.body ?? ""
 	readonly property var actions: n ? Array.from(n.actions).filter(a => a.identifier !== "default") : []
-	// An image or icon: a path, an image:// URL, or a name to look up in the
-	// icon theme (Ghostty sends its icon's name as the image)
-	readonly property string icon: {
-		if (!n)
-			return "";
-		if (claude)
-			return Qt.resolvedUrl("icons/claude.svg");
-		for (const source of [n.image, n.appIcon]) {
-			if (!source)
-				continue;
-			if (source.startsWith("/"))
-				return "file://" + source;
-			if (source.includes("://"))
-				return source;
-			const themed = Quickshell.iconPath(source, true);
-			if (themed !== "")
-				return themed;
-		}
-		return "";
-	}
+	// Its image, else its app's icon (Ghostty sends its icon's name as the
+	// image)
+	readonly property string icon: claude ? Inbox.appIcon(n) : Inbox.iconSource(n?.image ?? "") || Inbox.appIcon(n)
 	// The colour picker's notification carries the colour as its image: a
 	// bigger swatch than an app icon
 	readonly property int iconSize: n?.appName === "Screenshot" && n.image !== "" ? 56 : yubikey ? 48 : 40

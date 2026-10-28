@@ -17,7 +17,8 @@ PanelWindow {
 
 	required property ShellScreen modelData
 	readonly property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
-	// The notification or control centre is open on this monitor
+	// The notification or control centre (or the held notifications) is open
+	// on this monitor
 	readonly property bool panelOpen: Desktop.panel !== "" && Desktop.panelOn === monitor
 	// A question from NetworkManager or BlueZ is in this monitor's island
 	readonly property bool asking: Agent.current !== null && Hyprland.focusedMonitor === monitor
@@ -51,6 +52,10 @@ PanelWindow {
 
 		Region {
 			item: tray
+		}
+
+		Region {
+			item: held.visible ? held : null
 		}
 	}
 
@@ -100,6 +105,14 @@ PanelWindow {
 		monitor: bar.monitor
 		anchors.horizontalCenter: parent.horizontalCenter
 		y: Theme.barTop + 2
+	}
+
+	HeldPanel {
+		id: held
+
+		visible: Desktop.panel === "held" && Desktop.panelOn === bar.monitor
+		x: Math.max(8, Math.min(bar.width - width - 8, centre.x + centre.heldCentre - width / 2))
+		y: centre.y + centre.height + 8
 	}
 
 	// Set apart from the status icons by twice the gap between them; it grows
