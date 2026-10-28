@@ -2,9 +2,9 @@ import QtQuick
 import Quickshell.Hyprland
 
 // The status island at rest: Do Not Disturb while it's on, the temperature
-// once it's critical, the camera while it's in use, the microphone, Bluetooth
-// while it's on, the network, the volume and the battery. The network,
-// Bluetooth and volume open the control centre on their page.
+// once it's critical, recording, the camera, the microphone, Bluetooth while
+// it's on, the network, the volume and the battery. The network, Bluetooth
+// and volume open the control centre on their page.
 IslandMode {
 	id: root
 
@@ -44,19 +44,32 @@ IslandMode {
 			}
 		}
 
-		// A right click opens the camera settings
+		// Start a recording (choosing what to record), or stop it; Super+R
+		// does the same. A right click opens the last one.
 		BarIcon {
-			visible: Desktop.webcam === "in-use"
-			glyph: Glyphs.video
-			live: true
-			// The ~3px gap from the lens that waybar's dot had (measured)
-			dotShift: 6.5
+			readonly property bool on: Capture.phase === "countdown" || Capture.phase === "recording"
+
+			glyph: on ? Glyphs.stopCircle : Glyphs.recordCircle
+			tint: on ? Theme.red : Theme.fg
 			onClicked: mouse => {
 				if (mouse.button === Qt.RightButton)
-					Desktop.launch(["camera-settings"]);
+					Capture.run(["last"]);
 				else
-					root.open("");
+					Capture.toggleRecording();
 			}
+		}
+
+		// A left or middle click turns the cameras off or on; a right click
+		// opens (or closes) the camera settings
+		BarIcon {
+			readonly property bool off: Desktop.webcam === "muted" || Desktop.webcam === "disconnected"
+
+			glyph: off ? Glyphs.videoSlash : Glyphs.video
+			tint: off ? Theme.dim : Theme.fg
+			live: Desktop.webcam === "in-use"
+			// The ~3px gap from the lens that waybar's dot had (measured)
+			dotShift: 6.5
+			onClicked: mouse => Desktop.launch(mouse.button === Qt.RightButton ? ["camera-settings"] : ["sudo", "/run/current-system/sw/bin/webcam-toggle", "toggle"])
 		}
 
 		// A left click arms or disarms push-to-talk (pttd does the muting), a

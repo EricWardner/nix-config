@@ -29,6 +29,8 @@ Singleton {
 	readonly property string speakerWave2: String.fromCodePoint(0x1002A6)
 	readonly property string speakerWave3: String.fromCodePoint(0x1002A8)
 	readonly property string circle: String.fromCodePoint(0x100000)
+	readonly property string recordCircle: String.fromCodePoint(0x10075C)
+	readonly property string stopCircle: String.fromCodePoint(0x10072A)
 	readonly property string bellSlash: String.fromCodePoint(0x1002DD)
 	readonly property string terminal: String.fromCodePoint(0x100A7C)
 	readonly property string globe: String.fromCodePoint(0x1001AA)
