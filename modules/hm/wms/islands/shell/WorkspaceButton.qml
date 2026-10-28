@@ -47,7 +47,7 @@ Item {
 		anchors.left: parent.left
 		anchors.right: parent.right
 		anchors.bottom: parent.bottom
-		height: 4
+		height: 3
 		color: !root.shown ? "transparent" : root.monitor.focused ? Theme.fg : Theme.alpha(Theme.fg, 0.35)
 	}
 
