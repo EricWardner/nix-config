@@ -18,7 +18,7 @@
 #   open FILE                    a capture's preview (Sky's thumbnails)
 #   thumbnail FILE               a recording's first frame and length, for
 #                                Sky: THUMBS/NAME.jpg and NAME.duration
-#   today                        today's saved screenshots and recordings
+#   today                        today's saved screenshots and recordings,
 #                                newest first, a line each: FILE, then for a
 #                                recording its thumbnail and length, tabbed
 #

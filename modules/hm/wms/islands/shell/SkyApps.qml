@@ -15,7 +15,7 @@ SkyCard {
 		spacing: 8
 
 		Repeater {
-			model: [[Glyphs.terminal, "Ghostty", ["ghostty"]], [Glyphs.globe, "Chrome", ["google-chrome-stable"]], [Glyphs.folder, "Files", ["thunar"]]]
+			model: [[Glyphs.terminal, "Ghostty", "ghostty"], [Glyphs.globe, "Chrome", "google-chrome-stable"], [Glyphs.folder, "Files", "thunar"]]
 
 			Rectangle {
 				id: app
@@ -50,7 +50,7 @@ SkyCard {
 
 				TapHandler {
 					cursorShape: Qt.PointingHandCursor
-					onTapped: Desktop.launch(app.modelData[2])
+					onTapped: Desktop.launch([app.modelData[2]])
 				}
 			}
 		}
