@@ -39,9 +39,9 @@ Item {
 	RectangularShadow {
 		anchors.fill: glass
 		radius: glass.radius
-		offset.y: 10
-		blur: 30
-		color: Qt.rgba(0, 0, 0, 0.3)
+		offset.y: 2
+		blur: 6
+		color: Qt.rgba(0, 0, 0, 0.25)
 		opacity: root.resting ? 0 : 1
 
 		Behavior on opacity {
