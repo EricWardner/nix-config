@@ -172,7 +172,7 @@ Item {
 
 		width: options.length > 0 ? segments.implicitWidth + 6 : 0
 		height: 40
-		radius: 20
+		radius: 18
 		color: Theme.alpha(Theme.ink, 0.06)
 
 		Row {
@@ -195,7 +195,7 @@ Item {
 
 					width: segmented.iconOnly ? 40 : content.implicitWidth + 24
 					height: 34
-					radius: 17
+					radius: 15
 					color: on ? Theme.ink : hover.hovered ? Theme.inkTrack : "transparent"
 
 					Row {
