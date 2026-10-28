@@ -30,6 +30,7 @@ Singleton {
 	readonly property string speakerWave1: String.fromCodePoint(0x1002A4)
 	readonly property string speakerWave2: String.fromCodePoint(0x1002A6)
 	readonly property string speakerWave3: String.fromCodePoint(0x1002A8)
+	readonly property string circle: String.fromCodePoint(0x100000)
 	readonly property string recordCircle: String.fromCodePoint(0x10075C)
 	readonly property string stopCircle: String.fromCodePoint(0x10072A)
 	readonly property string rectangleDashed: String.fromCodePoint(0x100941)

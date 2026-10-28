@@ -96,7 +96,10 @@ Item {
 				}
 
 				Segmented {
-					options: [["screenshot", "Screenshot", Glyphs.camera], ["record", "Record", Glyphs.recordCircle], ["text", "Text", Glyphs.textViewfinder], ["colour", "Colour", Glyphs.eyedropper]]
+					id: kinds
+
+					iconOnly: true
+					options: [["screenshot", "Screenshot", Glyphs.camera], ["record", "Record", Glyphs.circle], ["text", "Text", Glyphs.textViewfinder], ["colour", "Colour", Glyphs.eyedropper]]
 					chosen: Capture.kind
 					onPicked: value => {
 						Capture.kind = value;
@@ -133,12 +136,37 @@ Item {
 		}
 	}
 
+	Rectangle {
+		readonly property Item segment: kinds.tipFor
+		readonly property point at: segment ? segment.mapToItem(root, segment.width / 2, 0) : Qt.point(0, 0)
+
+		visible: segment !== null
+		x: at.x - width / 2
+		y: glass.height + 8
+		width: tipText.implicitWidth + 20
+		height: 24
+		radius: 12
+		color: Qt.rgba(0.13, 0.13, 0.13, 0.85)
+
+		BarText {
+			id: tipText
+
+			anchors.centerIn: parent
+			text: parent.segment?.modelData[1] ?? ""
+			font.pixelSize: 12
+			font.weight: Font.DemiBold
+		}
+	}
+
 	component Segmented: Rectangle {
 		id: segmented
 
 		// [value, label, glyph]
 		property var options: []
 		property string chosen
+		// Glyphs alone, the hovered one named in a tip
+		property bool iconOnly: false
+		property Item tipFor: null
 
 		signal picked(string value)
 
@@ -163,8 +191,9 @@ Item {
 					required property var modelData
 
 					readonly property bool on: segmented.chosen === modelData[0]
+					readonly property color tint: on ? Theme.fg : Theme.ink
 
-					width: content.implicitWidth + 24
+					width: segmented.iconOnly ? 40 : content.implicitWidth + 24
 					height: 34
 					radius: 17
 					color: on ? Theme.ink : hover.hovered ? Theme.inkTrack : "transparent"
@@ -176,16 +205,39 @@ Item {
 						spacing: 6
 
 						BarText {
+							id: glyph
+
 							anchors.verticalCenter: parent.verticalCenter
 							text: segment.modelData[2]
-							color: segment.on ? Theme.fg : Theme.ink
-							font.pixelSize: 14
+							color: segment.tint
+							font.pixelSize: segmented.iconOnly ? 16 : 14
+
+							// Record's circle gets a red middle
+							Rectangle {
+								readonly property rect bounds: glyphInk.tightBoundingRect
+
+								visible: segment.modelData[0] === "record"
+								width: Math.round(bounds.width * 0.48)
+								height: width
+								radius: width / 2
+								x: bounds.x + (bounds.width - width) / 2
+								y: glyph.baselineOffset + bounds.y + (bounds.height - height) / 2
+								color: Theme.red
+							}
+
+							TextMetrics {
+								id: glyphInk
+
+								font: glyph.font
+								text: glyph.text
+							}
 						}
 
 						BarText {
+							visible: !segmented.iconOnly
 							anchors.verticalCenter: parent.verticalCenter
 							text: segment.modelData[1]
-							color: segment.on ? Theme.fg : Theme.ink
+							color: segment.tint
 							font.pixelSize: 13
 							font.weight: segment.on ? Font.DemiBold : Font.Medium
 						}
@@ -193,6 +245,17 @@ Item {
 
 					HoverHandler {
 						id: hover
+
+						onHoveredChanged: {
+							if (!hovered && segmented.tipFor === segment)
+								segmented.tipFor = null;
+						}
+					}
+
+					Timer {
+						interval: 400
+						running: segmented.iconOnly && hover.hovered
+						onTriggered: segmented.tipFor = segment
 					}
 
 					MouseArea {
