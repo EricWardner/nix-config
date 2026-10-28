@@ -10,14 +10,15 @@ import Quickshell.Wayland
 //
 // The window reaches well below the bar so islands can grow down into it,
 // but windows are only kept clear of the bar itself, and clicks only land
-// on the bar and the centre island; everywhere else they reach the windows
+// on the bar and the islands; everywhere else they reach the windows
 // underneath.
 PanelWindow {
 	id: bar
 
 	required property ShellScreen modelData
 	readonly property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
-	readonly property bool centreOpen: Desktop.centreOn !== null && Desktop.centreOn === monitor
+	// The notification or control centre is open on this monitor
+	readonly property bool panelOpen: Desktop.panel !== "" && Desktop.panelOn === monitor
 
 	screen: modelData
 	anchors.top: true
@@ -29,20 +30,24 @@ PanelWindow {
 	// Hyprland blurs behind it only where it's over 50% opaque
 	// (hypr/lua/rules.lua), so the bare bar's text gets no halo
 	WlrLayershell.namespace: "islands-bar"
-	// The notification centre takes the keyboard while it's open (Esc closes
-	// it), and a click anywhere but the bar closes it, as a popup's would
-	WlrLayershell.keyboardFocus: centreOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+	// An open panel takes the keyboard (Esc closes it), and a click anywhere
+	// but the bar closes it, as a popup's would
+	WlrLayershell.keyboardFocus: panelOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
 	HyprlandFocusGrab {
 		windows: [bar]
-		active: bar.centreOpen
-		onCleared: Desktop.closeCentre()
+		active: bar.panelOpen
+		onCleared: Desktop.closePanel()
 	}
 	mask: Region {
 		item: strip
 
 		Region {
 			item: centre
+		}
+
+		Region {
+			item: tray
 		}
 	}
 
@@ -86,7 +91,7 @@ PanelWindow {
 		}
 	}
 
-	Island {
+	CentreIsland {
 		id: centre
 
 		monitor: bar.monitor
@@ -112,23 +117,26 @@ PanelWindow {
 		onClicked: Desktop.launch(["screen-record", "click"])
 	}
 
+	// Set apart from the status icons by twice the gap between them; it grows
+	// leftwards and down into the control centre
+	TrayIsland {
+		id: tray
+
+		monitor: bar.monitor
+		window: bar
+		anchors.right: status.left
+		anchors.rightMargin: 20
+		y: Theme.barTop + 2
+	}
+
 	Row {
+		id: status
+
 		anchors.right: parent.right
 		anchors.rightMargin: 14
 		y: Theme.barTop
 		height: Theme.barHeight
 		spacing: 8
-
-		TrayIsland {
-			window: bar
-			anchors.verticalCenter: parent.verticalCenter
-		}
-
-		// Sets the island apart: twice the gap between status icons
-		Item {
-			width: 12
-			height: 1
-		}
 
 		// Start or stop a recording (Super+R does the same); a right click
 		// opens the last one

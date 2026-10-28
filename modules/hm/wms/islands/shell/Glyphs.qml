@@ -33,6 +33,19 @@ Singleton {
 	readonly property string recordCircle: String.fromCodePoint(0x10075C)
 	readonly property string stopCircle: String.fromCodePoint(0x10072A)
 	readonly property string nix: String.fromCodePoint(0xF1105)
+	readonly property string wifi: String.fromCodePoint(0x100647)
+	readonly property string wifiSlash: String.fromCodePoint(0x100648)
+
+	// Material Design icons (Nerd Font), where SF Symbols has none (no
+	// Bluetooth: it's a trademark) or none whose code point is known yet
+	readonly property string bluetooth: String.fromCodePoint(0xF00AF)
+	readonly property string bluetoothConnected: String.fromCodePoint(0xF00B1)
+	readonly property string bluetoothOff: String.fromCodePoint(0xF00B2)
+	readonly property string ethernet: String.fromCodePoint(0xF0200)
+	readonly property string lock: String.fromCodePoint(0xF033E)
+	readonly property string power: String.fromCodePoint(0xF0425)
+	// Wi-Fi signal, weakest to strongest
+	readonly property var wifiStrength: [0xF091F, 0xF0922, 0xF0925, 0xF0928].map(c => String.fromCodePoint(c))
 
 	// U+2002 EN SPACE between a workspace's number and its app icons, which
 	// have no side bearings

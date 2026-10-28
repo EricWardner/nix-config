@@ -4,8 +4,8 @@ import Quickshell
 // The notification centre: the clock's island grown into the time and date,
 // a calendar, UTC and what's playing, beside the notification history with
 // Do Not Disturb and "Clear all". A click on the clock opens it (or `qs ipc
-// -c islands call centre toggle`); Esc or a click outside closes it, as a
-// popup does.
+// -c islands call panel toggle centre`); Esc or a click outside closes it,
+// as a popup does.
 IslandMode {
 	id: root
 
@@ -20,7 +20,7 @@ IslandMode {
 		else
 			calendar.offset = 0;
 	}
-	Keys.onEscapePressed: Desktop.closeCentre()
+	Keys.onEscapePressed: Desktop.closePanel()
 
 	SystemClock {
 		id: clock
@@ -221,7 +221,7 @@ IslandMode {
 						time: Inbox.age(modelData, clock.date)
 						onActivated: {
 							Inbox.activate(modelData);
-							Desktop.closeCentre();
+							Desktop.closePanel();
 						}
 					}
 				}

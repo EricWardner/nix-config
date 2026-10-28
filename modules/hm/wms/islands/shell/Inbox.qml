@@ -58,7 +58,7 @@ Singleton {
 		if (dnd && !breaksThrough(n))
 			return;
 		// The open notification centre lists it already
-		if (Desktop.centreOn !== null && !breaksThrough(n))
+		if (Desktop.panel === "centre" && !breaksThrough(n))
 			return;
 		if (isYubiKey(n) && Host.attentionSound !== "")
 			Quickshell.execDetached(["pw-play", Host.attentionSound]);

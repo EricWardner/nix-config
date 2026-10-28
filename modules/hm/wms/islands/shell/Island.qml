@@ -1,24 +1,30 @@
 import QtQuick
 import QtQuick.Effects
-import Quickshell.Hyprland
 
-// The island in the middle of the bar, and everything it grows into. At
-// rest it's the clock in faint glass; a click on it opens the notification
-// centre. On the focused monitor it grows into the active mode with the
-// highest priority (the volume popup over a notification, say): light
-// glass with dark ink, at that mode's size, growing around the bar's
-// centre and downwards so nothing beside it moves.
+// An island on the bar and everything it grows into: the modes declared
+// inside it (IslandMode). It shows the active mode with the highest
+// priority, grown to that mode's size, in light glass with dark ink unless
+// the mode rests in the bar's faint glass. It grows away from the edge it's
+// anchored by, and downwards, so nothing beside it moves.
 Item {
 	id: root
 
-	required property HyprlandMonitor monitor
+	default property alias modes: stage.data
 
-	readonly property bool focused: Hyprland.focusedMonitor === monitor
-	readonly property list<IslandMode> modes: [clock, osd, notification, centre]
-	readonly property IslandMode current: modes.reduce((best, mode) => mode.active && mode.priority > best.priority ? mode : best, clock)
+	readonly property var modeList: Array.from(stage.children).filter(child => child.isMode)
+	readonly property IslandMode current: modeList.length === 0 ? null : modeList.reduce((best, mode) => mode.active && mode.priority > best.priority ? mode : best, modeList[0])
+	readonly property bool resting: current?.resting ?? true
 
-	width: current.islandWidth
-	height: current.islandHeight
+	function syncCurrent() {
+		for (const mode of modeList)
+			mode.current = mode === current;
+	}
+
+	onCurrentChanged: syncCurrent()
+	onModeListChanged: syncCurrent()
+
+	width: current?.islandWidth ?? 0
+	height: current?.islandHeight ?? 0
 
 	Behavior on width {
 		Morph {}
@@ -33,7 +39,7 @@ Item {
 		offset.y: 10
 		blur: 30
 		color: Qt.rgba(0, 0, 0, 0.3)
-		opacity: root.current.resting ? 0 : 1
+		opacity: root.resting ? 0 : 1
 
 		Behavior on opacity {
 			NumberAnimation {
@@ -46,12 +52,14 @@ Item {
 		id: glass
 
 		anchors.fill: parent
-		// A pill while it's a line high; rounded corners once it's taller
-		radius: Math.min(height / 2, 24)
-		color: root.current.resting ? Theme.islandFill : Theme.grownFill
+		radius: root.current && root.current.cornerRadius >= 0 ? root.current.cornerRadius : Math.min(height / 2, 24)
+		color: root.resting ? Theme.islandFill : Theme.grownFill
 		border.width: 1
-		border.color: root.current.resting ? Theme.islandRim : root.current.rim
+		border.color: root.resting ? Theme.islandRim : root.current.rim
 
+		Behavior on radius {
+			Morph {}
+		}
 		Behavior on color {
 			ColorAnimation {
 				duration: 300
@@ -65,40 +73,9 @@ Item {
 	}
 
 	Item {
+		id: stage
+
 		anchors.fill: parent
 		clip: true
-
-		ClockMode {
-			id: clock
-
-			current: root.current === clock
-
-			MouseArea {
-				anchors.fill: parent
-				cursorShape: Qt.PointingHandCursor
-				onClicked: Desktop.toggleCentre(root.monitor)
-			}
-		}
-
-		OsdMode {
-			id: osd
-
-			active: Osd.showing && root.focused
-			current: root.current === osd
-		}
-
-		NotificationMode {
-			id: notification
-
-			active: Inbox.popup !== null && root.focused
-			current: root.current === notification
-		}
-
-		CentreMode {
-			id: centre
-
-			active: Desktop.centreOn === root.monitor
-			current: root.current === centre
-		}
 	}
 }

@@ -66,6 +66,11 @@ Singleton {
 		show("brightness", to / 100, false);
 	}
 
+	// From the control centre's slider: no popup, the slider shows it
+	function setBrightness(percent: int) {
+		Quickshell.execDetached(["brightnessctl", "-q", "set", Math.max(5, Math.min(100, percent)) + "%"]);
+	}
+
 	IpcHandler {
 		target: "brightness"
 

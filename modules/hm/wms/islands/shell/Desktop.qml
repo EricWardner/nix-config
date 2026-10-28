@@ -6,30 +6,49 @@ import Quickshell.Hyprland
 import Quickshell.Io
 
 // What the status icons show that Quickshell has no service for, from
-// bar-tools' watchers (one process each, however many bars), which
-// monitor's notification centre is open, and how the bar starts things.
+// bar-tools' watchers (one process each, however many bars), which panel
+// is open where, and how the bar starts things.
 Singleton {
 	id: root
 
-	// The monitor whose centre island is open as the notification centre,
-	// or null: one at a time
-	property HyprlandMonitor centreOn: null
+	// The panel an island is grown into ("centre", the notification centre,
+	// or "control", the control centre) and the monitor it's open on: one at
+	// a time, anywhere
+	property string panel: ""
+	property HyprlandMonitor panelOn: null
+	// The page a panel opens on, when asked for one (the control centre's
+	// "wifi", say); its first page otherwise
+	property string panelPage: ""
 
-	function toggleCentre(monitor: HyprlandMonitor) {
-		centreOn = centreOn === monitor ? null : monitor;
+	function togglePanel(name: string, monitor: HyprlandMonitor) {
+		if (panel === name && panelOn === monitor) {
+			closePanel();
+		} else {
+			panel = name;
+			panelOn = monitor;
+		}
 	}
 
-	function closeCentre() {
-		centreOn = null;
+	function closePanel() {
+		panel = "";
+		panelOn = null;
+		panelPage = "";
 	}
 
-	// For a keybind: `qs ipc -c islands call centre toggle`, on the focused
-	// monitor
+	// For keybinds: `qs ipc -c islands call panel toggle centre` (or
+	// control), on the focused monitor; `… panel open control wifi` opens it
+	// on a page
 	IpcHandler {
-		target: "centre"
+		target: "panel"
 
-		function toggle(): void {
-			root.toggleCentre(Hyprland.focusedMonitor);
+		function toggle(name: string): void {
+			root.togglePanel(name, Hyprland.focusedMonitor);
+		}
+
+		function open(name: string, page: string): void {
+			root.panelPage = page;
+			root.panel = name;
+			root.panelOn = Hyprland.focusedMonitor;
 		}
 	}
 
