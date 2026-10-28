@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Effects
 
 // The centre island grown into the capture toolbar, over the frozen bar
-// where the clock was: what to take (an area, a window, the screen) and
+// where the clock was: what to take (an area or the screen) and
 // what to do with it (a screenshot, a recording, its text, a colour), and
 // under them, how to choose
 Item {
@@ -16,7 +16,7 @@ Item {
 	signal takeScreen
 
 	// A colour is a pixel, and text is read from an area: neither has a
-	// choice of area, window or screen
+	// choice of area or screen
 	readonly property bool targets: Capture.kind !== "colour" && Capture.kind !== "text"
 	readonly property string hint: {
 		const kind = Capture.kind;
@@ -27,8 +27,6 @@ Item {
 		const doing = kind === "record" ? "record" : "take";
 		if (Capture.target === "screen")
 			return "Click, or press Enter, to " + doing + " this screen";
-		if (Capture.target === "window")
-			return "Click a window to " + doing + " it";
 		return "Drag to select, or click a window";
 	}
 
@@ -92,7 +90,7 @@ Item {
 
 				Segmented {
 					visible: root.targets
-					options: [["area", "Area"], ["window", "Window"], ["screen", "Screen"]]
+					options: [["area", "Area"], ["screen", "Screen"]]
 					chosen: Capture.target
 					onPicked: value => Capture.target = value
 				}
@@ -128,7 +126,7 @@ Item {
 			BarText {
 				leftPadding: 8
 				rightPadding: 8
-				text: [root.hint, root.targets ? "Space: area, window, screen" : "", "Esc: cancel"].filter(part => part !== "").join("   ·   ")
+				text: [root.hint, root.targets ? "Space: " + (Capture.target === "screen" ? "area" : "screen") : "", "Esc: cancel"].filter(part => part !== "").join("   ·   ")
 				color: Theme.inkDim
 				font.pixelSize: 12
 			}

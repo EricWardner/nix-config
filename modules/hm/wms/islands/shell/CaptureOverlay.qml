@@ -8,7 +8,7 @@ import Quickshell.Wayland
 // window to take it whole (snapped to its edges); with Screen chosen, click
 // anywhere. The colour picker shows a magnifier at the pointer. The toolbar,
 // on the focused monitor, is the centre island grown. Esc cancels, Enter
-// takes the selection (or the screen), Space steps through area, window and
+// takes the selection (or the screen), Space switches between area and
 // screen.
 PanelWindow {
 	id: root
@@ -260,8 +260,7 @@ PanelWindow {
 		Keys.onSpacePressed: {
 			if (Capture.kind === "colour" || Capture.kind === "text")
 				return;
-			const targets = ["area", "window", "screen"];
-			Capture.target = targets[(targets.indexOf(Capture.target) + 1) % targets.length];
+			Capture.target = Capture.target === "screen" ? "area" : "screen";
 			root.selection = Qt.rect(0, 0, 0, 0);
 		}
 	}

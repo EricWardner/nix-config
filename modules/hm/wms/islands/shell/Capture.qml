@@ -15,7 +15,7 @@ Singleton {
 	id: root
 
 	property string kind: "screenshot" // screenshot, record, text, colour
-	property string target: "area" // area, window, screen
+	property string target: "area" // area, screen
 	property string phase: "idle" // idle, freezing, choosing, countdown, recording
 
 	readonly property bool choosing: phase === "choosing"
@@ -66,7 +66,8 @@ Singleton {
 		const frozen = frozenFile(screen.name);
 		phase = "idle";
 		if (kind === "screenshot") {
-			if (target === "window" && window) {
+			// From the window itself, so the parts covered or off screen are in it
+			if (window) {
 				dropFrames();
 				run(["window", window.stableId]);
 			} else {
@@ -262,8 +263,7 @@ Singleton {
 
 		readonly property string phase: root.phase
 
-		// kind: screenshot, record, text or colour; target: area, window or
-		// screen
+		// kind: screenshot, record, text or colour; target: area or screen
 		function open(kind: string, target: string): void {
 			root.open(kind, target);
 		}
