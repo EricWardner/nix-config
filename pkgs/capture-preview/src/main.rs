@@ -1,7 +1,8 @@
 //! capture-preview: a screen recording or screenshot in a small floating
-//! window, with what to do with it. screen-record and
-//! screenshot open it as soon as a recording or shot is done (and the bar's
-//! "Saved" opens a recording again).
+//! window, with what to do with it. The islands shell's capture
+//! (islands-capture) opens it as soon as a recording or shot is done, and
+//! the bar's record button opens the last recording again on a right
+//! click.
 //!
 //! An MP4 plays in GtkVideo (GStreamer, decoded on the GPU through VA-API),
 //! with play/pause and a seek bar on hover; Convert to GIF makes the GIF next
@@ -33,7 +34,7 @@ use gtk::{gdk, gio, glib};
 const MAX_W: f64 = 720.0;
 const MAX_H: f64 = 440.0;
 
-/// The same conversion screen-record used to run on every recording: 30 fps,
+/// The conversion the old screen-record script ran on every recording: 30 fps,
 /// ordered dithering and a palette from what changes between frames, about a
 /// second for a 5 s clip with text staying sharp.
 const GIF_FILTER: &str = "fps=30,scale={w}:{h}:flags=lanczos,split[s0][s1];\

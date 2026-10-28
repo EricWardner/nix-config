@@ -167,7 +167,6 @@ let
   # In silent mode vicinae runs the script with its window still open, then
   # closes it and shows the first line of output in its HUD (a failing
   # script's line goes to a toast instead, and the window stays).
-  recordState = ''$(cat "$XDG_RUNTIME_DIR/screen-record/state" 2>/dev/null)'';
   actions = {
     record-area = {
       title = "Record an area";
@@ -179,13 +178,8 @@ let
         "capture"
       ];
       script = ''
-        case ${recordState} in
-          selecting* | countdown* | recording*) echo "A recording is already under way" ;;
-          *)
-            ${afterLauncher} screen-record
-            echo "Drag to choose the area to record"
-            ;;
-        esac
+        ${afterLauncher} ${islands} capture open record area
+        echo "Drag to choose the area to record"
       '';
     };
     stop-recording = {
@@ -197,11 +191,8 @@ let
         "end"
       ];
       script = ''
-        case ${recordState} in
-          countdown* | recording*)
-            ${afterLauncher} screen-record
-            echo "Recording stopped"
-            ;;
+        case $(${islands} capture stop) in
+          stopped) echo "Recording stopped" ;;
           *) echo "Nothing is being recorded" ;;
         esac
       '';
@@ -217,7 +208,7 @@ let
         "trim"
       ];
       script = ''
-        ${afterLauncher} screen-record menu
+        ${islands} capture last
         echo "Opening the last recording"
       '';
     };
@@ -244,7 +235,7 @@ let
         "region"
       ];
       script = ''
-        ${afterHud} screenshot area
+        ${afterHud} ${islands} capture open screenshot area
         echo "Then drag to choose the area"
       '';
     };
@@ -256,7 +247,7 @@ let
         "capture"
       ];
       script = ''
-        ${afterHud} screenshot window
+        ${afterHud} ${islands} capture now window
         echo "Taking the focused window"
       '';
     };
@@ -270,7 +261,7 @@ let
         "display"
       ];
       script = ''
-        ${afterHud} screenshot output
+        ${afterHud} ${islands} capture now screen
         echo "Taking this screen"
       '';
     };
@@ -283,7 +274,7 @@ let
         "screenshot"
       ];
       script = ''
-        ${afterHud} screenshot text
+        ${afterHud} ${islands} capture open text area
         echo "Then drag over the text to copy"
       '';
     };
@@ -297,7 +288,7 @@ let
         "eyedropper"
       ];
       script = ''
-        ${afterHud} screenshot color
+        ${afterHud} ${islands} capture open colour area
         echo "Then click to pick a colour"
       '';
     };

@@ -3,7 +3,7 @@ name = "bar-tools"
 version = "0.1.0"
 edition = "2024"
 publish = false
-description = "Push-to-talk daemon and event-driven waybar status watchers"
+description = "Push-to-talk daemon and the islands bar's event-driven status watchers"
 
 [dependencies]
 pulseaudio = "0.3.2"

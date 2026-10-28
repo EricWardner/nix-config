@@ -2,9 +2,10 @@ import QtQuick
 import Quickshell.Hyprland
 
 // The island in the middle of the bar: the clock at rest (a click opens
-// the notification centre), and on the focused monitor, by rising
-// priority, notifications, the volume popup, the notification centre, and
-// the questions NetworkManager and BlueZ ask (a Wi-Fi password, a passkey)
+// the notification centre), a screen recording on every monitor while one
+// runs, and on the focused monitor, by rising priority, notifications, the
+// volume popup, the notification centre, and the questions NetworkManager
+// and BlueZ ask (a Wi-Fi password, a passkey)
 Island {
 	id: root
 
@@ -22,6 +23,10 @@ Island {
 
 	OsdMode {
 		active: Osd.showing && root.focused
+	}
+
+	RecordMode {
+		active: Capture.phase === "countdown" || Capture.phase === "recording"
 	}
 
 	NotificationMode {

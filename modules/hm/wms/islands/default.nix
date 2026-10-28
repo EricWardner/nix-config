@@ -45,6 +45,28 @@ let
   # The CPU icon's right click. The class must be a valid app ID (with a
   # dot) or ghostty ignores it; the floating rule in hypr/lua/rules.lua
   # matches it.
+  # The capture overlay's work (shell/Capture.qml): freezing the screens,
+  # cropping, recording, reading text, picking colours, and the preview
+  islandsCapture = pkgs.writeShellApplication {
+    name = "islands-capture";
+    runtimeInputs = with pkgs; [
+      grim
+      imagemagick
+      wl-screenrec
+      wl-clipboard-rs
+      libnotify
+      qrtool
+      # English is all it reads; every language would be ~650 MB
+      (tesseract.override { enableLanguages = [ "eng" ]; })
+      coreutils
+      findutils
+      gawk
+      gnugrep
+      gnused
+      (import ./capture-preview.nix { inherit config pkgs; })
+    ];
+    text = builtins.readFile ./islands-capture;
+  };
   systemMonitor = pkgs.writeShellScriptBin "system-monitor" ''
     exec ${pkgs.ghostty}/bin/ghostty --class=com.mitchellh.ghostty.btop -e ${pkgs.btop}/bin/btop
   '';
@@ -90,6 +112,7 @@ in
       # the brightness keys go through the shell (shell/Osd.qml)
       pkgs.brightnessctl
       islandsAgent
+      islandsCapture
       # nm-connection-editor, behind the Wi-Fi page's "Network settings…"
       pkgs.networkmanagerapplet
     ];
@@ -153,6 +176,32 @@ in
         RestartSec = 1;
       };
       Install.WantedBy = [ "hyprland-session.target" ];
+    };
+
+    # Annotating a screenshot, from the preview's Annotate or run by hand.
+    # Enter copies the result and closes; Ctrl+S saves it (over a saved
+    # screenshot, or a new file in ~/Pictures/Screenshots for one not saved
+    # yet).
+    programs.satty = {
+      enable = true;
+      settings = {
+        general = {
+          copy-command = "${pkgs.wl-clipboard-rs}/bin/wl-copy";
+          actions-on-enter = [
+            "save-to-clipboard"
+            "exit"
+          ];
+          output-filename = "~/Pictures/Screenshots/%m-%d-%Y-%H-%M-%S.png";
+          initial-tool = "arrow";
+          no-window-decoration = true;
+          # Named for Hyprland's float rule (rules.lua)
+          app-id = "com.gabm.satty";
+        };
+        font = {
+          family = config.stylix.fonts.sansSerif.name;
+          style = "Regular";
+        };
+      };
     };
 
     # Push-to-talk (pkgs/bar-tools/src/bin/pttd.rs): while armed from the mic

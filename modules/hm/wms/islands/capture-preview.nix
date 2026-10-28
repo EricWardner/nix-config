@@ -1,12 +1,11 @@
 # The preview a finished recording or screenshot opens in (pkgs/capture-preview),
-# themed like net-panel: the palette and the desktop font over its built-in
-# stylesheet. A function rather than a module, so screen-record and screenshot
-# share the one wrapper.
+# themed from the palette, with the desktop font, over its built-in
+# stylesheet. islands-capture opens it.
 { config, pkgs }:
 let
   inherit (config.lib.stylix) colors;
 
-  capturePreview = pkgs.callPackage ../../pkgs/capture-preview { };
+  capturePreview = pkgs.callPackage ../../../../pkgs/capture-preview { };
   theme = pkgs.writeText "capture-preview-theme.css" ''
     @define-color cp_fg #${colors.base05};
     @define-color cp_bg alpha(#${colors.base00}, 0.78);

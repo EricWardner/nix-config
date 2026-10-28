@@ -38,13 +38,14 @@ let
     lock = "${pkgs.systemd}/bin/loginctl lock-session";
     keyboardBrighter = "${brightnessctl} -d '*::kbd_backlight' set +33%";
     keyboardDimmer = "${brightnessctl} -d '*::kbd_backlight' set 33%-";
-    # home/tools/screenshot
-    screenshot = "screenshot area";
-    screenshotWindow = "screenshot window";
-    screenshotScreen = "screenshot output";
-    screenshotText = "screenshot text";
-    colorPicker = "screenshot color";
-    record = "screen-record";
+    # The islands shell's capture overlay (wms/islands): Print to choose,
+    # Shift+Print and Ctrl+Print to take the window or the screen at once
+    screenshot = "${islands} capture open screenshot area";
+    screenshotWindow = "${islands} capture now window";
+    screenshotScreen = "${islands} capture now screen";
+    screenshotText = "${islands} capture open text area";
+    colorPicker = "${islands} capture open colour area";
+    record = "${islands} capture record";
     # The islands shell is the notification server (wms/islands)
     doNotDisturb = "${islands} notifications toggleDnd";
     notificationRestore = "${islands} notifications restore";

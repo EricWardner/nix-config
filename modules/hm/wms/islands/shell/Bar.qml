@@ -102,24 +102,6 @@ PanelWindow {
 		y: Theme.barTop + 2
 	}
 
-	// A recording's progress, after the clock (which stays centred): the
-	// selection, the countdown and the timer in red, then green once saved.
-	// A click cancels or stops it, or opens the saved one's preview.
-	BarIcon {
-		readonly property string state: Desktop.recording.class
-		// record-watch writes Pango markup: the icon, then any text
-		readonly property var parts: Desktop.recording.text.replace(/<[^>]*>/g, "").split(" ")
-
-		visible: state !== "idle" && state !== ""
-		anchors.left: centre.right
-		anchors.leftMargin: 12
-		y: Theme.barTop
-		glyph: parts[0] ?? ""
-		value: parts.slice(1).join(" ")
-		tint: state === "done" ? Theme.green : state === "countdown" || state === "recording" ? Theme.red : Theme.fg
-		onClicked: Desktop.launch(["screen-record", "click"])
-	}
-
 	// Set apart from the status icons by twice the gap between them; it grows
 	// leftwards and down into the control centre
 	TrayIsland {
@@ -141,12 +123,19 @@ PanelWindow {
 		height: Theme.barHeight
 		spacing: 8
 
-		// Start or stop a recording (Super+R does the same); a right click
-		// opens the last one
+		// Start a recording (choosing what to record), or stop it; Super+R
+		// does the same. A right click opens the last one.
 		BarIcon {
-			glyph: Desktop.record === "active" ? Glyphs.stopCircle : Glyphs.recordCircle
-			tint: Desktop.record === "active" ? Theme.red : Theme.fg
-			onClicked: mouse => Desktop.launch(mouse.button === Qt.RightButton ? ["screen-record", "menu"] : ["screen-record"])
+			readonly property bool on: Capture.phase === "countdown" || Capture.phase === "recording"
+
+			glyph: on ? Glyphs.stopCircle : Glyphs.recordCircle
+			tint: on ? Theme.red : Theme.fg
+			onClicked: mouse => {
+				if (mouse.button === Qt.RightButton)
+					Capture.run(["last"]);
+				else
+					Capture.toggleRecording();
+			}
 		}
 
 		// A left or middle click turns the cameras off or on; a right click

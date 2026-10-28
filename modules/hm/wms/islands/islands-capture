@@ -1,0 +1,174 @@
+# islands-capture: the work behind the islands shell's capture overlay
+# (shell/Capture.qml), which does the choosing. Coordinates are the frozen
+# frame's own pixels.
+#
+#   freeze DIR OUTPUT...         each monitor's screen, frozen as it is, to
+#                                DIR/OUTPUT.png (DIR, new for each capture,
+#                                goes once a frame in it has been used)
+#   area FROZEN X Y W H          that part of a frozen screen, to the preview
+#   window STABLEID              a window, all of it even where it's covered
+#   output OUTPUT                a monitor, as it is now
+#   text FROZEN X Y W H SCALE    the text in that part (or a QR code's
+#                                contents), copied as text; SCALE is the
+#                                monitor's
+#   colour FROZEN X Y            a pixel's colour, copied as hex
+#   record FILE WxH ARGS...      wl-screenrec, to FILE (the shell runs it in
+#                                a scope of its own, which it stops); WxH,
+#                                its size on screen, for a GIF made from it
+#   finished                     the preview of the recording just ended
+#   last                         the newest recording's preview
+#
+# A shot stays in $XDG_RUNTIME_DIR/screenshot until the preview's Save puts
+# it in ~/Pictures/Screenshots.
+
+shots="${XDG_RUNTIME_DIR:?}/screenshot"
+saved="$HOME/Pictures/Screenshots"
+sizes="${XDG_RUNTIME_DIR:?}/islands/capture/sizes"
+# The recording under way (or just ended): its file, for `finished`, as the
+# shell may have restarted since it began
+current="${XDG_RUNTIME_DIR:?}/islands/capture/recording"
+
+notify() {
+  notify-send -a Screenshot "$@"
+}
+
+# The notification server reads a body as markup
+escape() {
+  sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
+}
+
+# A new file for a shot, named for now; shots from over an hour ago go
+# (copied, or open in Satty: Satty read them long since, and wl-copy holds
+# its own copy)
+new_shot() {
+  mkdir -p "$shots"
+  find "$shots" -maxdepth 1 -name '*.png' -mmin +60 -delete
+  local stamp file n=1
+  stamp=$(date +%m-%d-%Y-%H-%M-%S)
+  file="$shots/$stamp.png"
+  while [ -e "$file" ]; do
+    n=$((n + 1))
+    file="$shots/$stamp-$n.png"
+  done
+  echo "$file"
+}
+
+show_shot() {
+  [ -s "$1" ] || exit 1
+  capture-preview --save-dir "$saved" "$1" || true
+}
+
+# A recording's preview, with its size on screen for a GIF if it's known
+preview() {
+  local size_file size=""
+  size_file="$sizes/$(basename "${1%.*}")"
+  [ -f "$size_file" ] && size=$(cat "$size_file")
+  capture-preview ${size:+--gif-size "$size"} "$1" || true
+}
+
+crop() {
+  magick "$1" -crop "${4}x${5}+${2}+${3}" +repage "$6"
+}
+
+# A capture's frozen frames, once one's been used
+drop_frames() {
+  rm -rf "$(dirname "$1")"
+}
+
+case ${1:-} in
+  freeze)
+    dir=$2
+    shift 2
+    mkdir -p "$dir"
+    # Frames left by captures that never finished
+    find "$(dirname "$dir")" -mindepth 1 -maxdepth 1 -type d -mmin +10 -exec rm -rf {} +
+    # Uncompressed: 0.07s for both screens where PNG's default takes 0.7s
+    # (on a RAM-backed runtime dir, gone as soon as they're used)
+    for output in "$@"; do
+      grim -l 0 -o "$output" "$dir/$output.png" &
+    done
+    wait
+    ;;
+  area)
+    file=$(new_shot)
+    crop "$2" "$3" "$4" "$5" "$6" "$file"
+    drop_frames "$2"
+    show_shot "$file"
+    ;;
+  window)
+    file=$(new_shot)
+    grim -T "$2" "$file"
+    show_shot "$file"
+    ;;
+  output)
+    file=$(new_shot)
+    grim -o "$2" "$file"
+    show_shot "$file"
+    ;;
+  text)
+    img=$(mktemp --suffix=.png)
+    trap 'rm -f "$img"' EXIT
+    crop "$2" "$3" "$4" "$5" "$6" "$img"
+    drop_frames "$2"
+    # Up to 3x the logical size: tesseract reads small UI text better than
+    # at the monitors' own 1.25x and 1.6x
+    magick "$img" -resize "$(awk "BEGIN { print 300 / $7 }")%" "$img"
+    if out=$(qrtool decode "$img" 2>/dev/null) && [ -n "$out" ]; then
+      kind="QR code"
+    else
+      out=$(tesseract "$img" - 2>/dev/null | tr -d '\f') || true
+      kind=Text
+    fi
+    if [ -z "${out//[[:space:]]/}" ]; then
+      notify -t 3000 "No text found"
+      exit 0
+    fi
+    printf '%s' "$out" | wl-copy
+    notify -t 6000 "$kind copied" "$(head -n 4 <<<"$out" | cut -c1-80 | escape)"
+    ;;
+  colour)
+    hex=$(magick "$2" -crop "1x1+$3+$4" -depth 8 txt:- | grep -o '#[0-9A-Fa-f]\{6\}' | head -1 | tr 'A-F' 'a-f')
+    drop_frames "$2"
+    [ -n "$hex" ] || exit 1
+    printf '%s' "$hex" | wl-copy
+    swatch="${XDG_RUNTIME_DIR:?}/screenshot-swatch.svg"
+    printf '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="14" fill="%s"/></svg>\n' "$hex" >"$swatch"
+    notify -t 5000 -i "$swatch" "Colour copied" "$hex"
+    ;;
+  record)
+    file=$2
+    mkdir -p "$(dirname "$file")" "$sizes"
+    echo "$3" >"$sizes/$(basename "${file%.*}")"
+    echo "$file" >"$current"
+    shift 3
+    # Encoded on the GPU (VA-API, the Radeon's video engine): frames stay
+    # in GPU memory from capture to encode, and only screen changes are
+    # encoded. AMD's encoder has no low-power mode. H.264's Main profile,
+    # not the default High: High spins the encoder forever on areas under
+    # about 512x256 pixels (Strix Point, Mesa radeonsi), never writing a
+    # frame or answering SIGINT.
+    exec wl-screenrec "$@" --codec avc --low-power=off --ffmpeg-encoder-options profile=main -f "$file"
+    ;;
+  finished)
+    file=$(cat "$current" 2>/dev/null) || true
+    rm -f "$current"
+    if [ -z "$file" ] || [ ! -s "$file" ]; then
+      [ -n "$file" ] && rm -f "$file"
+      notify-send -a "Screen recording" -t 3000 "Recording failed" "No video was recorded"
+      exit 1
+    fi
+    preview "$file"
+    ;;
+  last)
+    file=$(find "$HOME/Videos" -maxdepth 1 -name '*.mp4' -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
+    if [ ! -f "$file" ]; then
+      notify-send -a "Screen recording" -t 3000 "Recording not found" "No recordings in ~/Videos"
+      exit 1
+    fi
+    preview "$file"
+    ;;
+  *)
+    echo "usage: islands-capture freeze | area | window | output | text | colour | record | finished | last" >&2
+    exit 2
+    ;;
+esac

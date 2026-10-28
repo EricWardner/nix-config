@@ -1,13 +1,13 @@
-/* Defaults; screen-record's Home Manager module loads a stylesheet after this
-   one that redefines these colours from the stylix theme and sets the font,
-   like net-panel's. */
+/* Defaults; the islands Home Manager module (capture-preview.nix) loads a
+   stylesheet after this one that redefines these colours from the stylix
+   theme and sets the font. */
 @define-color cp_fg #eeffff;
 @define-color cp_bg rgba(33, 33, 33, 0.78);
 @define-color cp_accent #82aaff;
 @define-color cp_on_accent #16181c;
 @define-color cp_danger #f07178;
 
-/* Glass like net-panel: the window is see-through and Hyprland blurs what's
+/* Glass: the window is see-through and Hyprland blurs what's
    behind it. Hyprland draws its corners, border and shadow, as for any
    window. */
 window.capture-preview {
@@ -76,7 +76,7 @@ button.action.suggested:hover {
   background: shade(@cp_accent, 1.08);
 }
 
-/* Keyboard focus, as in net-panel: Enter presses the focused button. On the
+/* Keyboard focus: Enter presses the focused button. On the
    accent-filled GIF button the ring is dark. */
 button.action:focus-visible {
   outline: 2px solid alpha(@cp_accent, 0.8);

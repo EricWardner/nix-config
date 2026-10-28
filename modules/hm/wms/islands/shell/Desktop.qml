@@ -54,16 +54,9 @@ Singleton {
 
 	// Each watcher's `class`: the mic is on, muted, ptt-muted (push-to-talk
 	// armed) or ptt-active (talking); the webcam disconnected, muted, in-use
-	// or available; the record button idle or active
+	// or available
 	property string mic: ""
 	property string webcam: ""
-	property string record: ""
-	// A recording's progress, for beside the clock: record-watch's `class`
-	// (idle, selecting, countdown, recording, done) and its text
-	property var recording: ({
-			"class": "idle",
-			"text": ""
-		})
 
 	Watcher {
 		command: ["mic-watch"]
@@ -72,14 +65,6 @@ Singleton {
 	Watcher {
 		command: ["webcam-watch"]
 		onUpdate: state => root.webcam = state.class
-	}
-	Watcher {
-		command: ["record-watch", "button"]
-		onUpdate: state => root.record = state.class
-	}
-	Watcher {
-		command: ["record-watch", "status"]
-		onUpdate: state => root.recording = state
 	}
 
 	// Starts a command in its own transient scope, so it outlives the shell

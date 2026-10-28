@@ -8,11 +8,18 @@ import QtQuick
 import Quickshell
 
 // islands: the desktop shell. One bar per monitor; Quickshell adds and
-// removes bars as monitors come and go, so a hotplug restarts nothing.
+// removes bars as monitors come and go, so a hotplug restarts nothing. The
+// capture overlays come up on every monitor while one's being chosen.
 ShellRoot {
 	Variants {
 		model: Quickshell.screens
 
 		Bar {}
+	}
+
+	Variants {
+		model: Capture.choosing ? Quickshell.screens : []
+
+		CaptureOverlay {}
 	}
 }
