@@ -90,13 +90,13 @@ Item {
 
 				Segmented {
 					visible: root.targets
-					options: [["area", "Area"], ["screen", "Screen"]]
+					options: [["area", "Area", Glyphs.rectangleDashed], ["screen", "Screen", Glyphs.display]]
 					chosen: Capture.target
 					onPicked: value => Capture.target = value
 				}
 
 				Segmented {
-					options: [["screenshot", "Screenshot"], ["record", "Record"], ["text", "Text"], ["colour", "Colour"]]
+					options: [["screenshot", "Screenshot", Glyphs.camera], ["record", "Record", Glyphs.recordCircle], ["text", "Text", Glyphs.textViewfinder], ["colour", "Colour", Glyphs.eyedropper]]
 					chosen: Capture.kind
 					onPicked: value => {
 						Capture.kind = value;
@@ -136,7 +136,7 @@ Item {
 	component Segmented: Rectangle {
 		id: segmented
 
-		// [value, label] pairs
+		// [value, label, glyph]
 		property var options: []
 		property string chosen
 
@@ -158,23 +158,37 @@ Item {
 				model: segmented.options
 
 				Rectangle {
+					id: segment
+
 					required property var modelData
 
 					readonly property bool on: segmented.chosen === modelData[0]
 
-					width: label.implicitWidth + 24
+					width: content.implicitWidth + 24
 					height: 34
 					radius: 17
 					color: on ? Theme.ink : hover.hovered ? Theme.inkTrack : "transparent"
 
-					BarText {
-						id: label
+					Row {
+						id: content
 
 						anchors.centerIn: parent
-						text: modelData[1]
-						color: parent.on ? Theme.fg : Theme.ink
-						font.pixelSize: 13
-						font.weight: parent.on ? Font.DemiBold : Font.Medium
+						spacing: 6
+
+						BarText {
+							anchors.verticalCenter: parent.verticalCenter
+							text: segment.modelData[2]
+							color: segment.on ? Theme.fg : Theme.ink
+							font.pixelSize: 14
+						}
+
+						BarText {
+							anchors.verticalCenter: parent.verticalCenter
+							text: segment.modelData[1]
+							color: segment.on ? Theme.fg : Theme.ink
+							font.pixelSize: 13
+							font.weight: segment.on ? Font.DemiBold : Font.Medium
+						}
 					}
 
 					HoverHandler {
