@@ -362,7 +362,7 @@ in
 
               blur = {
                 enabled = true;
-                size = 4;
+                size = 8;
                 passes = 2;
                 special = true;
                 # Off so blur frosts the windows behind, not just the
