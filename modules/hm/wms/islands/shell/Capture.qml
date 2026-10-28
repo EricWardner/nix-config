@@ -19,20 +19,8 @@ Singleton {
 	property string phase: "idle" // idle, freezing, choosing, countdown, recording
 
 	readonly property bool choosing: phase === "choosing"
-	// New for each capture: the overlays' images are cached by name
-	property string stamp: ""
-	readonly property string frames: Quickshell.env("XDG_RUNTIME_DIR") + "/islands/capture/frames/" + stamp
-
-	function frozenFile(output: string): string {
-		return frames + "/" + output + ".png";
-	}
-
-	// The frozen frames, when nothing more will read them (islands-capture
-	// drops them itself once it's cropped one)
-	function dropFrames() {
-		if (stamp !== "")
-			Quickshell.execDetached(["rm", "-rf", frames]);
-	}
+	// Overlays whose screens are still being captured
+	property int capturing: 0
 
 	// Freezes the screens and brings up the overlays
 	function open(newKind: string, newTarget: string) {
@@ -40,45 +28,56 @@ Singleton {
 			return;
 		kind = newKind;
 		target = newTarget;
-		stamp = String(Date.now());
+		capturing = Quickshell.screens.length;
 		phase = "freezing";
+		freezeTimeout.restart();
 		// Where the windows are now, for clicking one
 		Hyprland.refreshToplevels();
 		Hyprland.refreshMonitors();
-		freeze.command = ["islands-capture", "freeze", frames].concat(Quickshell.screens.map(s => s.name));
-		freeze.running = true;
+	}
+
+	// An overlay's screen is captured
+	function frozen() {
+		if (phase === "freezing" && --capturing <= 0) {
+			freezeTimeout.stop();
+			phase = "choosing";
+		}
 	}
 
 	function cancel() {
-		if (phase === "freezing" || phase === "choosing")
-			dropFrames();
+		freezeTimeout.stop();
 		if (phase === "countdown")
 			countdownTimer.stop();
 		if (phase !== "recording")
 			phase = "idle";
 	}
 
-	// The overlay's choice: `rect` in its monitor's logical pixels, and the
-	// window clicked, if one was
-	function take(monitor: HyprlandMonitor, screen: ShellScreen, rect: rect, window: var) {
+	// Whether taking a choice needs the frozen frame written out
+	function needsFrame(window: var): bool {
+		return kind === "text" || kind === "colour" || (kind === "screenshot" && !window);
+	}
+
+	function frameFile(output: string): string {
+		return Quickshell.env("XDG_RUNTIME_DIR") + "/islands-frame-" + Date.now() + "-" + output + ".ppm";
+	}
+
+	// The overlay's choice: `rect` in its monitor's logical pixels, the window
+	// clicked, if one was, and the frozen frame's file, if it's needed
+	function take(monitor: HyprlandMonitor, screen: ShellScreen, rect: rect, window: var, frame: string) {
 		const scale = monitor.scale;
 		const pixels = [rect.x, rect.y, rect.width, rect.height].map(v => Math.round(v * scale));
-		const frozen = frozenFile(screen.name);
 		phase = "idle";
 		if (kind === "screenshot") {
 			// From the window itself, so the parts covered or off screen are in it
-			if (window) {
-				dropFrames();
+			if (window)
 				run(["window", window.stableId]);
-			} else {
-				run(["area", frozen].concat(pixels));
-			}
+			else
+				run(["area", frame].concat(pixels));
 		} else if (kind === "text") {
-			run(["text", frozen].concat(pixels, [scale]));
+			run(["text", frame].concat(pixels, [scale]));
 		} else if (kind === "colour") {
-			run(["colour", frozen, pixels[0], pixels[1]]);
+			run(["colour", frame, Math.floor(rect.x * scale), Math.floor(rect.y * scale)]);
 		} else if (kind === "record") {
-			dropFrames();
 			const area = target === "screen" ? rect : encodable(rect, scale, screen);
 			const size = Math.round(area.width) + "x" + Math.round(area.height);
 			const geometry = target === "screen" ? "" : (monitor.x + Math.round(area.x)) + "," + (monitor.y + Math.round(area.y)) + " " + size;
@@ -118,16 +117,15 @@ Singleton {
 		Desktop.launch(["islands-capture"].concat(args.map(String)));
 	}
 
-	Process {
-		id: freeze
+	// A screen that never sends a frame (switched off, say) leaves its
+	// overlay see-through and the capture stuck
+	Timer {
+		id: freezeTimeout
 
-		onExited: code => {
-			if (root.phase !== "freezing")
-				return;
-			if (code === 0) {
-				root.phase = "choosing";
-			} else {
-				root.dropFrames();
+		interval: 1000
+		onTriggered: {
+			if (root.phase === "freezing") {
+				console.warn("capture: a screen sent no frame");
 				root.phase = "idle";
 			}
 		}

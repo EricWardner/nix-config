@@ -1,10 +1,8 @@
 # islands-capture: the work behind the islands shell's capture overlay
-# (shell/Capture.qml), which does the choosing. Coordinates are the frozen
-# frame's own pixels.
+# (shell/Capture.qml), which does the choosing. FROZEN is the screen as the
+# overlay froze it, written out by the shell and deleted here once read;
+# coordinates are its own pixels.
 #
-#   freeze DIR OUTPUT...         each monitor's screen, frozen as it is, to
-#                                DIR/OUTPUT.png (DIR, new for each capture,
-#                                goes once a frame in it has been used)
 #   area FROZEN X Y W H          that part of a frozen screen, to the preview
 #   window STABLEID              a window, all of it even where it's covered
 #   output OUTPUT                a monitor, as it is now
@@ -70,29 +68,18 @@ crop() {
   magick "$1" -crop "${4}x${5}+${2}+${3}" +repage "$6"
 }
 
-# A capture's frozen frames, once one's been used
-drop_frames() {
-  rm -rf "$(dirname "$1")"
-}
+case ${1:-} in
+  area | text | colour)
+    frozen=$2
+    trap 'rm -f "$frozen"' EXIT
+    ;;
+esac
 
 case ${1:-} in
-  freeze)
-    dir=$2
-    shift 2
-    mkdir -p "$dir"
-    # Frames left by captures that never finished
-    find "$(dirname "$dir")" -mindepth 1 -maxdepth 1 -type d -mmin +10 -exec rm -rf {} +
-    # Uncompressed: 0.07s for both screens where PNG's default takes 0.7s
-    # (on a RAM-backed runtime dir, gone as soon as they're used)
-    for output in "$@"; do
-      grim -l 0 -o "$output" "$dir/$output.png" &
-    done
-    wait
-    ;;
   area)
     file=$(new_shot)
     crop "$2" "$3" "$4" "$5" "$6" "$file"
-    drop_frames "$2"
+    rm -f "$frozen"
     show_shot "$file"
     ;;
   window)
@@ -107,9 +94,8 @@ case ${1:-} in
     ;;
   text)
     img=$(mktemp --suffix=.png)
-    trap 'rm -f "$img"' EXIT
+    trap 'rm -f "$img" "$frozen"' EXIT
     crop "$2" "$3" "$4" "$5" "$6" "$img"
-    drop_frames "$2"
     # Up to 3x the logical size: tesseract reads small UI text better than
     # at the monitors' own 1.25x and 1.6x
     magick "$img" -resize "$(awk "BEGIN { print 300 / $7 }")%" "$img"
@@ -128,7 +114,6 @@ case ${1:-} in
     ;;
   colour)
     hex=$(magick "$2" -crop "1x1+$3+$4" -depth 8 txt:- | grep -o '#[0-9A-Fa-f]\{6\}' | head -1 | tr 'A-F' 'a-f')
-    drop_frames "$2"
     [ -n "$hex" ] || exit 1
     printf '%s' "$hex" | wl-copy
     swatch="${XDG_RUNTIME_DIR:?}/screenshot-swatch.svg"
@@ -168,7 +153,7 @@ case ${1:-} in
     preview "$file"
     ;;
   *)
-    echo "usage: islands-capture freeze | area | window | output | text | colour | record | finished | last" >&2
+    echo "usage: islands-capture area | window | output | text | colour | record | finished | last" >&2
     exit 2
     ;;
 esac
