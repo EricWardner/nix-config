@@ -166,8 +166,6 @@ in
     xdg.configFile."islands/config.json".text = builtins.toJSON {
       inherit (cfg) temperatureSensor;
       attentionSound = "${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/dialog-warning.oga";
-      # What swaybg draws, for Sky's cards to frost
-      wallpaper = lib.optionalString config.modules.wallpaper.enable "${config.modules.wallpaper.path}";
     };
 
     # Kept alive by systemd, only under a Hyprland session. Quickshell's

@@ -4,11 +4,10 @@ import Quickshell.Services.UPower
 
 // The machine, in a line at the foot of Sky: the battery, CPU, memory and
 // how long it's been up
-Item {
+Rectangle {
 	id: root
 
 	property bool shown: false
-	property Item backdrop
 	readonly property UPowerDevice battery: UPower.displayDevice
 	property real uptime: 0
 
@@ -31,11 +30,10 @@ Item {
 
 	implicitWidth: row.implicitWidth + 32
 	implicitHeight: 34
-
-	SkyGlass {
-		backdrop: root.backdrop
-		radius: 17
-	}
+	radius: 17
+	color: Qt.rgba(0.04, 0.08, 0.24, 0.32)
+	border.width: 1
+	border.color: Theme.alpha(Theme.fg, 0.18)
 
 	FileView {
 		id: uptimeFile
