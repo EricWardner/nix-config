@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import Quickshell.Services.Pipewire
 import Quickshell.Wayland
 
@@ -24,6 +25,12 @@ Singleton {
 	property string kind: "screen"
 	property string output: ""
 	property string title: ""
+	// The shared window, found by its title as the share starts
+	property HyprlandToplevel window: null
+	// Hyprland's window rounding and border, for the frame round a shared
+	// window to follow
+	property int windowRounding: 12
+	property int windowBorder: 2
 
 	// Hyprland's latest screencast start and when the stream last appeared.
 	// grim and the capture overlay start screencasts too, so one is only the
@@ -37,6 +44,7 @@ Singleton {
 		kind = started.kind;
 		output = started.kind === "screen" ? started.target : "";
 		title = started.kind === "window" ? started.target : "";
+		window = kind === "window" ? Hyprland.toplevels.values.find(t => t.title === title) ?? null : null;
 	}
 
 	// As Chrome's own Stop button would: it takes its "<host> is sharing your
@@ -83,6 +91,31 @@ Singleton {
 
 		interval: 2000
 		onTriggered: root.active = false
+	}
+
+	// Where the shared window is now: Hyprland sends no event for a resize
+	Timer {
+		interval: 250
+		repeat: true
+		running: root.active && root.window !== null
+		onTriggered: {
+			Hyprland.refreshToplevels();
+			Hyprland.refreshMonitors();
+		}
+	}
+
+	Process {
+		running: true
+		command: ["sh", "-c", "hyprctl getoption decoration:rounding -j; hyprctl getoption general:border_size -j"]
+		stdout: SplitParser {
+			onRead: line => {
+				const option = JSON.parse(line);
+				if (option.option === "decoration:rounding")
+					root.windowRounding = option.int;
+				else if (option.option === "general:border_size")
+					root.windowBorder = option.int;
+			}
+		}
 	}
 
 	// The app didn't stop: its stream dropping ends the share as usual again
