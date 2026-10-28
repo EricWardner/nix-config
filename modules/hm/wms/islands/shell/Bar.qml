@@ -16,6 +16,8 @@ PanelWindow {
 	id: bar
 
 	required property ShellScreen modelData
+	readonly property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
+	readonly property bool centreOpen: Desktop.centreOn !== null && Desktop.centreOn === monitor
 
 	screen: modelData
 	anchors.top: true
@@ -27,6 +29,15 @@ PanelWindow {
 	// Hyprland blurs behind it only where it's over 50% opaque
 	// (hypr/lua/rules.lua), so the bare bar's text gets no halo
 	WlrLayershell.namespace: "islands-bar"
+	// The notification centre takes the keyboard while it's open (Esc closes
+	// it), and a click anywhere but the bar closes it, as a popup's would
+	WlrLayershell.keyboardFocus: centreOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+	HyprlandFocusGrab {
+		windows: [bar]
+		active: bar.centreOpen
+		onCleared: Desktop.closeCentre()
+	}
 	mask: Region {
 		item: strip
 
@@ -56,7 +67,7 @@ PanelWindow {
 		}
 
 		Workspaces {
-			monitor: Hyprland.monitorFor(bar.modelData)
+			monitor: bar.monitor
 		}
 
 		// The focused window's app, by class
@@ -78,7 +89,7 @@ PanelWindow {
 	Island {
 		id: centre
 
-		monitor: Hyprland.monitorFor(bar.modelData)
+		monitor: bar.monitor
 		anchors.horizontalCenter: parent.horizontalCenter
 		y: Theme.barTop + 2
 	}

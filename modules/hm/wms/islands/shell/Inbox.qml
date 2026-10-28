@@ -27,6 +27,8 @@ Singleton {
 
 	// Oldest first
 	readonly property var history: server.trackedNotifications.values
+	// When each arrived (ms), by id, for the centre's "2m" and "1h"
+	property var received: ({})
 
 	function isYubiKey(n: Notification): bool {
 		return n?.appName === "yubikey-touch-detector";
@@ -46,11 +48,17 @@ Singleton {
 
 	function receive(n: Notification) {
 		n.tracked = true;
+		received = Object.assign({}, received, {
+			[n.id]: Date.now()
+		});
 		const kept = server.trackedNotifications.values;
 		for (let i = 0; i < kept.length - 20; i++)
 			kept[i].dismiss();
 		n.closed.connect(() => forget(n));
 		if (dnd && !breaksThrough(n))
+			return;
+		// The open notification centre lists it already
+		if (Desktop.centreOn !== null && !breaksThrough(n))
 			return;
 		if (isYubiKey(n) && Host.attentionSound !== "")
 			Quickshell.execDetached(["pw-play", Host.attentionSound]);
@@ -80,6 +88,26 @@ Singleton {
 		queue = queue.filter(q => q !== n && q !== null);
 		if (popup === n)
 			next();
+	}
+
+	function clearAll() {
+		for (const n of Array.from(history))
+			n.dismiss();
+	}
+
+	// "now", "5m", "2h", or the day for older ones
+	function age(n: Notification, now: date): string {
+		const at = received[n?.id];
+		if (!at)
+			return "";
+		const minutes = Math.floor((now.getTime() - at) / 60000);
+		if (minutes < 1)
+			return "now";
+		if (minutes < 60)
+			return minutes + "m";
+		if (minutes < 24 * 60)
+			return Math.floor(minutes / 60) + "h";
+		return Qt.formatDate(new Date(at), "ddd");
 	}
 
 	// A click on a notification: its default action, if it has one, which
@@ -168,8 +196,7 @@ Singleton {
 		}
 
 		function clear(): void {
-			for (const n of root.history.slice())
-				n.dismiss();
+			root.clearAll();
 		}
 	}
 }

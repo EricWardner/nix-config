@@ -2,12 +2,36 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
+import Quickshell.Io
 
 // What the status icons show that Quickshell has no service for, from
-// bar-tools' watchers (one process each, however many bars), and how the
-// bar starts things.
+// bar-tools' watchers (one process each, however many bars), which
+// monitor's notification centre is open, and how the bar starts things.
 Singleton {
 	id: root
+
+	// The monitor whose centre island is open as the notification centre,
+	// or null: one at a time
+	property HyprlandMonitor centreOn: null
+
+	function toggleCentre(monitor: HyprlandMonitor) {
+		centreOn = centreOn === monitor ? null : monitor;
+	}
+
+	function closeCentre() {
+		centreOn = null;
+	}
+
+	// For a keybind: `qs ipc -c islands call centre toggle`, on the focused
+	// monitor
+	IpcHandler {
+		target: "centre"
+
+		function toggle(): void {
+			root.toggleCentre(Hyprland.focusedMonitor);
+		}
+	}
 
 	// Each watcher's `class`: the mic is on, muted, ptt-muted (push-to-talk
 	// armed) or ptt-active (talking); the webcam disconnected, muted, in-use

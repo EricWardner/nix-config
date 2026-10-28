@@ -3,17 +3,18 @@ import QtQuick.Effects
 import Quickshell.Hyprland
 
 // The island in the middle of the bar, and everything it grows into. At
-// rest it's the clock in faint glass. On the focused monitor it grows into
-// the active mode with the highest priority (the volume popup over a
-// notification, say): light glass with dark ink, at that mode's size,
-// growing around the bar's centre and downwards so nothing beside it moves.
+// rest it's the clock in faint glass; a click on it opens the notification
+// centre. On the focused monitor it grows into the active mode with the
+// highest priority (the volume popup over a notification, say): light
+// glass with dark ink, at that mode's size, growing around the bar's
+// centre and downwards so nothing beside it moves.
 Item {
 	id: root
 
 	required property HyprlandMonitor monitor
 
 	readonly property bool focused: Hyprland.focusedMonitor === monitor
-	readonly property list<IslandMode> modes: [clock, osd, notification]
+	readonly property list<IslandMode> modes: [clock, osd, notification, centre]
 	readonly property IslandMode current: modes.reduce((best, mode) => mode.active && mode.priority > best.priority ? mode : best, clock)
 
 	width: current.islandWidth
@@ -71,6 +72,12 @@ Item {
 			id: clock
 
 			current: root.current === clock
+
+			MouseArea {
+				anchors.fill: parent
+				cursorShape: Qt.PointingHandCursor
+				onClicked: Desktop.toggleCentre(root.monitor)
+			}
 		}
 
 		OsdMode {
@@ -85,6 +92,13 @@ Item {
 
 			active: Inbox.popup !== null && root.focused
 			current: root.current === notification
+		}
+
+		CentreMode {
+			id: centre
+
+			active: Desktop.centreOn === root.monitor
+			current: root.current === centre
 		}
 	}
 }

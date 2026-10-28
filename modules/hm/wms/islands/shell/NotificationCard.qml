@@ -13,6 +13,8 @@ Item {
 	required property Notification notification
 	// Others waiting behind this one, for a "2 more" beside its app's name
 	property int more: 0
+	// How long ago it arrived, in the centre's history
+	property string time: ""
 
 	readonly property Notification n: notification
 	// Claude Code notifies through Ghostty under its own title: shown as its
@@ -108,12 +110,30 @@ Item {
 		width: root.width - x - 16
 		spacing: 2
 
-		BarText {
-			width: parent.width - 24
-			text: root.more > 0 ? root.label + " · " + root.more + " more" : root.label
-			color: Theme.inkDim
-			font.pixelSize: 12
-			elide: Text.ElideRight
+		Item {
+			width: parent.width
+			height: labelText.implicitHeight
+
+			BarText {
+				id: labelText
+
+				width: parent.width - timeText.implicitWidth - 30
+				text: root.more > 0 ? root.label + " · " + root.more + " more" : root.label
+				color: Theme.inkDim
+				font.pixelSize: 12
+				elide: Text.ElideRight
+			}
+
+			// Under the close button while the pointer's over the card
+			BarText {
+				id: timeText
+
+				anchors.right: parent.right
+				visible: !hover.hovered
+				text: root.time
+				color: Theme.inkDim
+				font.pixelSize: 12
+			}
 		}
 
 		BarText {
