@@ -430,5 +430,13 @@ in
       workspace.library = [ "${pkgs.hyprland}/share/hypr/stubs" ];
       diagnostics.globals = [ "hl" ];
     };
+
+    # Chrome opens several portal sessions for one screen share and hands each
+    # the restore token, so with it allowed the share picker asks only once
+    xdg.configFile."hypr/xdph.conf".text = ''
+      screencopy {
+        allow_token_by_default = true
+      }
+    '';
   };
 }
