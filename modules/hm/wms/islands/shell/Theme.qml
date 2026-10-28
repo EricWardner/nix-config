@@ -30,7 +30,7 @@ Singleton {
 	readonly property color islandFill: alpha(fg, 0.1)
 	readonly property color islandRim: alpha(fg, 0.22)
 	// Grown: light glass (as mako's cards were) with the dark ink on it
-	readonly property color grownFill: alpha(fg, 0.8)
+	readonly property color grownFill: alpha(fg, 0.65)
 	readonly property color grownRim: Qt.rgba(1, 1, 1, 0.55)
 	readonly property color ink: bg
 	readonly property color inkDim: alpha(bg, 0.75)
