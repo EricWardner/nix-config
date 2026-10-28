@@ -6,20 +6,20 @@ import Quickshell.Hyprland
 import Quickshell.Io
 
 // CPU, memory, temperature and screen brightness. The CPU and memory are
-// read only while Sky shows them; the temperature every 10 s, for the status
-// island's warning; the brightness whenever udev reports a change (the
-// keys, idle dimming), for the popup, so nothing polls it.
+// read only while Sky or the control centre shows them, and the temperature
+// while the control centre does; the brightness whenever udev reports a
+// change (the keys, idle dimming), for the popup, so nothing polls it.
 Singleton {
 	id: root
 
 	readonly property bool onSky: Quickshell.screens.some(s => Desktop.workspaceEmpty(Hyprland.monitorFor(s)))
+	readonly property bool onControl: Desktop.panel === "control"
 
 	property int cpu: 0 // % busy
 	property int memory: 0 // % used
 	property real temperature: 0 // °C
 	property int backlight: 100 // %
 
-	readonly property bool critical: temperature >= 80
 
 	property var lastCpu: null
 
@@ -102,7 +102,7 @@ Singleton {
 		interval: root.lastCpu ? 2000 : 1000
 		repeat: true
 		triggeredOnStart: true
-		running: root.onSky
+		running: root.onSky || root.onControl
 		onRunningChanged: if (!running)
 			root.lastCpu = null
 		onTriggered: root.readCpu()
@@ -112,7 +112,7 @@ Singleton {
 		interval: 5000
 		repeat: true
 		triggeredOnStart: true
-		running: root.onSky
+		running: root.onSky || root.onControl
 		onTriggered: root.readMemory()
 	}
 
@@ -120,7 +120,7 @@ Singleton {
 		interval: 10000
 		repeat: true
 		triggeredOnStart: true
-		running: Host.temperatureFile !== ""
+		running: Host.temperatureFile !== "" && root.onControl
 		onTriggered: root.readTemperature()
 	}
 

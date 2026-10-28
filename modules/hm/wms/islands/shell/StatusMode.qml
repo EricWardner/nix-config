@@ -1,9 +1,9 @@
 import QtQuick
 import Quickshell.Hyprland
 
-// The status island at rest: Do Not Disturb while it's on, the temperature
-// once it's critical, recording, the camera, the microphone, Bluetooth while
-// it's on, the network, the volume and the battery. The network, Bluetooth
+// The status island at rest: Do Not Disturb while it's on, recording, the
+// camera, the microphone, Bluetooth while it's on, the network, the volume
+// and the battery. The network, Bluetooth
 // and volume open the control centre on their page.
 IslandMode {
 	id: root
@@ -30,18 +30,6 @@ IslandMode {
 			visible: Inbox.dnd
 			glyph: Glyphs.moonFill
 			onClicked: Inbox.dnd = false
-		}
-
-		// A right click opens btop
-		BarIcon {
-			visible: Metrics.critical
-			glyph: Glyphs.thermometer
-			value: Math.round(Metrics.temperature) + "°C"
-			tint: Theme.red
-			onClicked: mouse => {
-				if (mouse.button === Qt.RightButton)
-					Desktop.launch(["system-monitor"]);
-			}
 		}
 
 		// Start a recording (choosing what to record), or stop it; Super+R
