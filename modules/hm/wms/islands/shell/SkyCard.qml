@@ -9,7 +9,7 @@ Rectangle {
 	implicitWidth: 300
 	implicitHeight: column.implicitHeight + 32
 	radius: 22
-	color: Qt.rgba(0.04, 0.08, 0.24, 0.32)
+	color: Theme.alpha(Theme.bg, 0.32)
 	border.width: 1
 	border.color: Theme.alpha(Theme.fg, 0.18)
 

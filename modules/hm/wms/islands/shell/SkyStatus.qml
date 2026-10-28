@@ -31,7 +31,7 @@ Rectangle {
 	implicitWidth: row.implicitWidth + 32
 	implicitHeight: 34
 	radius: 17
-	color: Qt.rgba(0.04, 0.08, 0.24, 0.32)
+	color: Theme.alpha(Theme.bg, 0.32)
 	border.width: 1
 	border.color: Theme.alpha(Theme.fg, 0.18)
 
