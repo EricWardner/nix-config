@@ -5,8 +5,13 @@ import Quickshell.Wayland
 
 // The bar along the top of one monitor, transparent but for its islands and
 // 4px below the screen's edge, as waybar was. Left: the launcher, this
-// monitor's workspaces and the focused app. Middle: the clock island.
+// monitor's workspaces and the focused app. Middle: the centre island.
 // Right: the tray island, then the status icons on the bare bar.
+//
+// The window reaches well below the bar so islands can grow down into it,
+// but windows are only kept clear of the bar itself, and clicks only land
+// on the bar and the centre island; everywhere else they reach the windows
+// underneath.
 PanelWindow {
 	id: bar
 
@@ -16,11 +21,26 @@ PanelWindow {
 	anchors.top: true
 	anchors.left: true
 	anchors.right: true
-	implicitHeight: Theme.barTop + Theme.barHeight
+	implicitHeight: Theme.windowHeight
+	exclusiveZone: Theme.barTop + Theme.barHeight
 	color: "transparent"
 	// Hyprland blurs behind it only where it's over 50% opaque
 	// (hypr/lua/rules.lua), so the bare bar's text gets no halo
 	WlrLayershell.namespace: "islands-bar"
+	mask: Region {
+		item: strip
+
+		Region {
+			item: centre
+		}
+	}
+
+	Item {
+		id: strip
+
+		width: parent.width
+		height: Theme.barTop + Theme.barHeight
+	}
 
 	Row {
 		x: 14
@@ -55,9 +75,10 @@ PanelWindow {
 		}
 	}
 
-	ClockIsland {
-		id: clock
+	CentreIsland {
+		id: centre
 
+		monitor: Hyprland.monitorFor(bar.modelData)
 		anchors.horizontalCenter: parent.horizontalCenter
 		y: Theme.barTop + 2
 	}
@@ -71,7 +92,7 @@ PanelWindow {
 		readonly property var parts: Desktop.recording.text.replace(/<[^>]*>/g, "").split(" ")
 
 		visible: state !== "idle" && state !== ""
-		anchors.left: clock.right
+		anchors.left: centre.right
 		anchors.leftMargin: 12
 		y: Theme.barTop
 		glyph: parts[0] ?? ""

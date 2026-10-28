@@ -19,7 +19,9 @@ let
   thunar = "${pkgs.thunar}/bin/thunar";
   vicinae = "${config.programs.vicinae.package}/bin/vicinae";
   brightnessctl = "${pkgs.brightnessctl}/bin/brightnessctl";
-  swayosd = "${config.services.swayosd.package}/bin/swayosd-client";
+  wpctl = "${pkgs.wireplumber}/bin/wpctl";
+  playerctl = "${pkgs.playerctl}/bin/playerctl";
+  islands = "${pkgs.quickshell}/bin/qs ipc -c islands call";
   btop = "${pkgs.btop}/bin/btop";
   slack = "${pkgs.slack}/bin/slack";
   chrome = "${pkgs.google-chrome}/bin/google-chrome-stable";
@@ -45,18 +47,19 @@ let
     record = "screen-record";
     doNotDisturb = "mako-dnd toggle"; # from wms/notifications
     notificationRestore = "${pkgs.mako}/bin/makoctl restore";
-    # swayosd-client makes the change and shows the popup (wms/swayosd.nix,
-    # which caps volume at 150%); the bar's volume icon also flashes the
-    # new level
-    volumeUp = "${swayosd} --output-volume raise";
-    volumeDown = "${swayosd} --output-volume lower";
-    volumeMute = "${swayosd} --output-volume mute-toggle";
+    # The bar's centre island shows any volume change for a moment
+    # (wms/islands). Raising it unmutes, as swayosd's did; 150% at most.
+    volumeUp = "${wpctl} set-mute @DEFAULT_AUDIO_SINK@ 0; ${wpctl} set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+";
+    volumeDown = "${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-";
+    volumeMute = "${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle";
     micMute = "micctl mute"; # from bar-tools (islands module)
-    brighter = "${swayosd} --brightness raise";
-    dimmer = "${swayosd} --brightness lower";
-    mediaNext = "${swayosd} --playerctl next";
-    mediaPlayPause = "${swayosd} --playerctl play-pause";
-    mediaPrevious = "${swayosd} --playerctl prev";
+    # The shell makes the change, so the island shows it (idle dimming
+    # changes the brightness too, and shouldn't)
+    brighter = "${islands} brightness up";
+    dimmer = "${islands} brightness down";
+    mediaNext = "${playerctl} next";
+    mediaPlayPause = "${playerctl} play-pause";
+    mediaPrevious = "${playerctl} previous";
   };
   launchOnWorkspace =
     command: workspace:

@@ -77,6 +77,8 @@ in
       gatherSymbol
       cameraSettings
       systemMonitor
+      # the brightness keys go through the shell (shell/Osd.qml)
+      pkgs.brightnessctl
     ];
 
     xdg.configFile."quickshell/islands".source = ./shell;

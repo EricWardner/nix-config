@@ -51,7 +51,7 @@ in
     home.packages = [ makoDnd ];
 
     # Styled here instead (stylix's target draws an opaque box with a 2px
-    # border), in the palette, to match net-panel and swayosd.
+    # border), in the palette, to match net-panel and the bar's islands.
     stylix.targets.mako.enable = false;
 
     services.mako.enable = true;

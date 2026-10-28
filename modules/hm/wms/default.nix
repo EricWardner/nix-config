@@ -6,6 +6,5 @@
     ./launchers
     ./net-panel
     ./blueman.nix
-    ./swayosd.nix
   ];
 }

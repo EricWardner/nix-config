@@ -26,6 +26,15 @@ Singleton {
 	// tint with a rim of the same
 	readonly property color islandFill: alpha(fg, 0.1)
 	readonly property color islandRim: alpha(fg, 0.1)
+	// Grown: light glass (as mako's cards are) with the dark ink on it
+	readonly property color grownFill: alpha(fg, 0.8)
+	readonly property color grownRim: Qt.rgba(1, 1, 1, 0.55)
+	readonly property color ink: bg
+	readonly property color inkDim: alpha(bg, 0.75)
+	readonly property color inkTrack: alpha(bg, 0.14)
+	// The bar's window reaches this far down, transparent and letting clicks
+	// through below the bar, so islands have room to grow
+	readonly property int windowHeight: 560
 
 	// In logical pixels. Numbers beside icons are a size smaller than the
 	// bar's text so the icon leads.
