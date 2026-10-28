@@ -363,7 +363,7 @@ in
               blur = {
                 enabled = true;
                 size = 8;
-                passes = 2;
+                passes = 3;
                 special = true;
                 # Off so blur frosts the windows behind, not just the
                 # wallpaper. Hyprland 0.56.2 fades a closing layer out with
