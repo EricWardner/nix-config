@@ -89,7 +89,7 @@
       };
       packages.${system} = {
         bar-tools = pkgs.callPackage ./pkgs/bar-tools { };
-        net-panel = pkgs.callPackage ./pkgs/net-panel { };
+        islands-agent = pkgs.callPackage ./pkgs/islands-agent { };
         capture-preview = pkgs.callPackage ./pkgs/capture-preview { };
         gather-symbol = pkgs.callPackage ./pkgs/gather-symbol { };
       };
@@ -105,20 +105,12 @@
             CONTEXT_DOCS_ROOT = "/home/ewardner/nix-config/.claude";
           };
         };
-        # Rust toolchain for pkgs/bar-tools: `nix develop .#bar-tools`
+        # Rust toolchain for pkgs/bar-tools and pkgs/islands-agent:
+        # `nix develop .#bar-tools`
         bar-tools = pkgs.mkShell {
           packages = with pkgs; [
             cargo
             rustc
-            clippy
-            rustfmt
-            rust-analyzer
-          ];
-        };
-        # Rust toolchain plus GTK for pkgs/net-panel: `nix develop .#net-panel`
-        net-panel = pkgs.mkShell {
-          inputsFrom = [ self.packages.${system}.net-panel ];
-          packages = with pkgs; [
             clippy
             rustfmt
             rust-analyzer

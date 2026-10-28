@@ -12,6 +12,10 @@ let
   # Push-to-talk (pttd) and the status watchers the bar reads (pkgs/bar-tools)
   barTools = pkgs.callPackage ../../../../pkgs/bar-tools { };
 
+  # NetworkManager's secret agent and BlueZ's pairing agent, whose
+  # questions the shell asks in its centre island (shell/Agent.qml)
+  islandsAgent = pkgs.callPackage ../../../../pkgs/islands-agent { };
+
   # The Gather logo, a one-glyph font at U+FFF00 for Gather's workspace icon
   gatherSymbol = pkgs.callPackage ../../../../pkgs/gather-symbol { };
 
@@ -47,12 +51,17 @@ let
 in
 {
   # The islands desktop shell (Quickshell): the bar, the islands that grow
-  # out of it, and the notification server (in place of mako). Home Manager
-  # installs a copy as the `islands` config, which the service below runs.
-  # To work on it with reload on every save:
+  # out of it (notifications, the volume popup, the notification and control
+  # centres, Wi-Fi and pairing prompts), and the notification server. It
+  # replaced waybar, mako, swayosd, net-panel and blueman's applet. Home
+  # Manager installs a copy as the `islands` config, which the service below
+  # runs. To work on it with reload on every save:
   #
   #   systemctl --user stop islands
   #   qs -p ~/nix-config/modules/hm/wms/islands/shell
+  #
+  # (Run a second copy beside the service with ISLANDS_NO_AGENT=1, so it
+  # leaves the prompts to the running one.)
   options.modules.hyprland.islands = {
     enable = mkEnableOption "the islands Quickshell shell" // {
       default = true;
@@ -80,6 +89,9 @@ in
       systemMonitor
       # the brightness keys go through the shell (shell/Osd.qml)
       pkgs.brightnessctl
+      islandsAgent
+      # nm-connection-editor, behind the Wi-Fi page's "Network settings…"
+      pkgs.networkmanagerapplet
     ];
 
     xdg.configFile."quickshell/islands".source = ./shell;

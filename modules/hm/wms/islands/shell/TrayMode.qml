@@ -15,11 +15,9 @@ IslandMode {
 
 	signal controlRequested
 
-	// net-panel's and blueman's icons: the control centre does their job
-	readonly property var applets: Array.from(SystemTray.items.values).filter(item => !/^(net-panel|blueman)$/.test(item.id))
 	// By id: apps register in whatever order they start, so the icons would
 	// otherwise move between sessions
-	readonly property var sorted: applets.slice().sort((a, b) => a.id.localeCompare(b.id))
+	readonly property var sorted: Array.from(SystemTray.items.values).sort((a, b) => a.id.localeCompare(b.id))
 
 	active: true
 	resting: true

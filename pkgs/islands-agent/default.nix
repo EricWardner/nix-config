@@ -1,10 +1,6 @@
 {
   lib,
   rustPlatform,
-  pkg-config,
-  wrapGAppsHook4,
-  gtk4,
-  gtk4-layer-shell,
 }:
 let
   manifest = (lib.importTOML ./Cargo.toml).package;
@@ -21,14 +17,6 @@ rustPlatform.buildRustPackage {
     ];
   };
   cargoLock.lockFile = ./Cargo.lock;
-  nativeBuildInputs = [
-    pkg-config
-    wrapGAppsHook4
-  ];
-  buildInputs = [
-    gtk4
-    gtk4-layer-shell
-  ];
   meta = {
     inherit (manifest) description;
     mainProgram = manifest.name;

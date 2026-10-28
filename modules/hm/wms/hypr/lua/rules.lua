@@ -1,11 +1,11 @@
 -- The islands bar (modules/hm/wms/islands): blurred only where it's over
 -- 50% opaque, so the text on the bare bar gets no halo
 hl.layer_rule({ match = { namespace = "^islands-bar$" }, blur = true, ignore_alpha = 0.5 })
--- The glass panels of fuzzel (menus), vicinae (the launcher and its HUD)
--- and net-panel (the network panel). Global blur xray is off
--- (hyprland.nix), so they frost the windows under them.
+-- The glass panels of fuzzel (menus) and vicinae (the launcher and its
+-- HUD). Global blur xray is off (hyprland.nix), so they frost the windows
+-- under them.
 hl.layer_rule({
-	match = { namespace = "^(launcher|vicinae|vicinae-hud|net-panel)$" },
+	match = { namespace = "^(launcher|vicinae|vicinae-hud)$" },
 	blur = true,
 	ignore_alpha = 0.3,
 })

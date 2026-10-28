@@ -199,6 +199,18 @@ Column {
 				radius: 12
 				color: Theme.alpha(Theme.ink, 0.06)
 
+				function join() {
+					if (password.text.length < 8)
+						return;
+					root.error = "";
+					entry.modelData.connectWithPsk(password.text);
+					password.text = "";
+					root.asking = null;
+				}
+
+				onVisibleChanged: if (visible)
+					password.focusField()
+
 				Column {
 					id: passwordColumn
 
@@ -213,95 +225,30 @@ Column {
 						font.pixelSize: 12
 					}
 
-					Rectangle {
+					Field {
+						id: password
+
 						width: parent.width
-						height: 34
-						radius: 9
-						color: Qt.rgba(1, 1, 1, 0.85)
-						border.width: 1
-						border.color: password.activeFocus ? Theme.accent : Theme.alpha(Theme.ink, 0.18)
-
-						TextInput {
-							id: password
-
-							anchors.fill: parent
-							anchors.leftMargin: 10
-							anchors.rightMargin: 10
-							verticalAlignment: TextInput.AlignVCenter
-							echoMode: TextInput.Password
-							color: Theme.ink
-							font.family: Theme.sans
-							font.pixelSize: 14
-							focus: entry.askingHere
-							onVisibleChanged: if (visible)
-								forceActiveFocus()
-							onAccepted: joinButton.clicked()
-							Keys.onEscapePressed: root.asking = null
-						}
+						password: true
+						placeholder: "Password"
+						onAccepted: parent.parent.join()
+						Keys.onEscapePressed: root.asking = null
 					}
 
 					Row {
 						anchors.right: parent.right
 						spacing: 6
 
-						Rectangle {
-							width: cancelText.implicitWidth + 24
-							height: 28
-							radius: 14
-							color: cancelHover.hovered ? Theme.inkTrack : "transparent"
-
-							BarText {
-								id: cancelText
-
-								anchors.centerIn: parent
-								text: "Cancel"
-								color: Theme.ink
-								font.pixelSize: 13
-							}
-
-							HoverHandler {
-								id: cancelHover
-							}
-
-							MouseArea {
-								anchors.fill: parent
-								onClicked: root.asking = null
-							}
+						PillButton {
+							text: "Cancel"
+							onClicked: root.asking = null
 						}
 
-						Rectangle {
-							id: joinButton
-
-							signal clicked
-
-							width: joinText.implicitWidth + 28
-							height: 28
-							radius: 14
-							color: Theme.ink
-							opacity: password.text.length >= 8 ? 1 : 0.4
-							onClicked: {
-								if (password.text.length < 8)
-									return;
-								root.error = "";
-								entry.modelData.connectWithPsk(password.text);
-								password.text = "";
-								root.asking = null;
-							}
-
-							BarText {
-								id: joinText
-
-								anchors.centerIn: parent
-								text: "Join"
-								color: Theme.fg
-								font.pixelSize: 13
-								font.weight: Font.DemiBold
-							}
-
-							MouseArea {
-								anchors.fill: parent
-								onClicked: joinButton.clicked()
-							}
+						PillButton {
+							primary: true
+							text: "Join"
+							enabled: password.text.length >= 8
+							onClicked: passwordColumn.parent.join()
 						}
 					}
 				}

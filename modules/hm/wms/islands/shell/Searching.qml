@@ -1,7 +1,6 @@
 import QtQuick
 
-// Three breathing dots: scanning for networks or devices, as net-panel's
-// indicator was
+// Three breathing dots: scanning for networks or devices
 Row {
 	id: root
 

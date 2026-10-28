@@ -392,10 +392,9 @@ let
         "network"
         "internet"
         "wireless"
-        "net-panel"
       ];
       script = ''
-        ${afterLauncher} net-panel toggle
+        ${islands} panel open control wifi
         echo "Wi-Fi"
       '';
     };
@@ -433,7 +432,7 @@ in
     };
     themes.islands = islandsTheme;
     settings = {
-      # The bar's tray island holds net-panel and blueman; no vicinae icon.
+      # The bar's tray island has room enough; no vicinae icon.
       tray.enabled = false;
       theme = {
         light.name = "islands";

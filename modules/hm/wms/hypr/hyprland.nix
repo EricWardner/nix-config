@@ -214,7 +214,7 @@ in
         };
       };
       extraConfig = ''
-        -- Waybar, swaybg and net-panel are supervised by their systemd
+        -- The islands shell and swaybg are supervised by their systemd
         -- user services.
         hl.on("hyprland.start", function()
           hl.exec_cmd(${toLua ghostty}, { workspace = "1 silent" })

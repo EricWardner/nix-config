@@ -2,9 +2,9 @@ import QtQuick
 import Quickshell.Hyprland
 
 // The island in the middle of the bar: the clock at rest (a click opens
-// the notification centre), and on the focused monitor the volume popup,
-// notifications, and the notification centre, in that order of priority
-// below the centre
+// the notification centre), and on the focused monitor, by rising
+// priority, notifications, the volume popup, the notification centre, and
+// the questions NetworkManager and BlueZ ask (a Wi-Fi password, a passkey)
 Island {
 	id: root
 
@@ -30,5 +30,9 @@ Island {
 
 	CentreMode {
 		active: Desktop.panel === "centre" && Desktop.panelOn === root.monitor
+	}
+
+	PromptMode {
+		active: Agent.current !== null && root.focused
 	}
 }

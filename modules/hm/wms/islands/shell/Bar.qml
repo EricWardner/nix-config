@@ -19,6 +19,8 @@ PanelWindow {
 	readonly property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
 	// The notification or control centre is open on this monitor
 	readonly property bool panelOpen: Desktop.panel !== "" && Desktop.panelOn === monitor
+	// A question from NetworkManager or BlueZ is in this monitor's island
+	readonly property bool asking: Agent.current !== null && Hyprland.focusedMonitor === monitor
 
 	screen: modelData
 	anchors.top: true
@@ -31,8 +33,9 @@ PanelWindow {
 	// (hypr/lua/rules.lua), so the bare bar's text gets no halo
 	WlrLayershell.namespace: "islands-bar"
 	// An open panel takes the keyboard (Esc closes it), and a click anywhere
-	// but the bar closes it, as a popup's would
-	WlrLayershell.keyboardFocus: panelOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+	// but the bar closes it, as a popup's would. A question takes it too, but
+	// stays until it's answered.
+	WlrLayershell.keyboardFocus: panelOpen || asking ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
 	HyprlandFocusGrab {
 		windows: [bar]
