@@ -29,6 +29,11 @@ Singleton {
 		}
 	}
 
+	// No windows on the monitor's workspace, so Sky shows there
+	function workspaceEmpty(monitor: HyprlandMonitor): bool {
+		return monitor !== null && !Hyprland.toplevels.values.some(t => t.workspace === monitor.activeWorkspace);
+	}
+
 	function closePanel() {
 		panel = "";
 		panelOn = null;

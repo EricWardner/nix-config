@@ -2,27 +2,17 @@ import QtQuick
 import Quickshell.Services.Mpris
 import Quickshell.Widgets
 
-// What's playing (Mpris), with previous, play/pause and next: the player
-// that's playing, or else the first with a track. Nothing shows without
-// one (Chrome keeps an idle player around for any tab that has had media).
+// What's playing (Media), with previous, play/pause and next, on the light
+// glass. Nothing shows without a player.
 Rectangle {
 	id: root
 
-	readonly property var players: Array.from(Mpris.players.values).filter(p => p.trackTitle !== "")
-	readonly property MprisPlayer player: players.find(p => p.isPlaying) ?? players[0] ?? null
+	readonly property MprisPlayer player: Media.player
 
 	visible: player !== null
 	implicitHeight: 64
 	radius: 16
 	color: Theme.alpha(Theme.ink, 0.06)
-
-	// Material Design icons from the Nerd Font fallback: SF Symbols' media
-	// controls aren't among the code points found so far
-	readonly property string previousGlyph: String.fromCodePoint(0xF04AE)
-	readonly property string playGlyph: String.fromCodePoint(0xF040A)
-	readonly property string pauseGlyph: String.fromCodePoint(0xF03E4)
-	readonly property string nextGlyph: String.fromCodePoint(0xF04AD)
-	readonly property string noteGlyph: String.fromCodePoint(0xF0387)
 
 	ClippingRectangle {
 		id: art
@@ -37,7 +27,7 @@ Rectangle {
 		BarText {
 			anchors.centerIn: parent
 			visible: cover.status !== Image.Ready
-			text: root.noteGlyph
+			text: Media.noteGlyph
 			color: Theme.ink
 			font.pixelSize: 20
 		}
@@ -89,17 +79,17 @@ Rectangle {
 		Repeater {
 			model: [
 				{
-					"glyph": root.previousGlyph,
+					"glyph": Media.previousGlyph,
 					"enabled": root.player?.canGoPrevious ?? false,
 					"run": () => root.player.previous()
 				},
 				{
-					"glyph": root.player?.isPlaying ? root.pauseGlyph : root.playGlyph,
+					"glyph": root.player?.isPlaying ? Media.pauseGlyph : Media.playGlyph,
 					"enabled": root.player?.canTogglePlaying ?? false,
 					"run": () => root.player.togglePlaying()
 				},
 				{
-					"glyph": root.nextGlyph,
+					"glyph": Media.nextGlyph,
 					"enabled": root.player?.canGoNext ?? false,
 					"run": () => root.player.next()
 				}

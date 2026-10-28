@@ -53,6 +53,7 @@ let
       grim
       imagemagick
       wl-screenrec
+      ffmpeg
       wl-clipboard-rs
       libnotify
       qrtool

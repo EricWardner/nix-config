@@ -10,7 +10,8 @@ import Quickshell
 // islands: the desktop shell. One bar per monitor; Quickshell adds and
 // removes bars as monitors come and go, so a hotplug restarts nothing. The
 // capture overlays are built once per monitor and shown for each capture;
-// a frame goes round a screen while it's shared.
+// a frame goes round a screen while it's shared. Sky is the desktop of an
+// empty workspace.
 ShellRoot {
 	Variants {
 		model: Quickshell.screens
@@ -28,5 +29,11 @@ ShellRoot {
 		model: Quickshell.screens
 
 		ShareFrame {}
+	}
+
+	Variants {
+		model: Quickshell.screens
+
+		Sky {}
 	}
 }

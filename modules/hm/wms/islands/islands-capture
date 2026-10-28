@@ -15,6 +15,12 @@
 #                                its size on screen, for a GIF made from it
 #   finished                     the preview of the recording just ended
 #   last                         the newest recording's preview
+#   open FILE                    a capture's preview (Sky's thumbnails)
+#   thumbnail FILE               a recording's first frame and length, for
+#                                Sky: THUMBS/NAME.jpg and NAME.duration
+#   today                        today's saved screenshots and recordings
+#                                newest first, a line each: FILE, then for a
+#                                recording its thumbnail and length, tabbed
 #
 # A shot stays in $XDG_RUNTIME_DIR/screenshot until the preview's Save puts
 # it in ~/Pictures/Screenshots.
@@ -25,6 +31,7 @@ sizes="${XDG_RUNTIME_DIR:?}/islands/capture/sizes"
 # The recording under way (or just ended): its file, for `finished`, as the
 # shell may have restarted since it began
 current="${XDG_RUNTIME_DIR:?}/islands/capture/recording"
+thumbs="${XDG_CACHE_HOME:-$HOME/.cache}/islands/thumbnails"
 
 notify() {
   notify-send -a Screenshot "$@"
@@ -62,6 +69,19 @@ preview() {
   size_file="$sizes/$(basename "${1%.*}")"
   [ -f "$size_file" ] && size=$(cat "$size_file")
   capture-preview ${size:+--gif-size "$size"} "$1" || true
+}
+
+thumbnail() {
+  local name seconds
+  name="$thumbs/$(basename "${1%.*}")"
+  [ -s "$name.jpg" ] && return
+  mkdir -p "$thumbs"
+  # Half a second in, past a recording's first blank frames, unless it's
+  # shorter than that
+  ffmpeg -loglevel error -y -ss 0.5 -i "$1" -frames:v 1 -vf scale=360:-2 "$name.jpg" ||
+    ffmpeg -loglevel error -y -i "$1" -frames:v 1 -vf scale=360:-2 "$name.jpg"
+  seconds=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$1" | cut -d. -f1)
+  printf '%d:%02d\n' $((seconds / 60)) $((seconds % 60)) >"$name.duration"
 }
 
 crop() {
@@ -142,7 +162,32 @@ case ${1:-} in
       notify-send -a "Screen recording" -t 3000 "Recording failed" "No video was recorded"
       exit 1
     fi
+    thumbnail "$file" &
     preview "$file"
+    ;;
+  open)
+    preview "$2"
+    ;;
+  thumbnail)
+    thumbnail "$2"
+    ;;
+  today)
+    recording=$(cat "$current" 2>/dev/null) || true
+    n=0
+    find "$saved" "$HOME/Videos" -maxdepth 1 -type f \( -name '*.png' -o -name '*.mp4' \) -newermt "$(date +%F)" -printf '%T@\t%p\n' 2>/dev/null |
+      sort -rn | cut -f2- | while read -r file; do
+      [ "$file" = "$recording" ] && continue
+      n=$((n + 1))
+      case $file in
+        *.mp4)
+          name="$thumbs/$(basename "${file%.*}")"
+          # Sky shows three
+          [ "$n" -le 3 ] && thumbnail "$file"
+          printf '%s\t%s\t%s\n' "$file" "$name.jpg" "$(cat "$name.duration" 2>/dev/null)"
+          ;;
+        *) printf '%s\n' "$file" ;;
+      esac
+    done
     ;;
   last)
     file=$(find "$HOME/Videos" -maxdepth 1 -name '*.mp4' -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
@@ -153,7 +198,7 @@ case ${1:-} in
     preview "$file"
     ;;
   *)
-    echo "usage: islands-capture area | window | output | text | colour | record | finished | last" >&2
+    echo "usage: islands-capture area | window | output | text | colour | record | finished | last | open | thumbnail | today" >&2
     exit 2
     ;;
 esac

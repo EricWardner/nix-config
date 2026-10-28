@@ -21,6 +21,7 @@ Singleton {
 	readonly property color yellow: colours.base0A ?? "#ffcb6b"
 	readonly property color red: colours.base08 ?? "#f07178"
 	readonly property color orange: colours.base09 ?? "#f78c6c"
+	readonly property color purple: colours.base0E ?? "#c792ea"
 	readonly property string sans: fonts.sans ?? "sans-serif"
 
 	// The islands at rest: the faint glass of waybar's tray island, a light

@@ -2,10 +2,12 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 
 // CPU, memory, temperature and screen brightness for the bar's icons. The
-// CPU and memory are read only while their numbers show; the temperature
+// CPU and memory are read only while their numbers show, on the bar or on
+// Sky; the temperature
 // every 10 s, for its critical colour; the brightness whenever udev reports
 // a change (the keys, idle dimming), so nothing polls it.
 Singleton {
@@ -16,6 +18,7 @@ Singleton {
 	property bool showMemory: false
 	property bool showTemperature: false
 	property bool showBacklight: false
+	readonly property bool onSky: Quickshell.screens.some(s => Desktop.workspaceEmpty(Hyprland.monitorFor(s)))
 
 	property int cpu: 0 // % busy
 	property int memory: 0 // % used
@@ -105,7 +108,7 @@ Singleton {
 		interval: root.lastCpu ? 2000 : 1000
 		repeat: true
 		triggeredOnStart: true
-		running: root.showCpu
+		running: root.showCpu || root.onSky
 		onRunningChanged: if (!running)
 			root.lastCpu = null
 		onTriggered: root.readCpu()
@@ -115,7 +118,7 @@ Singleton {
 		interval: 5000
 		repeat: true
 		triggeredOnStart: true
-		running: root.showMemory
+		running: root.showMemory || root.onSky
 		onTriggered: root.readMemory()
 	}
 
