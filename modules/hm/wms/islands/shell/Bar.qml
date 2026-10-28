@@ -136,7 +136,7 @@ PanelWindow {
 
 		window: bar
 		anchors.right: statusRest.left
-		anchors.rightMargin: 8
+		anchors.rightMargin: 10
 		y: Theme.barTop + 2
 		opacity: Desktop.panel === "control" && Desktop.panelOn === bar.monitor ? 0 : 1
 

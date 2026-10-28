@@ -18,15 +18,15 @@ IslandMode {
 	active: true
 	resting: true
 	cornerRadius: 8
-	islandWidth: row.implicitWidth + 14
+	islandWidth: row.implicitWidth + 20
 	islandHeight: Theme.barHeight - 4
 
 	Row {
 		id: row
 
 		anchors.centerIn: parent
-		// 16px icons 14px apart: the status island's 30px pitch
-		spacing: 14
+		// 16px icons 20px apart: the status island's 36px pitch
+		spacing: 20
 
 		Repeater {
 			model: root.sorted

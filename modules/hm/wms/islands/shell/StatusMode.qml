@@ -17,14 +17,14 @@ IslandMode {
 	active: true
 	resting: true
 	cornerRadius: 8
-	islandWidth: row.implicitWidth + 8
+	islandWidth: row.implicitWidth + 16
 	islandHeight: Theme.barHeight - 4
 
 	Row {
 		id: row
 
 		anchors.centerIn: parent
-		spacing: 4
+		spacing: 10
 
 		BarIcon {
 			visible: Inbox.dnd
