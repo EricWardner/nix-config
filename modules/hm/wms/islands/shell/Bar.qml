@@ -30,8 +30,7 @@ PanelWindow {
 	implicitHeight: Theme.windowHeight
 	exclusiveZone: Theme.barTop + Theme.barHeight
 	color: "transparent"
-	// Hyprland blurs behind it only where it's over 50% opaque
-	// (hypr/lua/rules.lua), so the bare bar's text gets no halo
+	// Hyprland blurs behind it where it's at all opaque (hypr/lua/rules.lua)
 	WlrLayershell.namespace: "islands-bar"
 	// An open panel takes the keyboard (Esc closes it), and a click anywhere
 	// but the bar closes it, as a popup's would. A question takes it too, but

@@ -364,6 +364,13 @@ in
                 enabled = true;
                 size = 4;
                 passes = 2;
+                # Brighter and more saturated than the blurred colours, as the
+                # islands mockup's backdrop-filter saturate(1.5) is; no grey
+                # from lowered contrast or grain
+                brightness = 1.35;
+                vibrancy = 0.5;
+                contrast = 1.0;
+                noise = 0.0;
                 special = true;
                 # Off so blur frosts the windows behind, not just the
                 # wallpaper. Hyprland 0.56.2 fades a closing layer out with
