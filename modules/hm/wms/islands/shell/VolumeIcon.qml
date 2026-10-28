@@ -15,6 +15,7 @@ BarIcon {
 
 	signal openSound
 
+	widestGlyph: Glyphs.speakerWave3
 	glyph: muted || volume === 0 ? Glyphs.speakerSlash : volume < 0.34 ? Glyphs.speakerWave1 : volume < 0.67 ? Glyphs.speakerWave2 : Glyphs.speakerWave3
 	tint: muted ? Theme.dim : Theme.fg
 

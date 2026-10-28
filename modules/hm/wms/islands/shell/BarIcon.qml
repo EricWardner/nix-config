@@ -16,20 +16,34 @@ Item {
 	// How far right of the box's edge the dot sits (the camera's must clear
 	// its lens)
 	property real dotShift: 0
+	// For a glyph that changes width (the volume's waves): the widest it gets.
+	// The icon keeps that room, every glyph starting where it starts, so
+	// nothing beside it moves.
+	property string widestGlyph: ""
 
 	signal clicked(var mouse)
 	signal scrolled(var wheel)
 
-	implicitWidth: Math.max(26, row.implicitWidth + 2)
+	implicitWidth: Math.max(26, Math.max(row.implicitWidth, widest.advanceWidth) + 2)
 	implicitHeight: Theme.barHeight
+
+	TextMetrics {
+		id: widest
+
+		font: glyph.font
+		text: root.widestGlyph
+	}
 
 	Row {
 		id: row
 
-		anchors.centerIn: parent
+		x: Math.round((root.width - (root.widestGlyph !== "" ? widest.advanceWidth : width)) / 2)
+		anchors.verticalCenter: parent.verticalCenter
 		spacing: 4
 
 		BarText {
+			id: glyph
+
 			text: root.glyph
 			color: root.tint
 			font.pixelSize: root.glyphSize
