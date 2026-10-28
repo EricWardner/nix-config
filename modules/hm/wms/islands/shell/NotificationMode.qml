@@ -2,13 +2,13 @@ import QtQuick
 import Quickshell.Services.Notifications
 
 // The notification popping up (Inbox.popup). The pointer over it holds it
-// there. Critical ones are rimmed in red, the YubiKey touch prompt in the
-// green of the Yubico logo.
+// there. Critical ones are rimmed in red, the YubiKey touch prompt in
+// Yubico's green.
 IslandMode {
 	priority: 20
 	islandWidth: 420
 	islandHeight: card.implicitHeight
-	rim: Inbox.popup?.urgency === NotificationUrgency.Critical ? Theme.red : Inbox.isYubiKey(Inbox.popup) ? "#97c73b" : Theme.grownRim
+	rim: Inbox.popup?.urgency === NotificationUrgency.Critical ? Theme.red : Inbox.isYubiKey(Inbox.popup) ? Theme.yubico : Theme.grownRim
 
 	NotificationCard {
 		id: card
