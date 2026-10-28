@@ -18,7 +18,7 @@ IslandMode {
 		id: clock
 
 		anchors.centerIn: parent
-		// waybar's "%a %d %b  %I:%M %p %Z"
-		text: Qt.formatDateTime(time.date, "ddd dd MMM  hh:mm AP t")
+		// waybar's "%a %d %b  %I:%M %p %Z", but with no zero before a one-digit hour
+		text: Qt.formatDateTime(time.date, "ddd dd MMM  h:mm AP t")
 	}
 }
