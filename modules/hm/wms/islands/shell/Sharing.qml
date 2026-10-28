@@ -44,7 +44,15 @@ Singleton {
 		kind = started.kind;
 		output = started.kind === "screen" ? started.target : "";
 		title = started.kind === "window" ? started.target : "";
-		window = kind === "window" ? Hyprland.toplevels.values.find(t => t.title === title) ?? null : null;
+		window = kind === "window" ? sharedWindow(title) : null;
+	}
+
+	// The window with that title, or failing that the one whose title differs
+	// only in leading symbols: a terminal running Claude Code animates one
+	function sharedWindow(shared: string): HyprlandToplevel {
+		const windows = Hyprland.toplevels.values;
+		const words = t => t.replace(/^\W+/, "").trim();
+		return windows.find(t => t.title === shared) ?? windows.find(t => words(t.title) === words(shared)) ?? null;
 	}
 
 	// As Chrome's own Stop button would: it takes its "<host> is sharing your
