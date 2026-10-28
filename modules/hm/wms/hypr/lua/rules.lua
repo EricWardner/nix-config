@@ -9,9 +9,6 @@ hl.layer_rule({
 	blur = true,
 	ignore_alpha = 0.3,
 })
--- mako's notification cards: frosted too, sliding in from the right edge
--- they're anchored to.
-hl.layer_rule({ match = { namespace = "notifications" }, blur = true, ignore_alpha = 0.3, animation = "slide right" })
 
 hl.window_rule({ match = { class = ".*" }, suppress_event = "maximize" })
 hl.window_rule({

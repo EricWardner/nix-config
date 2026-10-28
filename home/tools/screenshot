@@ -21,7 +21,7 @@ notify() {
   notify-send -a Screenshot "$@"
 }
 
-# mako reads a body as Pango markup
+# The notification server reads a body as markup
 escape() {
   sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
 }

@@ -75,7 +75,7 @@ PanelWindow {
 		}
 	}
 
-	CentreIsland {
+	Island {
 		id: centre
 
 		monitor: Hyprland.monitorFor(bar.modelData)

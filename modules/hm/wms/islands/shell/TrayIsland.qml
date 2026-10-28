@@ -13,7 +13,7 @@ Rectangle {
 	// The bar's window, which the menus open from
 	required property QsWindow window
 
-	visible: SystemTray.items.values.length > 0 || Desktop.dnd
+	visible: SystemTray.items.values.length > 0 || Inbox.dnd
 	implicitWidth: row.implicitWidth + 14
 	implicitHeight: Theme.barHeight - 4
 	radius: 8
@@ -30,13 +30,13 @@ Rectangle {
 		spacing: 24
 
 		BarText {
-			visible: Desktop.dnd
+			visible: Inbox.dnd
 			text: Glyphs.moonFill
 			anchors.verticalCenter: parent.verticalCenter
 
 			MouseArea {
 				anchors.fill: parent
-				onClicked: Desktop.launch(["mako-dnd", "off"])
+				onClicked: Inbox.dnd = false
 			}
 		}
 

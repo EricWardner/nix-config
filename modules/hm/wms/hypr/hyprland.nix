@@ -45,8 +45,9 @@ let
     screenshotText = "screenshot text";
     colorPicker = "screenshot color";
     record = "screen-record";
-    doNotDisturb = "mako-dnd toggle"; # from wms/notifications
-    notificationRestore = "${pkgs.mako}/bin/makoctl restore";
+    # The islands shell is the notification server (wms/islands)
+    doNotDisturb = "${islands} notifications toggleDnd";
+    notificationRestore = "${islands} notifications restore";
     # The bar's centre island shows any volume change for a moment
     # (wms/islands). Raising it unmutes, as swayosd's did; 150% at most.
     volumeUp = "${wpctl} set-mute @DEFAULT_AUDIO_SINK@ 0; ${wpctl} set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+";

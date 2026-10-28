@@ -7,7 +7,7 @@
 let
   inherit (config.lib.stylix) colors;
 
-  # Light glass like the bar's islands once they open (and mako's cards):
+  # Light glass like the bar's islands once they open:
   # the theme's lightest colour, translucent over Hyprland's blur, with its
   # darkest as ink. The selected row is a pale accent with dark text: a dark
   # row outweighed the rest of the panel, and hid the labels at its right,
@@ -129,8 +129,9 @@ let
   # After the HUD fades too (1.5 s), so a screenshot doesn't catch it
   afterHud = "${spawn} '^vicinae'";
 
-  makoctl = "${pkgs.mako}/bin/makoctl";
   grep = "${pkgs.gnugrep}/bin/grep";
+  # The islands shell: notifications and Do Not Disturb (wms/islands)
+  islands = "${pkgs.quickshell}/bin/qs ipc -c islands call";
 
   # A rounded tile in one of the theme's accents with a line glyph inked on
   # it, like the icons in the islands' panels. It reads on the launcher's
@@ -310,12 +311,8 @@ let
         "quiet"
       ];
       script = ''
-        mako-dnd toggle
-        if ${makoctl} mode | ${grep} -qx do-not-disturb; then
-          echo "Do Not Disturb on"
-        else
-          echo "Do Not Disturb off"
-        fi
+        state=$(${islands} notifications toggleDnd) || exit 1
+        echo "Do Not Disturb $state"
       '';
     };
     last-notification = {
@@ -327,11 +324,10 @@ let
         "missed"
       ];
       script = ''
-        if ${makoctl} restore 2>/dev/null; then
-          echo "Brought back the last notification"
-        else
-          echo "No notification to bring back"
-        fi
+        case $(${islands} notifications restore) in
+          restored) echo "Brought back the last notification" ;;
+          *) echo "No notification to bring back" ;;
+        esac
       '';
     };
     push-to-talk = {

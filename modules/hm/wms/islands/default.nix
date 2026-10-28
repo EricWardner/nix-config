@@ -46,9 +46,10 @@ let
   '';
 in
 {
-  # The islands desktop shell (Quickshell): the bar, and the islands that
-  # grow out of it. Home Manager installs a copy as the `islands` config,
-  # which the service below runs. To work on it with reload on every save:
+  # The islands desktop shell (Quickshell): the bar, the islands that grow
+  # out of it, and the notification server (in place of mako). Home Manager
+  # installs a copy as the `islands` config, which the service below runs.
+  # To work on it with reload on every save:
   #
   #   systemctl --user stop islands
   #   qs -p ~/nix-config/modules/hm/wms/islands/shell
@@ -112,6 +113,7 @@ in
     };
     xdg.configFile."islands/config.json".text = builtins.toJSON {
       inherit (cfg) temperatureSensor;
+      attentionSound = "${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/dialog-warning.oga";
     };
 
     # Kept alive by systemd, only under a Hyprland session. Quickshell's
@@ -130,7 +132,11 @@ in
       };
       Service = {
         ExecStart = "${pkgs.quickshell}/bin/qs -c islands";
-        Environment = [ "QS_DISABLE_CRASH_HANDLER=1" ];
+        Environment = [
+          "QS_DISABLE_CRASH_HANDLER=1"
+          # Apps' and notifications' icons, from the GTK apps' theme
+          "QS_ICON_THEME=${config.gtk.iconTheme.name}"
+        ];
         Restart = "always";
         RestartSec = 1;
       };

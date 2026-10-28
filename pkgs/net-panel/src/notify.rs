@@ -1,5 +1,5 @@
-//! Connection notifications through org.freedesktop.Notifications (mako),
-//! each replacing the last so a flaky link doesn't stack them up.
+//! Connection notifications through org.freedesktop.Notifications, each
+//! replacing the last so a flaky link doesn't stack them up.
 
 use std::cell::Cell;
 use std::collections::HashMap;
