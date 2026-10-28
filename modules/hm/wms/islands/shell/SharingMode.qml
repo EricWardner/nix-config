@@ -37,14 +37,7 @@ IslandMode {
 			anchors.verticalCenter: parent.verticalCenter
 			spacing: 8
 
-			Searching {
-				anchors.verticalCenter: parent.verticalCenter
-				running: Sharing.stopping
-				color: Theme.orange
-			}
-
 			Rectangle {
-				visible: !Sharing.stopping
 				anchors.verticalCenter: parent.verticalCenter
 				width: 9
 				height: 9
@@ -52,7 +45,7 @@ IslandMode {
 				color: Theme.orange
 
 				SequentialAnimation on opacity {
-					running: root.current && !Sharing.stopping
+					running: root.current
 					loops: Animation.Infinite
 
 					NumberAnimation {
@@ -69,8 +62,6 @@ IslandMode {
 			BarText {
 				anchors.verticalCenter: parent.verticalCenter
 				text: {
-					if (Sharing.stopping)
-						return "Stopping…";
 					if (Sharing.kind === "window")
 						return "Sharing a window";
 					if (Sharing.output === "")
@@ -147,8 +138,7 @@ IslandMode {
 			width: stopText.implicitWidth + 28
 			height: 30
 			radius: 15
-			color: stopHover.hovered && !Sharing.stopping ? Qt.lighter(Theme.orange, 1.08) : Theme.orange
-			opacity: Sharing.stopping ? 0.5 : 1
+			color: stopHover.hovered ? Qt.lighter(Theme.orange, 1.08) : Theme.orange
 
 			BarText {
 				id: stopText
@@ -166,7 +156,6 @@ IslandMode {
 
 			MouseArea {
 				anchors.fill: parent
-				enabled: !Sharing.stopping
 				cursorShape: Qt.PointingHandCursor
 				onClicked: Sharing.stop()
 			}

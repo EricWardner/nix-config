@@ -1,12 +1,10 @@
 import QtQuick
 
-// Three breathing dots: scanning for networks or devices, or waiting on
-// something asked for
+// Three breathing dots: scanning for networks or devices
 Row {
 	id: root
 
 	property bool running: true
-	property color color: Theme.ink
 
 	spacing: 3
 	visible: running
@@ -20,7 +18,7 @@ Row {
 			width: 4
 			height: 4
 			radius: 2
-			color: root.color
+			color: Theme.ink
 			anchors.verticalCenter: parent.verticalCenter
 
 			SequentialAnimation on opacity {

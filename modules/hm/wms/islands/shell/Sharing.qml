@@ -85,7 +85,7 @@ Singleton {
 		onTriggered: root.active = false
 	}
 
-	// The app didn't stop: Stop sharing comes back
+	// The app didn't stop: its stream dropping ends the share as usual again
 	Timer {
 		id: stopTimeout
 
