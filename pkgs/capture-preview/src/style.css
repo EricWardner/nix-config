@@ -7,19 +7,15 @@
 @define-color cp_on_accent #16181c;
 @define-color cp_danger #f07178;
 
-/* The monitor behind the panel, dimmed a touch */
+/* Glass like net-panel: the window is see-through and Hyprland blurs what's
+   behind it. Hyprland draws its corners, border and shadow, as for any
+   window. */
 window.capture-preview {
-  background: rgba(0, 0, 0, 0.2);
+  background-color: @cp_bg;
 }
 
-/* Glass like net-panel: Hyprland blurs what's behind (the "capture-preview"
-   layer rule); box-shadow lifts it off the screen. */
 .panel {
   padding: 16px;
-  border-radius: 18px;
-  background-color: @cp_bg;
-  border: 1px solid alpha(@cp_fg, 0.18);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
   color: @cp_fg;
   font-size: 13px;
 }

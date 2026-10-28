@@ -1,5 +1,5 @@
-//! capture-preview: a screen recording or screenshot in a glass panel in the
-//! middle of the screen, with what to do with it. screen-record and
+//! capture-preview: a screen recording or screenshot in a small floating
+//! window, with what to do with it. screen-record and
 //! screenshot open it as soon as a recording or shot is done (and the bar's
 //! "Saved" opens a recording again).
 //!
@@ -28,7 +28,6 @@ use std::time::Duration;
 
 use gtk::prelude::*;
 use gtk::{gdk, gio, glib};
-use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 /// The preview's largest size, in logical pixels.
 const MAX_W: f64 = 720.0;
@@ -247,21 +246,14 @@ fn probe(path: &Path) -> Option<(u32, u32, f64)> {
 fn build(app: &gtk::Application, opts: &Options) {
     load_css(opts.css.as_deref());
 
+    // A plain window: Hyprland floats it in the middle and draws its corners,
+    // border and shadow (a window rule on the app ID), so no title bar
     let window = gtk::ApplicationWindow::builder()
         .application(app)
-        .title("Preview")
+        .decorated(false)
+        .resizable(false)
         .build();
     window.add_css_class("capture-preview");
-    window.init_layer_shell();
-    window.set_layer(Layer::Overlay);
-    window.set_namespace(Some("capture-preview"));
-    window.set_keyboard_mode(KeyboardMode::Exclusive);
-    // The whole monitor, dimmed a touch around the panel: a click anywhere
-    // outside the panel closes it
-    for edge in [Edge::Top, Edge::Right, Edge::Bottom, Edge::Left] {
-        window.set_anchor(edge, true);
-    }
-    window.set_exclusive_zone(-1);
 
     let file = opts.file.clone();
     let kind = Kind::of(&file);
@@ -334,6 +326,7 @@ fn build(app: &gtk::Application, opts: &Options) {
     // The name takes the room the video leaves it rather than widening the
     // panel past the video
     title.set_max_width_chars(1);
+    window.set_title(Some(&name));
     let info = gtk::Label::new(None);
     info.add_css_class("dim");
     // The size, a recording's length, the file's size and its GIF's; again
@@ -398,7 +391,7 @@ fn build(app: &gtk::Application, opts: &Options) {
         let window = window.clone();
         move || window.close()
     };
-    // Escape closes, and so does a click outside the panel
+    // Escape closes it, as Super+Q does
     let keys = gtk::EventControllerKey::new();
     keys.connect_key_pressed({
         let close = close.clone();
@@ -412,21 +405,6 @@ fn build(app: &gtk::Application, opts: &Options) {
         }
     });
     window.add_controller(keys);
-    let outside = gtk::GestureClick::new();
-    outside.set_button(0);
-    outside.connect_pressed({
-        let (window, panel) = (window.clone(), panel.clone());
-        move |gesture, _, x, y| {
-            let inside = panel
-                .compute_bounds(&window)
-                .is_some_and(|b| b.contains_point(&gtk::graphene::Point::new(x as f32, y as f32)));
-            if !inside {
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-                window.close();
-            }
-        }
-    });
-    window.add_controller(outside);
 
     let copied = {
         let close = close.clone();
@@ -520,7 +498,7 @@ fn build(app: &gtk::Application, opts: &Options) {
         }
     });
 
-    // A job still running when the panel closes would have no one to rename
+    // A job still running when the window closes would have no one to rename
     // its file: stop it
     let job: Job = Rc::default();
     window.connect_close_request({
@@ -982,9 +960,7 @@ fn satty(file: &Path, output: Option<&Path>) {
     spawn(&mut command);
 }
 
-/// Save… for a screenshot: a save dialog starting in `dir`. The panel covers
-/// the screen above every window, so it hides while the dialog is up, and
-/// comes back if the dialog is cancelled.
+/// Save… for a screenshot: a save dialog over the window, starting in `dir`.
 fn save_as(window: &gtk::ApplicationWindow, file: &Path, dir: &Path) {
     let _ = std::fs::create_dir_all(dir);
     let name = file
@@ -996,19 +972,18 @@ fn save_as(window: &gtk::ApplicationWindow, file: &Path, dir: &Path) {
         .initial_folder(&gio::File::for_path(dir))
         .initial_name(name.as_str())
         .build();
-    window.set_visible(false);
-    let (window, file) = (window.clone(), file.to_owned());
-    dialog.save(
-        None::<&gtk::Window>,
-        None::<&gio::Cancellable>,
-        move |result| match result.ok().and_then(|f| f.path()) {
-            Some(dest) if std::fs::copy(&file, &dest).is_ok() => {
+    let file = file.to_owned();
+    dialog.save(Some(window), None::<&gio::Cancellable>, {
+        let window = window.clone();
+        move |result| {
+            if let Some(dest) = result.ok().and_then(|f| f.path())
+                && std::fs::copy(&file, &dest).is_ok()
+            {
                 let _ = std::fs::remove_file(&file);
                 window.close();
             }
-            _ => window.set_visible(true),
-        },
-    );
+        }
+    });
 }
 
 fn action(label: &str, classes: &[&str], on_click: impl Fn(&gtk::Button) + 'static) -> gtk::Button {

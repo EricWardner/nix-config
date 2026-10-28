@@ -7,11 +7,6 @@ hl.layer_rule({
 	blur = true,
 	ignore_alpha = 0.3,
 })
--- capture-preview (a finished recording) covers the monitor: 20% dimming,
--- the panel's shadow on that (up to 60% together), and the panel (82%).
--- Only the panel should frost; at 0.3 the shadow frosted too, a blurred
--- band round the panel with a hard outer edge.
-hl.layer_rule({ match = { namespace = "^capture-preview$" }, blur = true, ignore_alpha = 0.7 })
 -- mako's notification cards: frosted too, sliding in from the right edge
 -- they're anchored to.
 hl.layer_rule({ match = { namespace = "notifications" }, blur = true, ignore_alpha = 0.3, animation = "slide right" })
@@ -57,9 +52,10 @@ hl.window_rule({
 	float = true,
 	move = { "(monitor_w-window_w-10)", 40 },
 })
--- Satty, annotating a screenshot, floats in the middle at the size it picks,
--- as does the preview's save dialog (it has no parent window to float over)
-hl.window_rule({ match = { class = "^(com.gabm.satty)$" }, float = true, center = true })
+-- capture-preview (a finished recording or screenshot) and Satty (annotating
+-- one) float in the middle at the size they pick, as does the preview's save
+-- dialog
+hl.window_rule({ match = { class = "^(io.github.capture-preview|com.gabm.satty)$" }, float = true, center = true })
 hl.window_rule({ match = { title = "^(Save Screenshot)$" }, float = true, center = true })
 -- Thunar floats. Its main windows ("<folder> - Thunar") open at a set size
 -- in the middle; its dialogs (copy progress, properties) keep their own size.
