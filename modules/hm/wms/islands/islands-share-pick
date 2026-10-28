@@ -1,0 +1,37 @@
+# islands-share-pick: the screen-share picker xdg-desktop-portal-hyprland
+# runs (its custom_picker_binary). The choice is made in the islands shell's
+# capture overlay (shell/Capture.qml), which answers through a pipe; this
+# turns the answer into the selection line the portal reads, granting the
+# restore token when the portal passes --allow-token. Printing nothing
+# cancels the share.
+
+flags=""
+[ "${1:-}" = --allow-token ] && flags=r
+
+reply=$(mktemp -u "${XDG_RUNTIME_DIR:?}/islands-share-XXXXXX")
+mkfifo "$reply"
+trap 'rm -f "$reply"' EXIT
+
+qs ipc -c islands call capture share "$reply" >/dev/null || exit 0
+# The portal waits on this picker, so it can't wait forever
+choice=$(timeout 600 cat "$reply") || exit 0
+
+case $choice in
+  screen:* | region:*)
+    printf '[SELECTION]%s/%s\n' "$flags" "$choice"
+    ;;
+  window:*)
+    choice=${choice#window:}
+    address=$((${choice%%$'\t'*}))
+    title=${choice#*$'\t'}
+    # Entries are HANDLE[HC>]CLASS[HT>]TITLE[HE>]ADDRESS[HA>]; the address
+    # is Hyprland's, in decimal (0 if the portal can't map it)
+    handle=$(printf '%s' "${XDPH_WINDOW_SHARING_LIST:-}" | awk -v RS='\\[HA>\\]' -F '\\[H[CTE]>\\]' -v address="$address" -v title="$title" '
+      $4 == address && address != 0 { print $1; found = 1; exit }
+      $3 == title && !byTitle { byTitle = $1 }
+      END { if (!found && byTitle) print byTitle }
+    ')
+    [ -n "$handle" ] && printf '[SELECTION]%s/window:%s\n' "$flags" "$handle"
+    ;;
+esac
+exit 0

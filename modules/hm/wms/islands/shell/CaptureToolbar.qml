@@ -18,6 +18,8 @@ Item {
 	readonly property bool targets: Capture.kind !== "colour" && Capture.kind !== "text"
 	readonly property string hint: {
 		const kind = Capture.kind;
+		if (kind === "share")
+			return Capture.target === "screen" ? "Click, or press Enter, to share this screen" : "Drag to share an area, or click a window";
 		if (kind === "colour")
 			return "Click to pick a colour";
 		if (kind === "text")
@@ -70,6 +72,16 @@ Item {
 				Row {
 					spacing: 8
 
+					BarText {
+						visible: Capture.kind === "share"
+						anchors.verticalCenter: parent.verticalCenter
+						leftPadding: 8
+						text: "Share"
+						color: Theme.ink
+						font.pixelSize: 13
+						font.weight: Font.DemiBold
+					}
+
 					Segmented {
 						visible: root.targets
 						options: [["area", "Area", Glyphs.rectangleDashed], ["screen", "Screen", Glyphs.display]]
@@ -80,6 +92,7 @@ Item {
 					Segmented {
 						id: kinds
 
+						visible: Capture.kind !== "share"
 						iconOnly: true
 						options: [["screenshot", "Screenshot", Glyphs.camera], ["record", "Record", Glyphs.circle], ["text", "Text", Glyphs.textViewfinder], ["colour", "Colour", Glyphs.eyedropper]]
 						chosen: Capture.kind
@@ -95,7 +108,10 @@ Item {
 						anchors.verticalCenter: parent.verticalCenter
 						primary: true
 						implicitHeight: 34
-						text: Capture.kind === "record" ? "Record" : "Capture"
+						text: ({
+								"record": "Record",
+								"share": "Share"
+							})[Capture.kind] ?? "Capture"
 						onClicked: root.takeScreen()
 					}
 

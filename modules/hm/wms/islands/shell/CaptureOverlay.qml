@@ -42,7 +42,9 @@ PanelWindow {
 					"y": c.at[1] - m.y,
 					"width": c.size[0],
 					"height": c.size[1],
-					"stableId": c.stableId
+					"stableId": c.stableId,
+					"address": c.address,
+					"title": c.title
 				}));
 	}
 

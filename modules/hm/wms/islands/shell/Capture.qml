@@ -10,15 +10,19 @@ import Quickshell.Io
 // area, a window or a screen, and what to do with it: a screenshot (to the
 // preview), a recording, its text, or a colour. islands-capture does the
 // work. A recording counts down and runs in the centre island (RecordMode),
-// in a scope of its own, so restarting the shell doesn't end it.
+// in a scope of its own, so restarting the shell doesn't end it. The same
+// overlay is the screen-share picker: islands-share-pick asks for a choice
+// of window, area or screen, and gets it back through a pipe.
 Singleton {
 	id: root
 
-	property string kind: "screenshot" // screenshot, record, text, colour
+	property string kind: "screenshot" // screenshot, record, text, colour, share
 	property string target: "area" // area, screen
 	property string phase: "idle" // idle, freezing, choosing, countdown, recording
 
 	readonly property bool choosing: phase === "choosing"
+	// The pipe islands-share-pick waits on, while a share is being chosen
+	property string reply: ""
 	// Overlays whose screens are still being captured
 	property int capturing: 0
 
@@ -44,8 +48,26 @@ Singleton {
 		}
 	}
 
+	// A screen share's choice, as islands-share-pick reads it ("" cancels)
+	function answer(choice: string) {
+		Quickshell.execDetached(["sh", "-c", "[ -p \"$1\" ] && printf '%s\\n' \"$2\" >\"$1\"", "sh", reply, choice]);
+		reply = "";
+	}
+
+	function share(pipe: string) {
+		if (phase !== "idle") {
+			reply = pipe;
+			answer("");
+			return;
+		}
+		reply = pipe;
+		open("share", "area");
+	}
+
 	function cancel() {
 		freezeTimeout.stop();
+		if (reply !== "")
+			answer("");
 		if (phase === "countdown")
 			countdownTimer.stop();
 		if (phase !== "recording")
@@ -67,7 +89,14 @@ Singleton {
 		const scale = monitor.scale;
 		const pixels = [rect.x, rect.y, rect.width, rect.height].map(v => Math.round(v * scale));
 		phase = "idle";
-		if (kind === "screenshot") {
+		if (kind === "share") {
+			if (target === "screen")
+				answer("screen:" + screen.name);
+			else if (window)
+				answer("window:" + window.address + "\t" + window.title);
+			else
+				answer("region:" + screen.name + "@" + [rect.x, rect.y, rect.width, rect.height].map(Math.round).join(","));
+		} else if (kind === "screenshot") {
 			// From the window itself, so the parts covered or off screen are in it
 			if (window)
 				run(["window", window.stableId]);
@@ -126,7 +155,7 @@ Singleton {
 		onTriggered: {
 			if (root.phase === "freezing") {
 				console.warn("capture: a screen sent no frame");
-				root.phase = "idle";
+				root.cancel();
 			}
 		}
 	}
@@ -264,6 +293,11 @@ Singleton {
 		// kind: screenshot, record, text or colour; target: area or screen
 		function open(kind: string, target: string): void {
 			root.open(kind, target);
+		}
+
+		// For islands-share-pick: the choice is written to `pipe`
+		function share(pipe: string): void {
+			root.share(pipe);
 		}
 
 		// Closes the overlay, or ends a countdown

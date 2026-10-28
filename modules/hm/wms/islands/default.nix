@@ -67,6 +67,15 @@ let
     ];
     text = builtins.readFile ./islands-capture;
   };
+  islandsSharePick = pkgs.writeShellApplication {
+    name = "islands-share-pick";
+    runtimeInputs = with pkgs; [
+      quickshell
+      coreutils
+      gawk
+    ];
+    text = builtins.readFile ./islands-share-pick;
+  };
   systemMonitor = pkgs.writeShellScriptBin "system-monitor" ''
     exec ${pkgs.ghostty}/bin/ghostty --class=com.mitchellh.ghostty.btop -e ${pkgs.btop}/bin/btop
   '';
@@ -118,6 +127,13 @@ in
     ];
 
     xdg.configFile."quickshell/islands".source = ./shell;
+
+    # Screen shares are chosen in the shell's capture overlay. Joined to the
+    # restore-token setting from the Hyprland module; the portal reads it at
+    # start.
+    xdg.configFile."hypr/xdph.conf".text = ''
+      screencopy:custom_picker_binary = ${islandsSharePick}/bin/islands-share-pick
+    '';
 
     # The stylix theme for shell/Theme.qml, and this machine's settings for
     # shell/Config.qml. They live outside the config directory so a checkout
