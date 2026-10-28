@@ -10,6 +10,9 @@ Item {
 	id: root
 
 	default property alias modes: stage.data
+	// Over the capture overlay's frozen screen, which Hyprland can't blur
+	// behind, the island frosts it itself; it must fill the island's parent
+	property Item backdrop: null
 
 	readonly property var modeList: Array.from(stage.children).filter(child => child.isMode)
 	readonly property IslandMode current: modeList.length === 0 ? null : modeList.reduce((best, mode) => mode.active && mode.priority > best.priority ? mode : best, modeList[0])
@@ -44,6 +47,38 @@ Item {
 		Behavior on opacity {
 			NumberAnimation {
 				duration: 300
+			}
+		}
+	}
+
+	Loader {
+		anchors.fill: parent
+		active: root.backdrop !== null
+
+		sourceComponent: Item {
+			MultiEffect {
+				anchors.fill: parent
+				source: ShaderEffectSource {
+					sourceItem: root.backdrop
+					sourceRect: Qt.rect(root.x, root.y, root.width, root.height)
+				}
+				autoPaddingEnabled: false
+				blurEnabled: true
+				blur: 1
+				blurMax: 32
+				maskEnabled: true
+				maskSource: shape
+				maskThresholdMin: 0.5
+				maskSpreadAtMin: 1
+			}
+
+			Rectangle {
+				id: shape
+
+				anchors.fill: parent
+				radius: glass.radius
+				visible: false
+				layer.enabled: true
 			}
 		}
 	}

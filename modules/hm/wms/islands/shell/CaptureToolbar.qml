@@ -1,17 +1,15 @@
 import QtQuick
-import QtQuick.Effects
 
-// The centre island grown into the capture toolbar, over the frozen bar
-// where the clock was: what to take (an area or the screen) and
-// what to do with it (a screenshot, a recording, its text, a colour), and
-// under them, how to choose
+// The centre island over the frozen bar, grown from the clock into the
+// capture toolbar as it grows into the calendar: what to take (an area or
+// the screen) and what to do with it (a screenshot, a recording, its text,
+// a colour), and under them, how to choose
 Item {
 	id: root
 
-	// The frozen screen behind, at the toolbar's parent's origin: frosted
-	// here, as Hyprland frosts behind the islands, since the toolbar is over
-	// the overlay's own picture of the screen, not over the screen
+	// The frozen screen, filling this item, for the island to frost
 	property Item backdrop
+	property bool open: false
 
 	signal takeScreen
 
@@ -30,108 +28,93 @@ Item {
 		return "Drag to select, or click a window";
 	}
 
-	implicitWidth: glass.width
-	implicitHeight: glass.height
+	Island {
+		id: island
 
-	RectangularShadow {
-		anchors.fill: glass
-		radius: glass.radius
-		offset.y: 10
-		blur: 30
-		color: Qt.rgba(0, 0, 0, 0.35)
-	}
+		backdrop: root.backdrop
+		anchors.horizontalCenter: parent.horizontalCenter
+		y: Theme.barTop + 2
+		// Hidden at rest, where the frozen bar under it shows the clock, and
+		// shown from the first frame it grows, so it grows out of that clock
+		opacity: root.open ? 1 : 0
 
-	MultiEffect {
-		anchors.fill: glass
-		source: ShaderEffectSource {
-			sourceItem: root.backdrop
-			sourceRect: Qt.rect(root.x + glass.x, root.y + glass.y, glass.width, glass.height)
-			hideSource: false
+		Behavior on opacity {
+			enabled: !root.open
+
+			NumberAnimation {
+				duration: 120
+			}
 		}
-		autoPaddingEnabled: false
-		blurEnabled: true
-		blur: 1
-		blurMax: 32
-		maskEnabled: true
-		maskSource: glassShape
-		maskThresholdMin: 0.5
-		maskSpreadAtMin: 1
-	}
 
-	Rectangle {
-		id: glassShape
+		ClockMode {}
 
-		width: glass.width
-		height: glass.height
-		radius: glass.radius
-		visible: false
-		layer.enabled: true
-	}
+		IslandMode {
+			active: root.open
+			priority: 10
+			islandWidth: column.implicitWidth + 16
+			islandHeight: column.implicitHeight + 16
+			cornerRadius: 26
 
-	Rectangle {
-		id: glass
+			// Clicks on the glass stop here, short of the screen under it
+			MouseArea {
+				anchors.fill: parent
+			}
 
-		width: column.implicitWidth + 16
-		height: column.implicitHeight + 16
-		radius: 26
-		color: Theme.grownFill
-		border.width: 1
-		border.color: Theme.grownRim
+			Column {
+				id: column
 
-		Column {
-			id: column
+				x: 8
+				y: 8
+				spacing: 6
 
-			x: 8
-			y: 8
-			spacing: 6
+				Row {
+					spacing: 8
 
-			Row {
-				spacing: 8
+					Segmented {
+						visible: root.targets
+						options: [["area", "Area", Glyphs.rectangleDashed], ["screen", "Screen", Glyphs.display]]
+						chosen: Capture.target
+						onPicked: value => Capture.target = value
+					}
 
-				Segmented {
-					visible: root.targets
-					options: [["area", "Area", Glyphs.rectangleDashed], ["screen", "Screen", Glyphs.display]]
-					chosen: Capture.target
-					onPicked: value => Capture.target = value
-				}
+					Segmented {
+						id: kinds
 
-				Segmented {
-					id: kinds
+						iconOnly: true
+						options: [["screenshot", "Screenshot", Glyphs.camera], ["record", "Record", Glyphs.circle], ["text", "Text", Glyphs.textViewfinder], ["colour", "Colour", Glyphs.eyedropper]]
+						chosen: Capture.kind
+						onPicked: value => {
+							Capture.kind = value;
+							if (value === "text")
+								Capture.target = "area";
+						}
+					}
 
-					iconOnly: true
-					options: [["screenshot", "Screenshot", Glyphs.camera], ["record", "Record", Glyphs.circle], ["text", "Text", Glyphs.textViewfinder], ["colour", "Colour", Glyphs.eyedropper]]
-					chosen: Capture.kind
-					onPicked: value => {
-						Capture.kind = value;
-						if (value === "text")
-							Capture.target = "area";
+					PillButton {
+						visible: root.targets && Capture.target === "screen"
+						anchors.verticalCenter: parent.verticalCenter
+						primary: true
+						implicitHeight: 34
+						text: Capture.kind === "record" ? "Record" : "Capture"
+						onClicked: root.takeScreen()
+					}
+
+					PillButton {
+						anchors.verticalCenter: parent.verticalCenter
+						implicitWidth: 34
+						implicitHeight: 34
+						text: "×"
+						onClicked: Capture.cancel()
 					}
 				}
 
-				PillButton {
-					visible: root.targets && Capture.target === "screen"
-					anchors.verticalCenter: parent.verticalCenter
-					primary: true
-					implicitHeight: 34
-					text: Capture.kind === "record" ? "Record" : "Capture"
-					onClicked: root.takeScreen()
+				BarText {
+					leftPadding: 8
+					rightPadding: 8
+					text: [root.hint, root.targets ? "Space: " + (Capture.target === "screen" ? "area" : "screen") : "", "Esc: cancel"].filter(part => part !== "").join("   ·   ")
+					color: Theme.inkDim
+					font.pixelSize: 12
 				}
-
-				PillButton {
-					anchors.verticalCenter: parent.verticalCenter
-					implicitWidth: 34
-					implicitHeight: 34
-					text: "×"
-					onClicked: Capture.cancel()
-				}
-			}
-
-			BarText {
-				leftPadding: 8
-				rightPadding: 8
-				text: [root.hint, root.targets ? "Space: " + (Capture.target === "screen" ? "area" : "screen") : "", "Esc: cancel"].filter(part => part !== "").join("   ·   ")
-				color: Theme.inkDim
-				font.pixelSize: 12
 			}
 		}
 	}
@@ -142,7 +125,7 @@ Item {
 
 		visible: segment !== null
 		x: at.x - width / 2
-		y: glass.height + 8
+		y: island.y + island.height + 8
 		width: tipText.implicitWidth + 20
 		height: 24
 		radius: 12

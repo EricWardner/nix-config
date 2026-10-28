@@ -105,14 +105,26 @@ PanelWindow {
 		target: Capture
 
 		function onPhaseChanged() {
-			if (Capture.phase !== "freezing")
-				return;
-			root.selection = Qt.rect(0, 0, 0, 0);
-			root.dragging = false;
-			root.hovered = null;
-			root.pointer = Qt.point(-100, -100);
-			root.taking = false;
+			if (Capture.phase === "freezing") {
+				root.selection = Qt.rect(0, 0, 0, 0);
+				root.dragging = false;
+				root.hovered = null;
+				root.pointer = Qt.point(-100, -100);
+				root.taking = false;
+			} else if (Capture.choosing) {
+				dimIn.restart();
+			}
 		}
+	}
+
+	NumberAnimation {
+		id: dimIn
+
+		target: shade
+		property: "opacity"
+		from: 0
+		to: 1
+		duration: 150
 	}
 
 	Item {
@@ -148,6 +160,7 @@ PanelWindow {
 			readonly property color dim: Qt.rgba(0.02, 0.03, 0.06, 0.5)
 
 			anchors.fill: parent
+			opacity: 0
 
 			Rectangle {
 				width: parent.width
@@ -310,10 +323,9 @@ PanelWindow {
 		}
 
 		CaptureToolbar {
-			visible: root.focused
+			anchors.fill: parent
+			open: Capture.choosing && root.focused
 			backdrop: frozenView
-			anchors.horizontalCenter: parent.horizontalCenter
-			y: Theme.barTop + 2
 			onTakeScreen: root.take(root.whole(), null)
 		}
 
