@@ -1,10 +1,10 @@
 import QtQuick
 import Quickshell.Hyprland
 
-// The status island at rest: Do Not Disturb while it's on, recording, the
-// camera, the microphone, Bluetooth while it's on, the network, the volume,
-// the control centre's switches, and the battery. The network, Bluetooth and
-// volume open the control centre on their page, the switches on its first.
+// The status island at rest: recording, the camera, the microphone,
+// Bluetooth while it's on, the network, the volume, the control centre's
+// switches, and the battery. The network, Bluetooth and volume open the
+// control centre on their page, the switches on its first.
 IslandMode {
 	id: root
 
@@ -25,12 +25,6 @@ IslandMode {
 
 		anchors.centerIn: parent
 		spacing: 10
-
-		BarIcon {
-			visible: Inbox.dnd
-			glyph: Glyphs.moonFill
-			onClicked: Inbox.dnd = false
-		}
 
 		// Start a recording (choosing what to record), or stop it; Super+R
 		// does the same. A right click opens the last one.

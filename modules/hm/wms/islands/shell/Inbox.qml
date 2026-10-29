@@ -25,6 +25,8 @@ Singleton {
 	property var queue: []
 	// Held back while the screen is shared
 	property var held: []
+	// Kept quiet by Do Not Disturb since it went on
+	property var quiet: []
 	// The popup is under the pointer: hold it there
 	property bool hovered: false
 
@@ -90,8 +92,10 @@ Singleton {
 		for (let i = 0; i < kept.length - 20; i++)
 			kept[i].dismiss();
 		n.closed.connect(() => forget(n));
-		if (dnd && !breaksThrough(n))
+		if (dnd && !breaksThrough(n)) {
+			quiet = quiet.concat([n]);
 			return;
+		}
 		// The open notification centre lists it already
 		if (Desktop.panel === "centre" && !breaksThrough(n))
 			return;
@@ -126,6 +130,7 @@ Singleton {
 	function forget(n: Notification) {
 		queue = queue.filter(q => q !== n && q !== null);
 		held = held.filter(h => h !== n);
+		quiet = quiet.filter(q => q !== n);
 		if (popup === n)
 			next();
 	}
@@ -226,7 +231,11 @@ Singleton {
 	// the runtime directory, so a restart of the shell keeps it
 	readonly property string dndFile: Quickshell.env("XDG_RUNTIME_DIR") + "/islands/dnd"
 
-	onDndChanged: Quickshell.execDetached(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && echo \"$2\" >\"$1\"", "sh", dndFile, dnd ? "on" : "off"])
+	onDndChanged: {
+		if (!dnd)
+			quiet = [];
+		Quickshell.execDetached(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && echo \"$2\" >\"$1\"", "sh", dndFile, dnd ? "on" : "off"]);
+	}
 
 	FileView {
 		path: root.dndFile

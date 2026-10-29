@@ -62,6 +62,10 @@ PanelWindow {
 		Region {
 			item: held.visible ? held : null
 		}
+
+		Region {
+			item: dnd.visible ? dnd : null
+		}
 	}
 
 	Item {
@@ -110,6 +114,16 @@ PanelWindow {
 		monitor: bar.monitor
 		anchors.horizontalCenter: parent.horizontalCenter
 		y: Theme.barTop + 2
+	}
+
+	// Beside the clock while it's at rest
+	DndIsland {
+		id: dnd
+
+		monitor: bar.monitor
+		visible: Inbox.dnd && centre.resting
+		x: centre.x + centre.width + 8
+		y: centre.y
 	}
 
 	HeldPanel {
