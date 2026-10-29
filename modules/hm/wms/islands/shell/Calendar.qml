@@ -1,6 +1,7 @@
 import QtQuick
 
-// A month, with today ringed in the accent; the arrows step through months.
+// A month, with today ringed in the accent and a dot under each day with an
+// event (Events); the arrows step through months, and a click picks a day.
 // Weeks start on the locale's first day.
 Item {
 	id: root
@@ -8,6 +9,7 @@ Item {
 	required property date today
 	// Months away from today's
 	property int offset: 0
+	property date selected: today
 
 	readonly property date month: new Date(today.getFullYear(), today.getMonth() + offset, 1)
 	// Qt counts Monday 1 to Sunday 7; JavaScript, Sunday 0 to Saturday 6
@@ -19,14 +21,19 @@ Item {
 		const cells = [];
 		for (let i = 0; i < lead; i++)
 			cells.push({
-				"day": 0,
-				"today": false
+				"day": 0
 			});
-		for (let d = 1; d <= count; d++)
+		for (let d = 1; d <= count; d++) {
+			const date = new Date(month.getFullYear(), month.getMonth(), d);
 			cells.push({
 				"day": d,
-				"today": isThisMonth && d === today.getDate()
+				"date": date,
+				"today": isThisMonth && d === today.getDate(),
+				"selected": date.toDateString() === selected.toDateString(),
+				"busy": Events.busy[Events.dayKey(date)] === true,
+				"past": date < new Date(today.getFullYear(), today.getMonth(), today.getDate())
 			});
+		}
 		return cells;
 	}
 
@@ -123,23 +130,42 @@ Item {
 					required property var modelData
 
 					width: grid.width / 7
-					height: 28
+					height: 34
 
 					Rectangle {
-						visible: modelData.today
-						anchors.centerIn: parent
+						id: circle
+
+						visible: modelData.today || (modelData.selected ?? false)
+						anchors.horizontalCenter: parent.horizontalCenter
+						y: 1
 						width: 26
 						height: 26
 						radius: 13
-						color: Theme.accent
+						color: modelData.today ? Theme.accent : Theme.alpha(Theme.ink, 0.12)
 					}
 
 					BarText {
-						anchors.centerIn: parent
+						anchors.centerIn: circle
 						text: modelData.day > 0 ? modelData.day : ""
 						color: Theme.ink
 						font.pixelSize: 13
 						font.weight: modelData.today ? Font.Bold : Font.Normal
+					}
+
+					Rectangle {
+						visible: modelData.busy ?? false
+						anchors.horizontalCenter: parent.horizontalCenter
+						y: 29
+						width: 4
+						height: 4
+						radius: 2
+						color: modelData.past ? Theme.alpha(Theme.ink, 0.4) : Theme.ink
+					}
+
+					MouseArea {
+						anchors.fill: parent
+						enabled: modelData.day > 0
+						onClicked: root.selected = modelData.date
 					}
 				}
 			}

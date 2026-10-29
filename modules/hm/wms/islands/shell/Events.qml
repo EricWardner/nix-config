@@ -10,7 +10,8 @@ import Quickshell.Io
 Singleton {
 	id: root
 
-	// [{title, start, end, allDay, join, location}], times in ms, by start
+	// [{title, start, end, allDay, join, page, location}], times in ms, by
+	// start; `page` is the event in Google Calendar
 	property var events: []
 	property real now: Date.now()
 	readonly property var today: events.filter(e => sameDay(e.start) || (e.allDay && e.start <= now && e.end > now))
@@ -21,9 +22,34 @@ Singleton {
 	readonly property var reminder: later.find(e => e.start - now <= 60 * 1000 && now - e.start <= 2 * 60 * 1000 && !dismissed.includes(key(e))) ?? null
 	// Reminders closed, by event
 	property var dismissed: []
+	// The days with an event, by dayKey: the calendar's dots
+	readonly property var busy: {
+		const days = {};
+		for (const event of events) {
+			const day = new Date(event.start);
+			day.setHours(0, 0, 0, 0);
+			// An all-day event marks each day it spans (its end is the day after)
+			do {
+				days[dayKey(day)] = true;
+				day.setDate(day.getDate() + 1);
+			} while (event.allDay && day.getTime() < event.end);
+		}
+		return days;
+	}
 
 	function sameDay(ms: real): bool {
 		return new Date(ms).toDateString() === new Date(now).toDateString();
+	}
+
+	function dayKey(day: date): string {
+		return day.getFullYear() + "-" + day.getMonth() + "-" + day.getDate();
+	}
+
+	// A day's events: all-day ones, then the rest by time
+	function onDay(day: date): var {
+		const start = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+		const end = start + 24 * 60 * 60 * 1000;
+		return events.filter(e => e.start < end && (e.allDay ? e.end > start : e.start >= start)).sort((a, b) => (b.allDay - a.allDay) || (a.start - b.start));
 	}
 
 	function key(event: var): string {
@@ -48,6 +74,11 @@ Singleton {
 	function join(event: var) {
 		if (event?.join)
 			Desktop.launch(["xdg-open", event.join]);
+	}
+
+	function open(event: var) {
+		if (event?.page)
+			Desktop.launch(["xdg-open", event.page]);
 	}
 
 	function dismiss(event: var) {

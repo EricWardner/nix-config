@@ -2,16 +2,18 @@ import QtQuick
 import Quickshell
 
 // The notification centre: the clock's island grown into the time and date,
-// a calendar, UTC and what's playing, beside the rest of today's meetings
-// and the notification history with Do Not Disturb and "Clear all". A click on the clock opens it (or `qs ipc
-// -c islands call panel toggle centre`); Esc or a click outside closes it,
-// as a popup does.
+// a calendar with a dot on each day with an event, the picked day's events,
+// UTC and what's playing, beside the notification history with Do Not
+// Disturb and "Clear all". A click on the clock opens it (or `qs ipc -c
+// islands call panel toggle centre`); Esc or a click outside closes it, as
+// a popup does.
 IslandMode {
 	id: root
 
 	priority: 40
 	islandWidth: 724
-	islandHeight: 476
+	// Taller for a day with more events than fit
+	islandHeight: Math.max(476, (content.item?.sideHeight ?? 0) + 36)
 
 	focus: current
 	onCurrentChanged: if (current)
@@ -27,11 +29,15 @@ IslandMode {
 	// Built while it shows (and as it fades): on every bar it would
 	// otherwise keep a calendar and the notification list up to date unseen
 	Loader {
+		id: content
+
 		anchors.fill: parent
 		anchors.margins: 18
 		active: root.current || root.visible
 
 		sourceComponent: Row {
+			readonly property real sideHeight: side.implicitHeight
+
 			spacing: 18
 
 			Column {
@@ -69,6 +75,12 @@ IslandMode {
 						width: parent.width - 24
 						today: clock.date
 					}
+				}
+
+				DayEvents {
+					width: parent.width
+					day: calendar.selected
+					onOpened: Desktop.closePanel()
 				}
 
 				// The other zone the old bar's clock could show
@@ -109,13 +121,6 @@ IslandMode {
 				width: parent.width - side.width - parent.spacing
 				height: parent.height
 				spacing: 8
-
-				TodayEvents {
-					id: today
-
-					width: parent.width
-					onJoined: Desktop.closePanel()
-				}
 
 				Item {
 					id: header
@@ -207,7 +212,7 @@ IslandMode {
 				// Newest first
 				ListView {
 					width: parent.width
-					height: parent.height - header.height - parent.spacing - (today.visible ? today.height + parent.spacing : 0)
+					height: parent.height - header.height - parent.spacing
 					clip: true
 					spacing: 8
 					boundsBehavior: Flickable.StopAtBounds
