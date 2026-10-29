@@ -29,24 +29,23 @@ IslandMode {
 		spacing: 10
 
 		Rectangle {
+			id: dot
+
 			anchors.verticalCenter: parent.verticalCenter
 			width: 9
 			height: 9
 			radius: 5
 			color: Theme.red
 
-			SequentialAnimation on opacity {
+			// A blink a second, not an animation: one repaints every bar at
+			// the screen's rate, and hands the recording a frame to encode
+			// each time
+			Timer {
 				running: Capture.recorder === "on"
-				loops: Animation.Infinite
-
-				NumberAnimation {
-					to: 0.3
-					duration: 550
-				}
-				NumberAnimation {
-					to: 1
-					duration: 550
-				}
+				interval: 1000
+				repeat: true
+				onTriggered: dot.opacity = dot.opacity < 1 ? 1 : 0.3
+				onRunningChanged: dot.opacity = 1
 			}
 		}
 

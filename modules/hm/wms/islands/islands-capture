@@ -74,14 +74,18 @@ preview() {
 thumbnail() {
   local name seconds
   name="$thumbs/$(basename "${1%.*}")"
-  [ -s "$name.jpg" ] && return
+  # Made again once the video is newer (Trim keeps its name)
+  [ -s "$name.jpg" ] && [ "$name.jpg" -nt "$1" ] && return
   mkdir -p "$thumbs"
   # Half a second in, past a recording's first blank frames, unless it's
   # shorter than that
   ffmpeg -loglevel error -y -ss 0.5 -i "$1" -frames:v 1 -vf scale=360:-2 "$name.jpg" ||
     ffmpeg -loglevel error -y -i "$1" -frames:v 1 -vf scale=360:-2 "$name.jpg"
-  seconds=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$1" | cut -d. -f1)
-  printf '%d:%02d\n' $((seconds / 60)) $((seconds % 60)) >"$name.duration"
+  seconds=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$1" | cut -d. -f1) || true
+  case $seconds in
+    '' | *[!0-9]*) rm -f "$name.duration" ;;
+    *) printf '%d:%02d\n' $((seconds / 60)) $((seconds % 60)) >"$name.duration" ;;
+  esac
 }
 
 crop() {
@@ -189,8 +193,8 @@ case ${1:-} in
       case $file in
         *.mp4)
           name="$thumbs/$(basename "${file%.*}")"
-          # Sky shows three
-          [ "$n" -le 3 ] && thumbnail "$file"
+          # Sky shows three; a broken video mustn't end the listing
+          if [ "$n" -le 3 ]; then thumbnail "$file" || true; fi
           printf '%s\t%s\t%s\n' "$file" "$name.jpg" "$(cat "$name.duration" 2>/dev/null)"
           ;;
         *) printf '%s\n' "$file" ;;
@@ -198,7 +202,10 @@ case ${1:-} in
     done
     ;;
   last)
-    file=$(find "$HOME/Videos" -maxdepth 1 -name '*.mp4' -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
+    # Not the one still being recorded
+    recording=$(cat "$current" 2>/dev/null) || true
+    file=$(find "$HOME/Videos" -maxdepth 1 -name '*.mp4' -printf '%T@ %p\n' 2>/dev/null | sort -rn | cut -d' ' -f2- |
+      grep -v -x -F "${recording:-/}" | head -1) || true
     if [ ! -f "$file" ]; then
       notify-send -a "Screen recording" -t 3000 "Recording not found" "No recordings in ~/Videos"
       exit 1

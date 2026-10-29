@@ -38,24 +38,22 @@ IslandMode {
 			spacing: 8
 
 			Rectangle {
+				id: dot
+
 				anchors.verticalCenter: parent.verticalCenter
 				width: 9
 				height: 9
 				radius: 4.5
 				color: Theme.orange
 
-				SequentialAnimation on opacity {
+				// A blink a second, not an animation, which would repaint every
+				// bar at the screen's rate for the whole call
+				Timer {
 					running: root.current
-					loops: Animation.Infinite
-
-					NumberAnimation {
-						to: 0.35
-						duration: 800
-					}
-					NumberAnimation {
-						to: 1
-						duration: 800
-					}
+					interval: 1000
+					repeat: true
+					onTriggered: dot.opacity = dot.opacity < 1 ? 1 : 0.35
+					onRunningChanged: dot.opacity = 1
 				}
 			}
 

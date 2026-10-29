@@ -111,7 +111,7 @@ Singleton {
 
 	// Where the shared window is now: Hyprland sends no event for a resize
 	Timer {
-		interval: 250
+		interval: 1000
 		repeat: true
 		running: root.active && root.window !== null
 		onTriggered: {

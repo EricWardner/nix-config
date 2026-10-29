@@ -176,11 +176,11 @@ Singleton {
 			next();
 	}
 
+	// Invoking closes it (Quickshell does) unless it asks to stay
 	function invoke(n: Notification, action: NotificationAction) {
+		const stays = n.resident;
 		action.invoke();
-		if (!n.resident)
-			n.dismiss();
-		else if (popup === n)
+		if (stays && popup === n)
 			next();
 	}
 

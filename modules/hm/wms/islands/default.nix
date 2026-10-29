@@ -187,8 +187,15 @@ in
         After = [ "hyprland-session.target" ];
         PartOf = [ "hyprland-session.target" ];
         StartLimitIntervalSec = 0;
-        # A new config: restart into it on switch
-        X-Restart-Triggers = [ "${./shell}" ];
+        # A new config, agent or watchers: restart into them on switch. The
+        # theme and settings files are read once, at start.
+        X-Restart-Triggers = [
+          "${./shell}"
+          "${islandsAgent}"
+          "${barTools}"
+          "${config.xdg.configFile."islands/theme.json".source}"
+          "${config.xdg.configFile."islands/config.json".source}"
+        ];
       };
       Service = {
         ExecStart = "${pkgs.quickshell}/bin/qs -c islands";

@@ -22,8 +22,9 @@ Island {
 		}
 	}
 
+	// Not over the control centre, whose sliders show the level already
 	OsdMode {
-		active: Osd.showing && root.focused
+		active: Osd.showing && root.focused && !(Desktop.panel === "control" && Desktop.panelOn === root.monitor)
 	}
 
 	RecordMode {

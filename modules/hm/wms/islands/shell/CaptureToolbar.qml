@@ -98,7 +98,8 @@ Item {
 						chosen: Capture.kind
 						onPicked: value => {
 							Capture.kind = value;
-							if (value === "text")
+							// They read a point or an area, never the whole screen
+							if (value === "text" || value === "colour")
 								Capture.target = "area";
 						}
 					}
