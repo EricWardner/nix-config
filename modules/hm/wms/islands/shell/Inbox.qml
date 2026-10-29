@@ -79,8 +79,9 @@ Singleton {
 	readonly property int duration: {
 		if (!popup || breaksThrough(popup))
 			return 0;
-		// The spec's milliseconds, which Quickshell gives in seconds
-		return popup.expireTimeout > 0 ? popup.expireTimeout * 1000 : 5000;
+		// The spec's milliseconds, as Quickshell passes them on (its docs say
+		// seconds)
+		return popup.expireTimeout > 0 ? popup.expireTimeout : 5000;
 	}
 
 	function receive(n: Notification) {
