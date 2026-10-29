@@ -24,7 +24,8 @@ IslandMode {
 		id: row
 
 		anchors.centerIn: parent
-		spacing: 10
+		// The gap between icons' ink (BarIcon is as wide as its glyph)
+		spacing: 24
 
 		// Start a recording (choosing what to record), or stop it; Super+R
 		// does the same. A right click opens the last one.
@@ -32,6 +33,7 @@ IslandMode {
 			readonly property bool on: Capture.recorder !== "off"
 
 			glyph: on ? Glyphs.stopCircle : Glyphs.recordCircle
+			glyphs: [Glyphs.recordCircle, Glyphs.stopCircle]
 			tint: on ? Theme.red : Theme.fg
 			onClicked: mouse => {
 				if (mouse.button === Qt.RightButton)
@@ -47,10 +49,10 @@ IslandMode {
 			readonly property bool off: Desktop.webcam === "muted" || Desktop.webcam === "disconnected"
 
 			glyph: off ? Glyphs.videoSlash : Glyphs.video
+			glyphs: [Glyphs.video, Glyphs.videoSlash]
 			tint: off ? Theme.dim : Theme.fg
 			live: Desktop.webcam === "in-use"
-			// The ~3px gap from the lens that waybar's dot had (measured)
-			dotShift: 6.5
+			dotShift: 2
 			onClicked: mouse => Desktop.launch(mouse.button === Qt.RightButton ? ["camera-settings"] : ["sudo", "/run/current-system/sw/bin/webcam-toggle", "toggle"])
 		}
 
@@ -62,6 +64,7 @@ IslandMode {
 					"muted": Glyphs.micSlash,
 					"ptt-muted": Glyphs.micSlashFill
 				})[Desktop.mic] ?? Glyphs.mic
+			glyphs: [Glyphs.mic, Glyphs.micSlash, Glyphs.micSlashFill]
 			tint: Desktop.mic === "muted" ? Theme.dim : Desktop.mic === "ptt-muted" ? Theme.red : Theme.fg
 			live: Desktop.mic === "ptt-active"
 			onClicked: mouse => Desktop.launch(mouse.button === Qt.LeftButton ? ["micctl", "ptt"] : mouse.button === Qt.MiddleButton ? ["micctl", "mute"] : ["pavucontrol"])
@@ -70,6 +73,7 @@ IslandMode {
 		BarIcon {
 			visible: Net.adapter !== null && Net.bluetoothOn
 			glyph: Net.bluetoothConnected.length > 0 ? Glyphs.bluetoothConnected : Glyphs.bluetooth
+			glyphs: [Glyphs.bluetooth, Glyphs.bluetoothConnected]
 			onClicked: root.open("bluetooth")
 		}
 
@@ -77,6 +81,7 @@ IslandMode {
 		// connected, amber behind a login page
 		BarIcon {
 			glyph: Net.wired ? Glyphs.ethernet : Net.current ? Glyphs.wifi : Glyphs.wifiSlash
+			glyphs: [Glyphs.ethernet, Glyphs.wifi, Glyphs.wifiSlash]
 			tint: Net.limited ? Theme.yellow : Net.wired || Net.current ? Theme.fg : Theme.dim
 			onClicked: root.open("wifi")
 		}

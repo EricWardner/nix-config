@@ -17,6 +17,7 @@ BarIcon {
 
 	visible: device.isLaptopBattery
 	glyph: plugged ? Glyphs.batteryBolt : level < 13 ? Glyphs.battery0 : level < 38 ? Glyphs.battery25 : level < 63 ? Glyphs.battery50 : level < 88 ? Glyphs.battery75 : Glyphs.battery100
+	glyphs: [Glyphs.battery0, Glyphs.battery25, Glyphs.battery50, Glyphs.battery75, Glyphs.battery100, Glyphs.batteryBolt]
 	value: showPercent ? Math.round(level) + "%" : ""
 	// Green on power; on battery, yellow from 30% and red, blinking, from 15%
 	tint: plugged ? Theme.green : level <= 15 ? (blink.on ? Theme.red : Theme.fg) : level <= 30 ? Theme.yellow : Theme.fg
