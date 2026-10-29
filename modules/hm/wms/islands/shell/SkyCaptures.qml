@@ -15,7 +15,8 @@ SkyCard {
 	property var listing: []
 
 	spacing: 10
-	visible: captures.length > 0
+	// Off a shared screen: they're pictures of private things
+	visible: captures.length > 0 && !Sharing.active
 
 	onShownChanged: {
 		if (shown)

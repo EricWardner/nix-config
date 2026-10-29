@@ -9,7 +9,7 @@ SkyCard {
 
 	readonly property MprisPlayer player: Media.player
 
-	visible: player !== null
+	visible: player !== null && !Sharing.active
 
 	// Mpris doesn't announce the position as it moves
 	Timer {

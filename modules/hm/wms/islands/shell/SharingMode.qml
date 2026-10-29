@@ -115,11 +115,14 @@ IslandMode {
 			onClicked: Desktop.launch(["micctl", "ptt"])
 		}
 
+		// A click turns the cameras off or on, as the bar's camera does
 		Detail {
 			visible: Desktop.webcam !== "" && Desktop.webcam !== "disconnected"
 			glyph: Desktop.webcam === "muted" ? Glyphs.videoSlash : Glyphs.video
 			label: Desktop.webcam === "in-use" ? "On" : "Off"
 			live: Desktop.webcam === "in-use"
+			clickable: true
+			onClicked: Desktop.launch(["sudo", "/run/current-system/sw/bin/webcam-toggle", "toggle"])
 		}
 
 		Detail {

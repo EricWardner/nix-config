@@ -113,7 +113,7 @@ case ${1:-} in
     show_shot "$file"
     ;;
   text)
-    img=$(mktemp --suffix=.png)
+    img=$(mktemp -p "$XDG_RUNTIME_DIR" --suffix=.png)
     trap 'rm -f "$img" "$frozen"' EXIT
     crop "$2" "$3" "$4" "$5" "$6" "$img"
     # Up to 3x the logical size: tesseract reads small UI text better than
@@ -130,7 +130,9 @@ case ${1:-} in
       exit 0
     fi
     printf '%s' "$out" | wl-copy
-    notify -t 6000 "$kind copied" "$(head -n 4 <<<"$out" | cut -c1-80 | escape)"
+    # Transient: a QR code is often a secret (a 2FA or Wi-Fi code), not to
+    # be kept in the notification centre
+    notify -t 6000 --transient "$kind copied" "$(head -n 4 <<<"$out" | cut -c1-80 | escape)"
     ;;
   colour)
     hex=$(magick "$2" -crop "1x1+$3+$4" -depth 8 txt:- | grep -o '#[0-9A-Fa-f]\{6\}' | head -1 | tr 'A-F' 'a-f')

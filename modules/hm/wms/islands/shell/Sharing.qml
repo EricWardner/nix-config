@@ -8,14 +8,15 @@ import Quickshell.Services.Pipewire
 import Quickshell.Wayland
 
 // Sharing the screen in a call: on while xdg-desktop-portal-hyprland's
-// stream is linked to an app. Chrome drops and restarts its stream as a
-// share begins, so a share only ends once the stream's been gone 2s.
+// stream exists. Chrome drops and restarts its stream as a share begins, so
+// a share only ends once the stream's been gone 2s.
 Singleton {
 	id: root
 
-	// The link exists only while the share runs. Its state isn't usable:
-	// Quickshell reports Unlinked for links nothing tracks.
-	readonly property bool streaming: Pipewire.linkGroups.values.some(group => (group.source?.name ?? "").includes("xdg-desktop-portal-hyprland"))
+	// The stream's node, not its link to the app: Chrome unlinks it while
+	// the share stays open (it does for a while after a camera comes back),
+	// and can pick it up again at any moment
+	readonly property bool streaming: Pipewire.nodes.values.some(node => node.name.includes("xdg-desktop-portal-hyprland"))
 	property bool active: false
 	property real since: 0
 	// Stop sharing was pressed, and the stream hasn't gone yet
@@ -56,10 +57,12 @@ Singleton {
 	}
 
 	// As Chrome's own Stop button would: it takes its "<host> is sharing your
-	// screen." bar being closed as one, and Gather sees an ordinary stop
+	// screen." bar being closed as one, and Gather sees an ordinary stop. A
+	// host, not a page's title that mentions sharing ("Alice is sharing…"),
+	// which would close a browser window and its tabs.
 	function stop() {
 		for (const toplevel of ToplevelManager.toplevels.values) {
-			if (toplevel.title.includes(" is sharing ")) {
+			if (/^[^ ]+\.[^ ]+ is sharing /.test(toplevel.title)) {
 				toplevel.close();
 				stopping = true;
 				stopTimeout.restart();
@@ -90,6 +93,11 @@ Singleton {
 		if (active)
 			return;
 		stopping = false;
+		// Or the next share, if it can't be identified, frames this one's
+		kind = "screen";
+		output = "";
+		title = "";
+		window = null;
 		if (Desktop.panel === "held")
 			Desktop.closePanel();
 	}

@@ -262,7 +262,11 @@ Singleton {
 			const newest = root.history[root.history.length - 1];
 			if (!newest)
 				return "none";
+			if (Sharing.active && !root.breaksThrough(newest))
+				return "held";
 			root.queue = root.queue.filter(n => n !== newest);
+			if (root.popup && root.popup !== newest)
+				root.queue = [root.popup].concat(root.queue);
 			root.popup = newest;
 			return "restored";
 		}
