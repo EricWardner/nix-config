@@ -35,6 +35,7 @@ Singleton {
 	readonly property string globe: String.fromCodePoint(0x1001AA)
 	readonly property string folder: String.fromCodePoint(0x100215)
 	readonly property string chevronRight: String.fromCodePoint(0x100193)
+	readonly property string controlCentre: String.fromCodePoint(0x10070A)
 	readonly property string rectangleDashed: String.fromCodePoint(0x100941)
 	readonly property string display: String.fromCodePoint(0x1008B9)
 	readonly property string camera: String.fromCodePoint(0x10031E)

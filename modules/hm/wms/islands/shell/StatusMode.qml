@@ -2,9 +2,9 @@ import QtQuick
 import Quickshell.Hyprland
 
 // The status island at rest: Do Not Disturb while it's on, recording, the
-// camera, the microphone, Bluetooth while it's on, the network, the volume
-// and the battery. The network, Bluetooth
-// and volume open the control centre on their page.
+// camera, the microphone, Bluetooth while it's on, the network, the volume,
+// the control centre's switches, and the battery. The network, Bluetooth and
+// volume open the control centre on their page, the switches on its first.
 IslandMode {
 	id: root
 
@@ -89,6 +89,11 @@ IslandMode {
 
 		VolumeIcon {
 			onOpenSound: root.open("sound")
+		}
+
+		BarIcon {
+			glyph: Glyphs.controlCentre
+			onClicked: root.open("")
 		}
 
 		BatteryIcon {}
