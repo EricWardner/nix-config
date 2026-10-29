@@ -35,9 +35,10 @@ PanelWindow {
 	// (hypr/lua/rules.lua), so the bare bar's text gets no halo
 	WlrLayershell.namespace: "islands-bar"
 	// An open panel takes the keyboard (Esc closes it), and a click anywhere
-	// but the bar closes it, as a popup's would. A question takes it too, but
-	// stays until it's answered.
-	WlrLayershell.keyboardFocus: panelOpen || asking ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+	// but the bar closes it, as a popup's would. A question holds the keyboard
+	// until it's answered or Esc'd: it can turn up unasked (a keyring's
+	// password), and has to be typed into without a click first.
+	WlrLayershell.keyboardFocus: asking ? WlrKeyboardFocus.Exclusive : panelOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
 	HyprlandFocusGrab {
 		windows: [bar]

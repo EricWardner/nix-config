@@ -6,7 +6,14 @@ publish = false
 description = "NetworkManager's secret agent and BlueZ's pairing agent for the islands shell"
 
 [dependencies]
+aes = "0.8"
 async-channel = "2"
+base64 = "0.22"
+cbc = "0.1"
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
+getrandom = "0.3"
+hkdf = "0.12"
+num-bigint = "0.4"
 serde_json = "1"
+sha2 = "0.10"
 zbus = "5.19"

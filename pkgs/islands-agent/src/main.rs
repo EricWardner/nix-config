@@ -1,5 +1,6 @@
-//! islands-agent: NetworkManager's secret agent and BlueZ's pairing agent
-//! for the islands shell, which asks their questions in its centre island.
+//! islands-agent: NetworkManager's secret agent, BlueZ's pairing agent and
+//! gnome-keyring's prompter for the islands shell, which asks their
+//! questions in its centre island.
 //!
 //! The shell runs it as a child process, and they talk in JSON lines. Each
 //! question goes out on stdout (`{"id":1,"kind":"wifi","ssid":…}`), and its
@@ -7,6 +8,9 @@
 //! cancel). A question the asker gave up on goes out as
 //! `{"id":1,"kind":"cancel"}`. It exits when stdin closes, so it never
 //! outlives the shell, and the agents go with it.
+
+mod exchange;
+mod prompter;
 
 use std::collections::HashMap;
 use std::io::{BufRead as _, Write as _};
@@ -415,7 +419,27 @@ async fn keep_registered(conn: &Connection, service: &'static str) {
     }
 }
 
+/// Takes the keyring's prompts from gcr's dialog, or queues for them while
+/// it's up
+async fn prompt_for_keyring(shell: Shell) -> zbus::Result<Connection> {
+    let session = Connection::session().await?;
+    session
+        .object_server()
+        .at(prompter::PATH, prompter::Prompter::new(shell))
+        .await?;
+    let flags = zbus::fdo::RequestNameFlags::ReplaceExisting.into();
+    match session
+        .request_name_with_flags(prompter::NAME, flags)
+        .await?
+    {
+        zbus::fdo::RequestNameReply::InQueue => eprintln!("queued for {}", prompter::NAME),
+        _ => eprintln!("registered as {}", prompter::NAME),
+    }
+    Ok(session)
+}
+
 async fn run(shell: Shell) -> zbus::Result<()> {
+    let _session = prompt_for_keyring(shell.clone()).await?;
     let conn = Connection::system().await?;
     conn.object_server()
         .at(

@@ -4,9 +4,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// The questions NetworkManager and BlueZ ask (a Wi-Fi password, a pairing
-// passkey), from islands-agent (pkgs/islands-agent), for the centre island
-// to ask in turn. The agent runs as this shell's child, so it stops with it,
+// The questions NetworkManager, BlueZ and gnome-keyring ask (a Wi-Fi
+// password, a pairing passkey, a keyring's password), from islands-agent
+// (pkgs/islands-agent), for the centre island to ask in turn. The agent runs as this shell's child, so it stops with it,
 // and it's restarted if it exits. A copy of the shell run by hand for
 // development can leave it out (ISLANDS_NO_AGENT=1), so it doesn't take
 // BlueZ's default agent from the running one.
@@ -17,7 +17,7 @@ Singleton {
 	property var questions: []
 	readonly property var current: questions[0] ?? null
 	// The questions PromptMode knows how to ask
-	readonly property var kinds: ["wifi", "bt-confirm", "bt-display", "bt-pin", "bt-passkey", "bt-authorize"]
+	readonly property var kinds: ["wifi", "bt-confirm", "bt-display", "bt-pin", "bt-passkey", "bt-authorize", "keyring"]
 
 	// `value` is null to cancel
 	function answer(id: int, value: var) {

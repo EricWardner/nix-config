@@ -1,17 +1,21 @@
 import QtQuick
 import Quickshell.Bluetooth
 
-// A question from NetworkManager or BlueZ (Agent), over everything else in
-// the centre island until it's answered: a Wi-Fi password (and a login, for
-// a work network), or a pairing step (confirm a passkey, type one shown
-// here on a keyboard, enter a PIN, allow a device in). Enter answers it, Esc
-// cancels it; it keeps the keyboard while it shows.
+// A question from NetworkManager, BlueZ or gnome-keyring (Agent), over
+// everything else in the centre island until it's answered: a Wi-Fi
+// password (and a login, for a work network), a pairing step (confirm a
+// passkey, type one shown here on a keyboard, enter a PIN, allow a device
+// in), or a keyring's password (to unlock it, or a new one) or yes or no.
+// Enter answers it, Esc cancels it; it keeps the keyboard while it shows.
 IslandMode {
 	id: root
 
 	readonly property var question: Agent.current
 	readonly property string kind: question?.kind ?? ""
 	readonly property bool wifi: kind === "wifi"
+	readonly property bool keyring: kind === "keyring"
+	readonly property bool keyringPassword: keyring && !question.confirm
+	readonly property bool newPassword: keyringPassword && question.new
 	readonly property bool typed: kind === "bt-pin" || kind === "bt-passkey"
 	readonly property bool shows: kind === "bt-confirm" || kind === "bt-display"
 	// The Bluetooth device it's about, to cancel its pairing from here and to
@@ -35,26 +39,36 @@ IslandMode {
 			return "Passkey for " + q.device;
 		case "bt-authorize":
 			return "Allow " + q.device + " to connect?";
+		case "keyring":
+			return q.message || q.title;
 		}
 		return "";
 	}
-	readonly property string detail: kind === "bt-confirm" ? "Check that it shows this number" : ""
+	readonly property string detail: kind === "bt-confirm" ? "Check that it shows this number" : keyring ? question.description : ""
 	readonly property bool ready: {
 		if (wifi)
 			return question.login ? identity.text !== "" && secret.text !== "" : secret.text.length >= 8;
-		if (typed)
+		if (newPassword)
+			return secret.text === confirmation.text;
+		if (typed || keyringPassword)
 			return secret.text !== "";
 		return true;
 	}
 
+	// Enter reaches here twice, from the field and then from this
 	function submit() {
-		if (!ready)
+		if (!question || !ready)
 			return;
 		const id = question.id;
 		if (wifi)
 			Agent.answer(id, {
 				"identity": identity.text,
 				"secret": secret.text
+			});
+		else if (keyring)
+			Agent.answer(id, {
+				"secret": secret.text,
+				"chosen": choice.on
 			});
 		else if (typed)
 			Agent.answer(id, secret.text);
@@ -79,16 +93,23 @@ IslandMode {
 	Keys.onEscapePressed: cancel()
 	Keys.onReturnPressed: submit()
 
-	// A new question: empty fields, and the keyboard where it's typed
-	onQuestionChanged: {
-		identity.text = question?.identity ?? "";
-		secret.text = "";
+	function focusFirst() {
 		if (question?.login)
 			identity.focusField();
-		else if (wifi || typed)
+		else if (wifi || typed || keyringPassword)
 			secret.focusField();
 		else
 			forceActiveFocus();
+	}
+
+	// A new question: empty fields, and the keyboard where it's typed, once
+	// the fields it asks for are showing (a hidden one can't take it)
+	onQuestionChanged: {
+		identity.text = question?.identity ?? "";
+		secret.text = "";
+		confirmation.text = "";
+		choice.on = question?.chosen ?? false;
+		Qt.callLater(focusFirst);
 	}
 	onCurrentChanged: if (current)
 		questionChanged()
@@ -123,7 +144,7 @@ IslandMode {
 
 				BarText {
 					anchors.centerIn: parent
-					text: root.wifi ? Glyphs.wifi : Glyphs.bluetooth
+					text: root.wifi ? Glyphs.wifi : root.keyring ? Glyphs.lock : Glyphs.bluetooth
 					color: Theme.ink
 					font.pixelSize: 15
 				}
@@ -144,9 +165,22 @@ IslandMode {
 
 				BarText {
 					visible: text !== ""
+					width: parent.width
 					text: root.detail
 					color: Theme.inkDim
 					font.pixelSize: 12
+					wrapMode: Text.Wrap
+				}
+
+				// The last password didn't work, or the new ones don't match
+				BarText {
+					visible: text !== ""
+					width: parent.width
+					text: root.keyring ? root.question.warning : ""
+					color: Theme.red
+					font.pixelSize: 12
+					font.weight: Font.DemiBold
+					wrapMode: Text.Wrap
 				}
 			}
 		}
@@ -181,12 +215,46 @@ IslandMode {
 		Field {
 			id: secret
 
-			visible: root.wifi || root.typed
+			visible: root.wifi || root.typed || root.keyringPassword
 			width: parent.width
-			password: root.wifi
+			password: root.wifi || root.keyring
 			numeric: root.kind === "bt-passkey"
-			placeholder: root.wifi ? "Password" : root.kind === "bt-pin" ? "PIN" : "Passkey"
+			placeholder: root.wifi || root.keyring ? "Password" : root.kind === "bt-pin" ? "PIN" : "Passkey"
+			onAccepted: root.newPassword ? confirmation.focusField() : root.submit()
+		}
+
+		Field {
+			id: confirmation
+
+			visible: root.newPassword
+			width: parent.width
+			password: true
+			placeholder: "Confirm password"
 			onAccepted: root.submit()
+		}
+
+		// gnome-keyring's offer to remember the password (and so unlock the
+		// keyring at login)
+		Row {
+			visible: root.keyring && root.question.choice !== ""
+			width: parent.width
+			spacing: 10
+
+			Switch {
+				id: choice
+
+				anchors.verticalCenter: parent.verticalCenter
+				onToggled: on = !on
+			}
+
+			BarText {
+				width: parent.width - choice.width - 10
+				anchors.verticalCenter: parent.verticalCenter
+				text: root.keyring ? root.question.choice : ""
+				color: Theme.ink
+				font.pixelSize: 12
+				wrapMode: Text.Wrap
+			}
 		}
 
 		Row {
@@ -194,7 +262,7 @@ IslandMode {
 			spacing: 6
 
 			PillButton {
-				text: root.kind === "bt-authorize" ? "Deny" : "Cancel"
+				text: root.kind === "bt-authorize" ? "Deny" : root.keyring ? root.question.cancel || "Cancel" : "Cancel"
 				onClicked: root.cancel()
 			}
 
@@ -202,7 +270,7 @@ IslandMode {
 				visible: root.kind !== "bt-display"
 				primary: true
 				enabled: root.ready
-				text: root.wifi ? "Join" : root.kind === "bt-authorize" ? "Allow" : "Pair"
+				text: root.wifi ? "Join" : root.keyring ? root.question.continue || "Continue" : root.kind === "bt-authorize" ? "Allow" : "Pair"
 				onClicked: root.submit()
 			}
 		}
