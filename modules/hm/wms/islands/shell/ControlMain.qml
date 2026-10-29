@@ -19,6 +19,13 @@ Column {
 	readonly property bool ptt: Desktop.mic.startsWith("ptt")
 	readonly property bool cameraOff: Desktop.webcam === "muted" || Desktop.webcam === "disconnected"
 
+	// "3h 20m", "45m"
+	function duration(seconds: real): string {
+		const minutes = Math.round(seconds / 60);
+		const hours = Math.floor(minutes / 60);
+		return hours > 0 ? hours + "h " + minutes % 60 + "m" : minutes + "m";
+	}
+
 	spacing: 10
 
 	PwObjectTracker {
@@ -284,12 +291,28 @@ Column {
 
 			BarText {
 				visible: text !== ""
+				// "62% · 17 W · Empty in 3h 20m", "96% · Charging at 45 W · Full
+				// in 19m"; UPower leaves a time out (0) until it has an estimate
 				text: {
 					const device = UPower.displayDevice;
 					if (!device?.isLaptopBattery)
 						return "";
-					const level = Math.round(device.percentage * 100);
-					return level + "% · " + (UPower.onBattery ? "On battery" : "On power");
+					const parts = [Math.round(device.percentage * 100) + "%"];
+					const rate = Math.abs(device.changeRate);
+					const watts = rate >= 10 ? Math.round(rate) + " W" : rate.toFixed(1) + " W";
+					if (device.state === UPowerDeviceState.Charging) {
+						parts.push(rate > 0 ? "Charging at " + watts : "Charging");
+						if (device.timeToFull > 0)
+							parts.push("Full in " + root.duration(device.timeToFull));
+					} else if (UPower.onBattery) {
+						if (rate > 0)
+							parts.push(watts);
+						if (device.timeToEmpty > 0)
+							parts.push("Empty in " + root.duration(device.timeToEmpty));
+					} else {
+						parts.push("On power");
+					}
+					return parts.join(" · ");
 				}
 				color: Theme.inkDim
 				font.pixelSize: 12
