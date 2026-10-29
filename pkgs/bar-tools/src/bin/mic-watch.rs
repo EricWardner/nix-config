@@ -1,4 +1,4 @@
-//! waybar `custom/mic`: prints whether the microphones are live and whether
+//! mic-watch: tells the bar whether the microphones are live and whether
 //! push-to-talk is armed, whenever either changes. "Muted" means every
 //! capture source is muted: apps can pin their stream to a non-default
 //! source, so the default's state alone can lie.
@@ -11,8 +11,7 @@ use std::time::{Duration, Instant};
 use bar_tools::inotify::{self, WatchFlags};
 use bar_tools::pa::{self, Conn, Frame};
 use bar_tools::ptt;
-use bar_tools::sf;
-use bar_tools::waybar::Emitter;
+use bar_tools::state::Emitter;
 use pulseaudio::protocol::{Command, SubscriptionMask};
 use rustix::event::{PollFd, PollFlags};
 
@@ -77,7 +76,7 @@ fn main() {
     loop {
         let Err(err) = run(&mut out, &armed);
         bar_tools::warn!("mic-watch: {err}; reconnecting");
-        out.emit(sf::MIC_SLASH, "Audio server unavailable", "muted");
+        out.emit("muted");
         std::thread::sleep(RECONNECT);
     }
 }
@@ -162,20 +161,10 @@ fn query(conn: &mut Conn) -> Result<Mics, pa::Error> {
 }
 
 fn render(out: &mut Emitter, mics: Mics, armed: bool) {
-    let (text, tooltip, class) = match (mics, armed) {
-        (Mics::None, _) => (sf::MIC_SLASH, "No microphones", "muted"),
-        (Mics::AllMuted, true) => (
-            sf::MIC_SLASH_FILL,
-            "Push-to-talk armed — hold Right Alt to talk",
-            "ptt-muted",
-        ),
-        (Mics::Live, true) => (sf::MIC, "Push-to-talk — talking", "ptt-active"),
-        (Mics::AllMuted, false) => (
-            sf::MIC_SLASH,
-            "Mic muted (left-click for push-to-talk)",
-            "muted",
-        ),
-        (Mics::Live, false) => (sf::MIC, "Mic live (left-click for push-to-talk)", "on"),
-    };
-    out.emit(text, tooltip, class);
+    out.emit(match (mics, armed) {
+        (Mics::None, _) | (Mics::AllMuted, false) => "muted",
+        (Mics::AllMuted, true) => "ptt-muted",
+        (Mics::Live, true) => "ptt-active",
+        (Mics::Live, false) => "on",
+    });
 }

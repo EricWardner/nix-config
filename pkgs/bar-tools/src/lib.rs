@@ -1,27 +1,12 @@
 //! Shared pieces of the bar tools: a minimal PulseAudio-protocol client, the
-//! waybar output helper, and small system utilities.
+//! watchers' output, and small system utilities.
 
 use std::time::Duration;
 
 use rustix::event::{PollFd, Timespec};
 
 pub mod pa;
-pub mod waybar;
-
-/// The watchers' icons: SF Symbols, which ship inside SF Pro (the bar's
-/// font) as private-use characters and match its weight and baseline. The
-/// code points come from this SF Pro build and could move if the font is
-/// updated; the waybar module names the rest of the bar's set the same way.
-pub mod sf {
-    // mic.slash.fill marks push-to-talk armed but silent. Camera in use and
-    // push-to-talk talking keep the outline icon, which waybar.css marks
-    // with a green dot.
-    pub const VIDEO: &str = "\u{100349}"; // video
-    pub const VIDEO_SLASH: &str = "\u{10034D}"; // video.slash
-    pub const MIC: &str = "\u{1002B0}"; // mic
-    pub const MIC_SLASH: &str = "\u{1002B2}"; // mic.slash
-    pub const MIC_SLASH_FILL: &str = "\u{1002B3}"; // mic.slash.fill
-}
+pub mod state;
 
 /// Push-to-talk's one piece of shared state: it is armed while the file
 /// `$XDG_RUNTIME_DIR/ptt/armed` exists. pttd mutes and unmutes the mics as

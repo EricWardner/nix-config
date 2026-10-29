@@ -1,4 +1,4 @@
-//! waybar `custom/webcam`: prints whether cameras are present, enabled (see
+//! webcam-watch: tells the bar whether cameras are present, enabled (see
 //! webcam-toggle) and streaming, whenever that changes.
 //!
 //! "Streaming" comes from sysfs: a UVC camera moves its VideoStreaming
@@ -16,8 +16,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use bar_tools::inotify::{self, WatchFlags};
-use bar_tools::sf;
-use bar_tools::waybar::Emitter;
+use bar_tools::state::Emitter;
 use rustix::event::{PollFd, PollFlags};
 
 /// How often to look for streaming while a camera is enabled.
@@ -183,11 +182,10 @@ fn attr(dir: &Path, name: &str) -> Option<String> {
 }
 
 fn render(out: &mut Emitter, state: State) {
-    let (text, tooltip, class) = match state {
-        State::NoCamera => (sf::VIDEO_SLASH, "No cameras found", "disconnected"),
-        State::Off => (sf::VIDEO_SLASH, "Webcam muted", "muted"),
-        State::InUse => (sf::VIDEO, "Webcam in use", "in-use"),
-        State::Available => (sf::VIDEO, "Webcam available", "available"),
-    };
-    out.emit(text, tooltip, class);
+    out.emit(match state {
+        State::NoCamera => "disconnected",
+        State::Off => "muted",
+        State::InUse => "in-use",
+        State::Available => "available",
+    });
 }

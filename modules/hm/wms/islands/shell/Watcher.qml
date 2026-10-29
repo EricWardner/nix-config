@@ -2,8 +2,8 @@ import QtQuick
 import Quickshell.Io
 
 // One of bar-tools' watchers: a long-running process that prints a line of
-// JSON (waybar's format) whenever its state changes, and otherwise sleeps.
-// Restarted 5 s after it exits, as waybar's restart-interval did.
+// JSON ({"class": …}) whenever its state changes, and otherwise sleeps.
+// Restarted 5 s after it exits.
 Process {
 	id: root
 

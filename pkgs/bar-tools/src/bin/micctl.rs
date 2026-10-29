@@ -1,4 +1,4 @@
-//! micctl: microphone controls for waybar clicks and keybinds.
+//! micctl: microphone controls for the bar's clicks and keybinds.
 //!
 //!   micctl ptt    arm or disarm push-to-talk (pttd does the muting)
 //!   micctl mute   mute every microphone, or unmute them all if all are
