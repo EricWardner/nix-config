@@ -2,6 +2,7 @@
   pkgs,
   config,
   lib,
+  user,
   ...
 }:
 let
@@ -15,7 +16,11 @@ let
 
   batteryCheckScript = pkgs.writeShellApplication {
     name = "power-profile-battery-check";
-    runtimeInputs = [ pkgs.power-profiles-daemon ];
+    runtimeInputs = [
+      pkgs.power-profiles-daemon
+      pkgs.libnotify
+      pkgs.util-linux
+    ];
     text = ''
       # Use battery status as source of truth instead of AC online,
       # since some USB-C sources (e.g. monitor KVM) report AC online
@@ -31,13 +36,27 @@ let
         CAPACITY=$(cat /sys/class/power_supply/BAT0/capacity)
       fi
 
+      AC_ONLINE=0
+      for supply in /sys/class/power_supply/*; do
+        if [ "$(cat "$supply/type")" = Mains ] && [ "$(cat "$supply/online")" = 1 ]; then
+          AC_ONLINE=1
+        fi
+      done
+
       case "$BAT_STATUS" in
-        Charging|Full|"Not charging") WANT=performance ;;
+        Charging|Full|"Not charging") WANT=performance WHY="Plugged in" ;;
         *)
-          if [ "$CAPACITY" -le ${toString cfg.powerSaverThreshold} ]; then
-            WANT=power-saver
+          # A full battery on a charger reports Discharging (the EC lets it
+          # drift), so a source that can't keep up only counts once it's
+          # pulled the battery below 95%
+          if [ "$AC_ONLINE" = 1 ] && [ "$CAPACITY" -ge 95 ]; then
+            WANT=performance WHY="Plugged in"
+          elif [ "$CAPACITY" -le ${toString cfg.powerSaverThreshold} ]; then
+            WANT=power-saver WHY="Battery at $CAPACITY%"
+          elif [ "$AC_ONLINE" = 1 ]; then
+            WANT=balanced WHY="The charger isn't keeping up"
           else
-            WANT=balanced
+            WANT=balanced WHY="On battery"
           fi
           ;;
       esac
@@ -47,7 +66,18 @@ let
       LAST=$(cat /run/power-profile-auto 2>/dev/null || true)
       [ "$WANT" = "$LAST" ] && exit 0
       echo "$WANT" >/run/power-profile-auto
-      [ "$(powerprofilesctl get)" != "$WANT" ] && powerprofilesctl set "$WANT" || true
+      if [ "$(powerprofilesctl get)" != "$WANT" ] && powerprofilesctl set "$WANT"; then
+        case "$WANT" in
+          performance) TITLE=Performance ;;
+          balanced) TITLE=Balanced ;;
+          *) TITLE="Power saver" ;;
+        esac
+        # This runs as root; the notification belongs on the user's session bus
+        uid=$(id -u ${user.username})
+        setpriv --reuid="$uid" --regid="$(id -g ${user.username})" --init-groups \
+          env DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" \
+          notify-send --transient --app-name=Power "$TITLE" "$WHY" || true
+      fi
     '';
   };
 in
@@ -56,7 +86,7 @@ in
     autoSwitch = mkEnableOption "Automatic power profile switching based on AC/battery state";
     powerSaverThreshold = mkOption {
       type = types.int;
-      default = 20;
+      default = 30;
       description = "Battery percentage at which to switch to power-saver mode.";
     };
   };
