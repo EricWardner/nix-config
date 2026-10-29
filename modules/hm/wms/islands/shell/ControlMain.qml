@@ -172,7 +172,7 @@ Column {
 				spacing: 6
 
 				BarText {
-					text: "Display"
+					text: "Brightness"
 					color: Theme.inkDim
 					font.pixelSize: 12
 				}
