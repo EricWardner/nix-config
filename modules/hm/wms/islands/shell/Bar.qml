@@ -92,19 +92,10 @@ PanelWindow {
 			monitor: bar.monitor
 		}
 
-		// The focused window's app, by class
-		BarText {
-			readonly property var window: Hyprland.activeToplevel
-			readonly property string windowClass: window ? (window.wayland?.appId ?? window.lastIpcObject?.class ?? "") : ""
-			readonly property string name: ({
-					"": "Desktop",
-					"com.mitchellh.ghostty": "Ghostty",
-					"com.mitchellh.ghostty.btop": "btop"
-				})[windowClass] ?? windowClass
-
+		FocusedApp {
+			monitor: bar.monitor
 			leftPadding: 18
 			anchors.verticalCenter: parent.verticalCenter
-			text: name.length > 20 ? name.slice(0, 19) + "…" : name
 		}
 	}
 
