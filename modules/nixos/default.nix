@@ -162,7 +162,14 @@ in
       };
       sudo.enable = true;
       auditd.enable = true;
-      audit.enable = true;
+      audit = {
+        enable = true;
+        # Whoever signals PID 1 to power off (SIGRTMIN+4, 38)
+        rules = [
+          "-a always,exit -F arch=b64 -S kill,rt_sigqueueinfo -F a0=1 -F a1=38 -k pid1-poweroff"
+          "-a always,exit -F arch=b64 -S tgkill -F a0=1 -F a2=38 -k pid1-poweroff"
+        ];
+      };
       rtkit.enable = true;
       pam.services = {
         hyprlock = { };
