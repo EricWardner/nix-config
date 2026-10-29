@@ -48,6 +48,7 @@ let
     record = "${islands} capture record";
     # The islands shell is the notification server (wms/islands)
     doNotDisturb = "${islands} notifications toggleDnd";
+    controlCentre = "${islands} panel toggle control";
     notificationRestore = "${islands} notifications restore";
     # The bar's centre island shows any volume change for a moment
     # (wms/islands). Raising it unmutes, as swayosd's did; 150% at most.

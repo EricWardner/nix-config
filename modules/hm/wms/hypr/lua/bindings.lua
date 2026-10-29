@@ -22,6 +22,7 @@ local applications = {
 	{ "F2", cmd.keyboardDimmer },
 	{ "R", cmd.record },
 	{ "N", cmd.doNotDisturb },
+	{ "A", cmd.controlCentre },
 	{ "SHIFT + N", cmd.notificationRestore },
 }
 for _, binding in ipairs(applications) do
