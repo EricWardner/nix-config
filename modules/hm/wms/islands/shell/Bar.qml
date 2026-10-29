@@ -67,6 +67,10 @@ PanelWindow {
 		Region {
 			item: dnd.visible ? dnd : null
 		}
+
+		Region {
+			item: meeting.visible ? meeting : null
+		}
 	}
 
 	Item {
@@ -123,6 +127,16 @@ PanelWindow {
 		monitor: bar.monitor
 		visible: Inbox.dnd && centre.resting
 		x: centre.x + centre.width + 8
+		y: centre.y
+	}
+
+	// And the next meeting before it
+	EventIsland {
+		id: meeting
+
+		monitor: bar.monitor
+		visible: soon && centre.resting
+		x: centre.x - width - 8
 		y: centre.y
 	}
 

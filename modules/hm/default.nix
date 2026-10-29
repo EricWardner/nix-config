@@ -115,6 +115,7 @@
         jq
         yubikey-manager
         outfieldr
+        libsecret # secret-tool: the keyring from the shell
 
         # Clipboard
         grim

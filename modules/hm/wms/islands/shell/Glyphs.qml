@@ -52,6 +52,7 @@ Singleton {
 	readonly property string bluetoothOff: String.fromCodePoint(0xF00B2)
 	readonly property string ethernet: String.fromCodePoint(0xF0200)
 	readonly property string lock: String.fromCodePoint(0xF033E)
+	readonly property string calendar: String.fromCodePoint(0xF00ED)
 	readonly property string power: String.fromCodePoint(0xF0425)
 	// Wi-Fi signal, weakest to strongest
 	readonly property var wifiStrength: [0xF091F, 0xF0922, 0xF0925, 0xF0928].map(c => String.fromCodePoint(c))

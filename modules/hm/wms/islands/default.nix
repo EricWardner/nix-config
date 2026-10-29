@@ -75,6 +75,22 @@ let
     ];
     text = builtins.readFile ./islands-share-pick;
   };
+  # The work calendar's events for the bar (shell/Events.qml), from its
+  # secret iCal address in the keyring
+  islandsCalendar =
+    pkgs.writers.writePython3Bin "islands-calendar"
+      {
+        libraries = with pkgs.python3Packages; [
+          icalendar
+          recurring-ical-events
+        ];
+        flakeIgnore = [ "E501" ];
+      }
+      (
+        builtins.replaceStrings [ "@secretTool@" ] [ "${pkgs.libsecret}/bin/secret-tool" ] (
+          builtins.readFile ./islands-calendar.py
+        )
+      );
   # The control centre's load line opens it. The class must be a valid app
   # ID (with a dot) or ghostty ignores it; the floating rule in
   # hypr/lua/rules.lua matches it.
@@ -115,7 +131,7 @@ in
       # nixpkgs' build is in cache.nixos.org; the upstream flake's isn't,
       # and overriding it would compile it locally on every Qt update
       pkgs.quickshell
-      # micctl for keybinds; the rest are handy to run by hand when debugging
+      # micctl for keybinds, and the watchers the bar runs
       barTools
       gatherSymbol
       cameraSettings
@@ -124,6 +140,7 @@ in
       pkgs.brightnessctl
       islandsAgent
       islandsCapture
+      islandsCalendar
       # nm-connection-editor, behind the Wi-Fi page's "Network settings…"
       pkgs.networkmanagerapplet
     ];

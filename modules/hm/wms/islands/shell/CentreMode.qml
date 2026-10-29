@@ -2,8 +2,8 @@ import QtQuick
 import Quickshell
 
 // The notification centre: the clock's island grown into the time and date,
-// a calendar, UTC and what's playing, beside the notification history with
-// Do Not Disturb and "Clear all". A click on the clock opens it (or `qs ipc
+// a calendar, UTC and what's playing, beside the rest of today's meetings
+// and the notification history with Do Not Disturb and "Clear all". A click on the clock opens it (or `qs ipc
 // -c islands call panel toggle centre`); Esc or a click outside closes it,
 // as a popup does.
 IslandMode {
@@ -110,6 +110,13 @@ IslandMode {
 				height: parent.height
 				spacing: 8
 
+				TodayEvents {
+					id: today
+
+					width: parent.width
+					onJoined: Desktop.closePanel()
+				}
+
 				Item {
 					id: header
 
@@ -200,7 +207,7 @@ IslandMode {
 				// Newest first
 				ListView {
 					width: parent.width
-					height: parent.height - header.height - parent.spacing
+					height: parent.height - header.height - parent.spacing - (today.visible ? today.height + parent.spacing : 0)
 					clip: true
 					spacing: 8
 					boundsBehavior: Flickable.StopAtBounds
