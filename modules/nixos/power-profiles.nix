@@ -31,20 +31,23 @@ let
         CAPACITY=$(cat /sys/class/power_supply/BAT0/capacity)
       fi
 
-      CURRENT=$(powerprofilesctl get)
-
       case "$BAT_STATUS" in
-        Charging|Full|"Not charging")
-          [ "$CURRENT" != "performance" ] && powerprofilesctl set performance || true
-          ;;
+        Charging|Full|"Not charging") WANT=performance ;;
         *)
           if [ "$CAPACITY" -le ${toString cfg.powerSaverThreshold} ]; then
-            [ "$CURRENT" != "power-saver" ] && powerprofilesctl set power-saver || true
+            WANT=power-saver
           else
-            [ "$CURRENT" != "balanced" ] && powerprofilesctl set balanced || true
+            WANT=balanced
           fi
           ;;
       esac
+
+      # Only when that changes (plugged in, unplugged, the battery running
+      # low): a profile picked by hand stays until then
+      LAST=$(cat /run/power-profile-auto 2>/dev/null || true)
+      [ "$WANT" = "$LAST" ] && exit 0
+      echo "$WANT" >/run/power-profile-auto
+      [ "$(powerprofilesctl get)" != "$WANT" ] && powerprofilesctl set "$WANT" || true
     '';
   };
 in
@@ -59,12 +62,13 @@ in
   };
 
   config = mkIf cfg.autoSwitch {
-    # Trigger a profile check immediately on any power supply change.
-    # SYSTEMD_WANTS only acts when a device unit first becomes active
-    # (systemd.device(5)), so it never fires on change events for
-    # already-active power supplies — start the service directly instead.
+    # Trigger a profile check as soon as a charger comes or goes. The
+    # battery itself reports a change about every second, so it's left to
+    # the minutely timer. SYSTEMD_WANTS only acts when a device unit first
+    # becomes active (systemd.device(5)), so it never fires on change events
+    # for already-active power supplies — start the service directly instead.
     services.udev.extraRules = ''
-      SUBSYSTEM=="power_supply", ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start --no-block power-profile-battery-check.service"
+      SUBSYSTEM=="power_supply", ATTR{type}=="Mains|USB", ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start --no-block power-profile-battery-check.service"
     '';
 
     # Poll battery percentage every minute for power-saver threshold, and
