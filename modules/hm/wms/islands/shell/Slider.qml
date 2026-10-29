@@ -26,7 +26,7 @@ Item {
 			width: parent.width * root.shown
 			height: parent.height
 			radius: parent.radius
-			color: root.dimmed ? Theme.inkDim : Theme.ink
+			color: root.dimmed ? Theme.alpha(Theme.ink, 0.3) : Theme.ink
 		}
 	}
 

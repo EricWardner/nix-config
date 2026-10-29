@@ -67,8 +67,10 @@ Column {
 			width: (parent.width - parent.spacing) / 2
 			glyph: Glyphs.mic
 			title: "Push-to-talk"
-			subtitle: root.ptt ? "Hold Right Alt" : "Off"
+			subtitle: Desktop.mic === "ptt-active" ? "Talking" : root.ptt ? "Hold Right Alt" : "Off"
 			on: root.ptt
+			// Green while Right Alt is held, as the bar's mic gets its dot
+			tint: Desktop.mic === "ptt-active" ? Theme.green : Theme.accent
 			onToggled: Desktop.launch(["micctl", "ptt"])
 		}
 	}
@@ -148,8 +150,8 @@ Column {
 
 					BarText {
 						anchors.right: parent.right
-						text: root.ptt ? "Muted until you hold Right Alt" : root.source?.audio?.muted ? "Muted" : ""
-						color: Theme.inkDim
+						text: Desktop.mic === "ptt-active" ? "Talking" : root.ptt ? "Muted until you hold Right Alt" : root.source?.audio?.muted ? "Muted" : ""
+						color: Desktop.mic === "ptt-active" ? Theme.inkGreen : Theme.inkDim
 						font.pixelSize: 12
 					}
 				}
@@ -157,7 +159,7 @@ Column {
 				Slider {
 					width: parent.width
 					value: root.source?.audio?.volume ?? 0
-					dimmed: root.ptt || (root.source?.audio?.muted ?? false)
+					dimmed: Desktop.mic === "ptt-muted" || Desktop.mic === "muted"
 					onMoved: value => {
 						if (root.source?.audio)
 							root.source.audio.volume = value;

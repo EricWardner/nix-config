@@ -10,6 +10,8 @@ Rectangle {
 	property string title
 	property string subtitle
 	property bool on: false
+	// The badge's colour while it's on
+	property color tint: Theme.accent
 	property bool opens: false
 
 	signal toggled
@@ -36,7 +38,7 @@ Rectangle {
 		width: 32
 		height: 32
 		radius: 16
-		color: root.on ? Theme.accent : Theme.inkTrack
+		color: root.on ? root.tint : Theme.inkTrack
 
 		Behavior on color {
 			ColorAnimation {
