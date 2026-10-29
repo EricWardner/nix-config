@@ -418,7 +418,7 @@ in
     enableFirefoxIntegration = false; # Chrome, not Firefox
     systemd = {
       enable = true;
-      # Like waybar, only under a Hyprland session.
+      # Only under a Hyprland session
       target = "hyprland-session.target";
     };
     themes.islands = islandsTheme;

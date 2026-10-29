@@ -118,11 +118,7 @@
 
         # Clipboard
         grim
-        slurp
         wl-clipboard-rs
-
-        # Dev Tools
-        hyprpicker
 
         # Fonts: Nerd Font icons for text in any font (fonts.fontconfig
         # above), and Ghostty's font-codepoint-map

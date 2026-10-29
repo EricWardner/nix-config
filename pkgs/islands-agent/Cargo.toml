@@ -3,7 +3,7 @@ name = "islands-agent"
 version = "0.1.0"
 edition = "2024"
 publish = false
-description = "NetworkManager's secret agent and BlueZ's pairing agent for the islands shell"
+description = "NetworkManager's secret agent, BlueZ's pairing agent and gnome-keyring's prompter for the islands shell"
 
 [dependencies]
 aes = "0.8"

@@ -24,7 +24,6 @@ hl.window_rule({
 hl.window_rule({ match = { class = "(Alacritty|kitty)" }, scroll_touchpad = 1.5 })
 hl.window_rule({ match = { class = "com.mitchellh.ghostty" }, scroll_touchpad = 0.2 })
 
-hl.window_rule({ match = { title = "^(MainPicker)$" }, float = true })
 hl.window_rule({ match = { title = "^(Sign in to Security Device)$" }, float = true })
 -- Chrome's screen-share bar is titled "<host> is sharing your screen."; any
 -- Gather host matches, as the host has changed before (app.v2.gather.town).

@@ -11,8 +11,7 @@ BarIcon {
 	id: root
 
 	readonly property UPowerDevice device: UPower.displayDevice
-	// UPower reports 0-100; Quickshell may scale it to 0-1
-	readonly property real level: device.percentage <= 1 ? device.percentage * 100 : device.percentage
+	readonly property real level: device.percentage * 100
 	readonly property bool plugged: !UPower.onBattery
 	property bool showPercent: false
 

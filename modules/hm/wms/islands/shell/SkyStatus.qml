@@ -14,7 +14,7 @@ Rectangle {
 	readonly property var parts: {
 		const parts = [];
 		if (battery?.isLaptopBattery) {
-			const level = battery.percentage <= 1 ? battery.percentage * 100 : battery.percentage;
+			const level = battery.percentage * 100;
 			parts.push("Battery " + Math.round(level) + "% · " + (UPower.onBattery ? "on battery" : "on power"));
 		}
 		parts.push("CPU " + Metrics.cpu + "%", "Memory " + Metrics.memory + "%");

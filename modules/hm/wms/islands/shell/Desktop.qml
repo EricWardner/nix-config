@@ -11,9 +11,9 @@ import Quickshell.Io
 Singleton {
 	id: root
 
-	// The panel an island is grown into ("centre", the notification centre,
-	// or "control", the control centre) and the monitor it's open on: one at
-	// a time, anywhere
+	// The panel an island is grown into ("centre", the notification centre;
+	// "control", the control centre; "held", the notifications held during a
+	// share) and the monitor it's open on: one at a time, anywhere
 	property string panel: ""
 	property HyprlandMonitor panelOn: null
 	// The page showing (the control centre's "wifi", say); "" for its first
@@ -87,7 +87,8 @@ Singleton {
 	}
 
 	// Starts a command in its own transient scope, so it outlives the shell
-	// (a restart would otherwise take a recording with it)
+	// (a restart would otherwise take a preview window or a settings app
+	// with it)
 	function launch(command: list<string>) {
 		Quickshell.execDetached(["systemd-run", "--user", "--scope", "--collect", "--quiet", "--"].concat(command));
 	}

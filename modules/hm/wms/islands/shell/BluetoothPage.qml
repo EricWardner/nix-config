@@ -18,7 +18,7 @@ Column {
 	function battery(device: var): string {
 		if (!device.batteryAvailable)
 			return "";
-		return Math.round(device.battery <= 1 ? device.battery * 100 : device.battery) + "%";
+		return Math.round(device.battery * 100) + "%";
 	}
 
 	function iconFor(device: var): string {

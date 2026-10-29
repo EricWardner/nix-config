@@ -288,7 +288,7 @@ Column {
 					const device = UPower.displayDevice;
 					if (!device?.isLaptopBattery)
 						return "";
-					const level = Math.round(device.percentage <= 1 ? device.percentage * 100 : device.percentage);
+					const level = Math.round(device.percentage * 100);
 					return level + "% · " + (UPower.onBattery ? "On battery" : "On power");
 				}
 				color: Theme.inkDim

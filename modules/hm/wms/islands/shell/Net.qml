@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Bluetooth
 import Quickshell.Networking
 
-// Network and Bluetooth state for the tray island and the control centre,
+// Network and Bluetooth state for the status island and the control centre,
 // from Quickshell's NetworkManager and BlueZ services
 Singleton {
 	id: root
@@ -25,10 +25,9 @@ Singleton {
 	readonly property var bluetoothDevices: adapter ? Array.from(adapter.devices.values) : []
 	readonly property var bluetoothConnected: bluetoothDevices.filter(d => d.connected)
 
-	// 0 to 1 (NetworkManager's percentage, should Quickshell pass it on)
+	// 0 to 1
 	function strength(network: var): real {
-		const s = network?.signalStrength ?? 0;
-		return s > 1 ? s / 100 : s;
+		return network?.signalStrength ?? 0;
 	}
 
 	function strengthGlyph(network: var): string {

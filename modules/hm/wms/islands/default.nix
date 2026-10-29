@@ -12,8 +12,9 @@ let
   # Push-to-talk (pttd) and the status watchers the bar reads (pkgs/bar-tools)
   barTools = pkgs.callPackage ../../../../pkgs/bar-tools { };
 
-  # NetworkManager's secret agent and BlueZ's pairing agent, whose
-  # questions the shell asks in its centre island (shell/Agent.qml)
+  # NetworkManager's secret agent, BlueZ's pairing agent and gnome-keyring's
+  # prompter, whose questions the shell asks in its centre island
+  # (shell/Agent.qml)
   islandsAgent = pkgs.callPackage ../../../../pkgs/islands-agent { };
 
   # The Gather logo, a one-glyph font at U+FFF00 for Gather's workspace icon
@@ -42,11 +43,8 @@ let
     exec ${pkgs.systemd}/bin/systemd-run --user --scope --collect --quiet \
       --unit=camera-settings -- ${cameractrls}/bin/cameractrlsgtk4
   '';
-  # The CPU icon's right click. The class must be a valid app ID (with a
-  # dot) or ghostty ignores it; the floating rule in hypr/lua/rules.lua
-  # matches it.
-  # The capture overlay's work (shell/Capture.qml): freezing the screens,
-  # cropping, recording, reading text, picking colours, and the preview
+  # The capture overlay's work (shell/Capture.qml): cropping, recording,
+  # reading text, picking colours, and the preview
   islandsCapture = pkgs.writeShellApplication {
     name = "islands-capture";
     runtimeInputs = with pkgs; [
@@ -77,6 +75,9 @@ let
     ];
     text = builtins.readFile ./islands-share-pick;
   };
+  # The control centre's load line opens it. The class must be a valid app
+  # ID (with a dot) or ghostty ignores it; the floating rule in
+  # hypr/lua/rules.lua matches it.
   systemMonitor = pkgs.writeShellScriptBin "system-monitor" ''
     exec ${pkgs.ghostty}/bin/ghostty --class=com.mitchellh.ghostty.btop -e ${pkgs.btop}/bin/btop
   '';
@@ -144,7 +145,7 @@ in
     '';
 
     # The stylix theme for shell/Theme.qml, and this machine's settings for
-    # shell/Config.qml. They live outside the config directory so a checkout
+    # shell/Host.qml. They live outside the config directory so a checkout
     # run with `qs -p` finds them too.
     xdg.configFile."islands/theme.json".text = builtins.toJSON {
       colours = lib.genAttrs [
