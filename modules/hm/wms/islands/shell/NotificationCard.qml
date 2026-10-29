@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Services.Notifications
@@ -72,14 +71,6 @@ Item {
 			fillMode: Image.PreserveAspectFit
 			smooth: true
 			mipmap: true
-			// The detector's logo is lime, glaring on the light glass. The tint
-			// scales by the logo's own lightness (about two thirds), so it's
-			// aimed lighter to land on Theme.yubico.
-			layer.enabled: root.yubikey
-			layer.effect: MultiEffect {
-				colorization: 1
-				colorizationColor: "#65bd00"
-			}
 		}
 	}
 

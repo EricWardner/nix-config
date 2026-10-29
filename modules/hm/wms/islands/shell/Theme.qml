@@ -37,8 +37,8 @@ Singleton {
 	readonly property color inkTrack: alpha(bg, 0.14)
 	// The palette's green is too pale to read on the light glass
 	readonly property color inkGreen: "#3f8f3a"
-	// Yubico's own green for light backgrounds (their site's buttons)
-	readonly property color yubico: "#447f00"
+	// The lime of the detector's Yubico logo, so the rim matches it
+	readonly property color yubico: "#99ca3c"
 	// The bar's window reaches this far down, transparent and letting clicks
 	// through below the bar, so islands have room to grow
 	readonly property int windowHeight: 560
