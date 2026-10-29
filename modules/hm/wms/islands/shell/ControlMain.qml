@@ -5,8 +5,8 @@ import Quickshell.Services.UPower
 
 // The control centre's main page: tiles for Wi-Fi, Bluetooth, Do Not
 // Disturb and push-to-talk; sliders for the output, the microphone and the
-// screen; the camera; the power profile; the CPU, memory and temperature
-// (a click opens btop); and the battery, lock and power menu
+// screen; the camera; the power profile; and the CPU, memory and
+// temperature (a click opens btop), the battery, lock and the power menu
 Column {
 	id: root
 
@@ -250,51 +250,49 @@ Column {
 		}
 	}
 
-	// The machine's load; a click opens btop
-	Rectangle {
-		width: parent.width
-		height: 32
-		radius: 10
-		color: loadHover.hovered ? Theme.alpha(Theme.ink, 0.06) : "transparent"
-
-		BarText {
-			anchors.verticalCenter: parent.verticalCenter
-			x: 4
-			text: ["CPU " + Metrics.cpu + "%", "Memory " + Metrics.memory + "%"].concat(Metrics.temperature > 0 ? [Math.round(Metrics.temperature) + "°C"] : []).join(" · ")
-			color: Theme.inkDim
-			font.pixelSize: 12
-			font.features: {
-				"tnum": 1
-			}
-		}
-
-		HoverHandler {
-			id: loadHover
-		}
-
-		TapHandler {
-			cursorShape: Qt.PointingHandCursor
-			onTapped: Desktop.launch(["system-monitor"])
-		}
-	}
-
-	// The battery; lock; the power menu
+	// The machine's load (a click opens btop) and the battery; lock; the power
+	// menu
 	Item {
 		width: parent.width
-		height: 32
+		height: Math.max(32, footer.implicitHeight)
 
-		BarText {
+		Column {
+			id: footer
+
 			anchors.verticalCenter: parent.verticalCenter
 			x: 4
-			text: {
-				const device = UPower.displayDevice;
-				if (!device?.isLaptopBattery)
-					return "";
-				const level = Math.round(device.percentage <= 1 ? device.percentage * 100 : device.percentage);
-				return level + "% · " + (UPower.onBattery ? "On battery" : "On power");
+			spacing: 4
+
+			BarText {
+				text: ["CPU " + Metrics.cpu + "%", "Memory " + Metrics.memory + "%"].concat(Metrics.temperature > 0 ? [Math.round(Metrics.temperature) + "°C"] : []).join(" · ")
+				color: loadHover.hovered ? Theme.ink : Theme.inkDim
+				font.pixelSize: 12
+				font.features: {
+					"tnum": 1
+				}
+
+				HoverHandler {
+					id: loadHover
+				}
+
+				TapHandler {
+					cursorShape: Qt.PointingHandCursor
+					onTapped: Desktop.launch(["system-monitor"])
+				}
 			}
-			color: Theme.inkDim
-			font.pixelSize: 12
+
+			BarText {
+				visible: text !== ""
+				text: {
+					const device = UPower.displayDevice;
+					if (!device?.isLaptopBattery)
+						return "";
+					const level = Math.round(device.percentage <= 1 ? device.percentage * 100 : device.percentage);
+					return level + "% · " + (UPower.onBattery ? "On battery" : "On power");
+				}
+				color: Theme.inkDim
+				font.pixelSize: 12
+			}
 		}
 
 		Row {
