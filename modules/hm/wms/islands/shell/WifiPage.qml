@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell.Io
 import Quickshell.Networking
 
 // Wi-Fi: on or off, the network in use, and the others in range (known
@@ -48,84 +49,226 @@ Column {
 		onToggled: Networking.wifiEnabled = !Networking.wifiEnabled
 	}
 
-	// The network in use
+	// The network in use; the chevron shows its details
 	Rectangle {
+		id: card
+
+		property bool expanded: false
+		// [[label, value]]: from nmcli, as Quickshell has none of them
+		property var details: []
+
+		function parse(text: string): var {
+			const ipv4 = [], gateway = [], dns = [], ipv6 = [];
+			let link = null;
+			for (const line of text.split("\n")) {
+				const field = line.match(/^([^:]*):(.*)$/);
+				if (!field)
+					continue;
+				const [, key, rest] = field;
+				// Without the prefix length; nmcli escapes IPv6's colons
+				const value = rest.replace(/\\:/g, ":").replace(/\/\d+$/, "");
+				if (key.startsWith("IP4.ADDRESS"))
+					ipv4.push(value);
+				else if (key === "IP4.GATEWAY" && value !== "")
+					gateway.push(value);
+				else if (key.startsWith("IP4.DNS"))
+					dns.push(value);
+				else if (key.startsWith("IP6.ADDRESS") && !value.startsWith("fe80"))
+					ipv6.push(value);
+				else if (key === "*")
+					link = rest.split(":"); // SIGNAL, RATE, CHAN, FREQ
+			}
+			const band = mhz => mhz < 3000 ? "2.4 GHz" : mhz < 5925 ? "5 GHz" : "6 GHz";
+			const rows = [];
+			if (link) {
+				rows.push(["Signal", link[0] + "%"], ["Speed", link[1]]);
+				rows.push(["Channel", link[2] + " · " + band(parseInt(link[3]))]);
+			}
+			// The first IPv6 address: the others are temporary ones
+			for (const [label, values] of [["IPv4", ipv4], ["Gateway", gateway], ["DNS", dns], ["IPv6", ipv6.slice(0, 1)]]) {
+				if (values.length > 0)
+					rows.push([label, values.join(", ")]);
+			}
+			return rows;
+		}
+
 		visible: Net.current !== null
 		width: parent.width
-		height: 52
+		height: cardColumn.implicitHeight
 		radius: 16
 		color: Theme.alpha(Theme.ink, 0.06)
 
-		Rectangle {
-			id: badge
+		onExpandedChanged: {
+			if (expanded)
+				read.running = true;
+		}
 
-			x: 10
-			anchors.verticalCenter: parent.verticalCenter
-			width: 32
-			height: 32
-			radius: 16
-			color: Theme.accent
+		Timer {
+			interval: 5000
+			repeat: true
+			running: card.expanded && root.visible
+			onTriggered: read.running = true
+		}
 
-			BarText {
-				anchors.centerIn: parent
-				text: Glyphs.wifi
-				color: Theme.ink
-				font.pixelSize: 15
+		Process {
+			id: read
+
+			command: ["sh", "-c", "nmcli -t -f IP4.ADDRESS,IP4.GATEWAY,IP4.DNS,IP6.ADDRESS device show \"$1\"; nmcli -t -f IN-USE,SIGNAL,RATE,CHAN,FREQ device wifi list ifname \"$1\" --rescan no", "sh", Net.wifi?.name ?? ""]
+			stdout: StdioCollector {
+				onStreamFinished: card.details = card.parse(text)
 			}
 		}
 
 		Column {
-			anchors.left: badge.right
-			anchors.leftMargin: 10
-			anchors.right: disconnect.left
-			anchors.rightMargin: 8
-			anchors.verticalCenter: parent.verticalCenter
+			id: cardColumn
 
-			BarText {
+			width: parent.width
+
+			Item {
 				width: parent.width
-				text: Net.current?.name ?? ""
-				color: Theme.ink
-				font.pixelSize: 13
-				font.weight: Font.DemiBold
-				elide: Text.ElideRight
+				height: 52
+
+				Rectangle {
+					id: badge
+
+					x: 10
+					anchors.verticalCenter: parent.verticalCenter
+					width: 32
+					height: 32
+					radius: 16
+					color: Theme.accent
+
+					BarText {
+						anchors.centerIn: parent
+						text: Glyphs.wifi
+						color: Theme.ink
+						font.pixelSize: 15
+					}
+				}
+
+				Column {
+					anchors.left: badge.right
+					anchors.leftMargin: 10
+					anchors.right: chevron.left
+					anchors.rightMargin: 4
+					anchors.verticalCenter: parent.verticalCenter
+
+					BarText {
+						width: parent.width
+						text: Net.current?.name ?? ""
+						color: Theme.ink
+						font.pixelSize: 13
+						font.weight: Font.DemiBold
+						elide: Text.ElideRight
+					}
+
+					BarText {
+						text: Net.limited ? "Connected · No internet" : "Connected"
+						color: Net.limited ? Theme.alpha(Theme.ink, 0.9) : Theme.inkDim
+						font.pixelSize: 12
+					}
+				}
+
+				Rectangle {
+					id: chevron
+
+					anchors.right: disconnect.left
+					anchors.rightMargin: 6
+					anchors.verticalCenter: parent.verticalCenter
+					width: 26
+					height: 26
+					radius: 13
+					color: chevronHover.hovered ? Theme.inkTrack : "transparent"
+
+					BarText {
+						anchors.centerIn: parent
+						text: Glyphs.chevronRight
+						rotation: card.expanded ? -90 : 90
+						color: Theme.ink
+						font.pixelSize: 12
+
+						Behavior on rotation {
+							Morph {}
+						}
+					}
+
+					HoverHandler {
+						id: chevronHover
+					}
+
+					MouseArea {
+						anchors.fill: parent
+						onClicked: card.expanded = !card.expanded
+					}
+				}
+
+				Rectangle {
+					id: disconnect
+
+					anchors.right: parent.right
+					anchors.rightMargin: 10
+					anchors.verticalCenter: parent.verticalCenter
+					width: disconnectText.implicitWidth + 20
+					height: 26
+					radius: 13
+					color: disconnectHover.hovered ? Theme.inkTrack : "transparent"
+					border.width: 1
+					border.color: Theme.alpha(Theme.ink, 0.18)
+
+					BarText {
+						id: disconnectText
+
+						anchors.centerIn: parent
+						text: "Disconnect"
+						color: Theme.ink
+						font.pixelSize: 12
+					}
+
+					HoverHandler {
+						id: disconnectHover
+					}
+
+					MouseArea {
+						anchors.fill: parent
+						onClicked: Net.current?.disconnect()
+					}
+				}
 			}
 
-			BarText {
-				text: Net.limited ? "Connected · No internet" : "Connected"
-				color: Net.limited ? Theme.alpha(Theme.ink, 0.9) : Theme.inkDim
-				font.pixelSize: 12
-			}
-		}
+			Column {
+				visible: card.expanded
+				x: 14
+				width: parent.width - 28
+				bottomPadding: 12
+				spacing: 4
 
-		Rectangle {
-			id: disconnect
+				Repeater {
+					model: card.details
 
-			anchors.right: parent.right
-			anchors.rightMargin: 10
-			anchors.verticalCenter: parent.verticalCenter
-			width: disconnectText.implicitWidth + 20
-			height: 26
-			radius: 13
-			color: disconnectHover.hovered ? Theme.inkTrack : "transparent"
-			border.width: 1
-			border.color: Theme.alpha(Theme.ink, 0.18)
+					Row {
+						required property var modelData
 
-			BarText {
-				id: disconnectText
+						spacing: 10
 
-				anchors.centerIn: parent
-				text: "Disconnect"
-				color: Theme.ink
-				font.pixelSize: 12
-			}
+						BarText {
+							width: 64
+							text: modelData[0]
+							color: Theme.inkDim
+							font.pixelSize: 12
+						}
 
-			HoverHandler {
-				id: disconnectHover
-			}
-
-			MouseArea {
-				anchors.fill: parent
-				onClicked: Net.current?.disconnect()
+						BarText {
+							width: card.width - 28 - 74
+							text: modelData[1]
+							color: Theme.ink
+							font.pixelSize: 12
+							font.features: {
+								"tnum": 1
+							}
+							elide: Text.ElideMiddle
+						}
+					}
+				}
 			}
 		}
 	}
