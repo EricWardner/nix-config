@@ -25,7 +25,7 @@ IslandMode {
 
 		anchors.centerIn: parent
 		// The gap between icons' ink (BarIcon is as wide as its glyph)
-		spacing: 24
+		spacing: 18
 
 		// Start a recording (choosing what to record), or stop it; Super+R
 		// does the same. A right click opens the last one.
