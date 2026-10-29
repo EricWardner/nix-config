@@ -6,7 +6,7 @@ import QtQuick
 IslandMode {
 	id: root
 
-	readonly property bool counting: Capture.phase === "countdown"
+	readonly property bool counting: Capture.recorder === "countdown"
 	property real now: Date.now()
 
 	priority: 10
@@ -17,7 +17,7 @@ IslandMode {
 	Timer {
 		interval: 1000
 		repeat: true
-		running: Capture.phase === "recording"
+		running: Capture.recorder === "on"
 		triggeredOnStart: true
 		onTriggered: root.now = Date.now()
 	}
@@ -36,7 +36,7 @@ IslandMode {
 			color: Theme.red
 
 			SequentialAnimation on opacity {
-				running: Capture.phase === "recording"
+				running: Capture.recorder === "on"
 				loops: Animation.Infinite
 
 				NumberAnimation {

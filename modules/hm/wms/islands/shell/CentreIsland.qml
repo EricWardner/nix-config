@@ -27,7 +27,7 @@ Island {
 	}
 
 	RecordMode {
-		active: Capture.phase === "countdown" || Capture.phase === "recording"
+		active: Capture.recorder !== "off"
 	}
 
 	SharingMode {

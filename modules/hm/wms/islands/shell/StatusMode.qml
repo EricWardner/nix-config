@@ -29,7 +29,7 @@ IslandMode {
 		// Start a recording (choosing what to record), or stop it; Super+R
 		// does the same. A right click opens the last one.
 		BarIcon {
-			readonly property bool on: Capture.phase === "countdown" || Capture.phase === "recording"
+			readonly property bool on: Capture.recorder !== "off"
 
 			glyph: on ? Glyphs.stopCircle : Glyphs.recordCircle
 			tint: on ? Theme.red : Theme.fg

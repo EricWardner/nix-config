@@ -162,6 +162,12 @@ case ${1:-} in
       notify-send -a "Screen recording" -t 3000 "Recording failed" "No video was recorded"
       exit 1
     fi
+    # Killed before it wrote its index (an encoder that hung): unplayable
+    if ! ffprobe -v error -show_entries format=duration "$file" >/dev/null 2>&1; then
+      rm -f "$file"
+      notify-send -a "Screen recording" -t 5000 "Recording failed" "The video couldn't be finished"
+      exit 1
+    fi
     thumbnail "$file" &
     preview "$file"
     ;;

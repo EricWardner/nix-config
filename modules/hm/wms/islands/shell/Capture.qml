@@ -18,7 +18,11 @@ Singleton {
 
 	property string kind: "screenshot" // screenshot, record, text, colour, share
 	property string target: "area" // area, screen
-	property string phase: "idle" // idle, freezing, choosing, countdown, recording
+	// The overlay's
+	property string phase: "idle" // idle, freezing, choosing
+	// A recording's, apart from the overlay's, so a share or a screenshot
+	// can be chosen while one runs
+	property string recorder: "off" // off, countdown, on
 
 	readonly property bool choosing: phase === "choosing"
 	// The pipe islands-share-pick waits on, while a share is being chosen
@@ -28,7 +32,7 @@ Singleton {
 
 	// Freezes the screens and brings up the overlays
 	function open(newKind: string, newTarget: string) {
-		if (phase !== "idle")
+		if (phase !== "idle" || (newKind === "record" && recorder !== "off"))
 			return;
 		kind = newKind;
 		target = newTarget;
@@ -64,14 +68,21 @@ Singleton {
 		open("share", "area");
 	}
 
+	// Closes the overlay, or with none up, ends a countdown
 	function cancel() {
-		freezeTimeout.stop();
-		if (reply !== "")
-			answer("");
-		if (phase === "countdown")
-			countdownTimer.stop();
-		if (phase !== "recording")
+		if (phase !== "idle") {
+			freezeTimeout.stop();
+			if (reply !== "")
+				answer("");
 			phase = "idle";
+		} else if (recorder === "countdown") {
+			endCountdown();
+		}
+	}
+
+	function endCountdown() {
+		countdownTimer.stop();
+		recorder = "off";
 	}
 
 	// Whether taking a choice needs the frozen frame written out
@@ -174,18 +185,25 @@ Singleton {
 			"file": Quickshell.env("HOME") + "/Videos/" + Qt.formatDateTime(new Date(), "MM-dd-yyyy-HH-mm-ss") + ".mp4"
 		};
 		countdown = 3;
-		phase = "countdown";
+		recorder = "countdown";
 		countdownTimer.start();
 	}
 
 	function record() {
 		const p = pending;
 		const area = p.geometry !== "" ? ["-g", p.geometry] : ["-o", p.output];
-		recorder.command = ["systemd-run", "--user", "--scope", "--unit=islands-recording", "--collect", "--quiet", "--", "islands-capture", "record", p.file, p.size].concat(area);
+		recording.command = ["systemd-run", "--user", "--scope", "--unit=islands-recording", "--collect", "--quiet", "--", "islands-capture", "record", p.file, p.size].concat(area);
 		since = Date.now();
 		size = p.size;
-		phase = "recording";
-		recorder.running = true;
+		recorder = "on";
+		recording.running = true;
+	}
+
+	// The last one's over: its kill timer mustn't reach the next
+	function recordingEnded() {
+		stopping.stop();
+		recorder = "off";
+		run(["finished"]);
 	}
 
 	function stopRecording() {
@@ -200,18 +218,18 @@ Singleton {
 
 		interval: 5000
 		onTriggered: {
-			if (root.phase === "recording")
+			if (root.recorder === "on")
 				Quickshell.execDetached(["systemctl", "--user", "kill", "--signal=SIGKILL", "islands-recording.scope"]);
 		}
 	}
 
 	// Super+R and the bar's record button: start (choosing an area), or stop
 	function toggleRecording() {
-		if (phase === "recording")
+		if (recorder === "on")
 			stopRecording();
-		else if (phase === "countdown")
-			cancel();
-		else if (phase === "idle")
+		else if (recorder === "countdown")
+			endCountdown();
+		else
 			open("record", "area");
 	}
 
@@ -230,12 +248,9 @@ Singleton {
 	}
 
 	Process {
-		id: recorder
+		id: recording
 
-		onExited: {
-			root.phase = "idle";
-			root.run(["finished"]);
-		}
+		onExited: root.recordingEnded()
 	}
 
 	// A recording left running by the shell before a restart: shown, and
@@ -253,10 +268,10 @@ Singleton {
 					const at = line.indexOf("=");
 					unit[line.slice(0, at)] = line.slice(at + 1);
 				}
-				if (unit.ActiveState === "active" && root.phase === "idle") {
+				if (unit.ActiveState === "active" && root.recorder === "off") {
 					root.since = Number(unit.ActiveEnterTimestamp.slice(1)) * 1000;
 					root.size = "";
-					root.phase = "recording";
+					root.recorder = "on";
 					adopted.start();
 				}
 			}
@@ -278,8 +293,7 @@ Singleton {
 		onExited: code => {
 			if (code !== 0) {
 				adopted.stop();
-				root.phase = "idle";
-				root.run(["finished"]);
+				root.recordingEnded();
 			}
 		}
 	}
@@ -289,6 +303,7 @@ Singleton {
 		target: "capture"
 
 		readonly property string phase: root.phase
+		readonly property string recorder: root.recorder
 
 		// kind: screenshot, record, text or colour; target: area or screen
 		function open(kind: string, target: string): void {
@@ -316,12 +331,12 @@ Singleton {
 
 		// Stops a recording, if one's running (or counting down)
 		function stop(): string {
-			if (root.phase === "recording") {
+			if (root.recorder === "on") {
 				root.stopRecording();
 				return "stopped";
 			}
-			if (root.phase === "countdown") {
-				root.cancel();
+			if (root.recorder === "countdown") {
+				root.endCountdown();
 				return "stopped";
 			}
 			return "none";
