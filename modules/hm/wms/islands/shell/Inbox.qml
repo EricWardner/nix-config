@@ -86,13 +86,23 @@ Singleton {
 
 	function receive(n: Notification) {
 		n.tracked = true;
-		received = Object.assign({}, received, {
-			[n.id]: Date.now()
-		});
 		const kept = server.trackedNotifications.values;
 		for (let i = 0; i < kept.length - 20; i++)
 			kept[i].dismiss();
 		n.closed.connect(() => forget(n));
+		// Sent again under its id (a chat's next message), it changes in
+		// place, and pops up again
+		n.summaryChanged.connect(() => route(n));
+		n.bodyChanged.connect(() => route(n));
+		route(n);
+	}
+
+	function route(n: Notification) {
+		received = Object.assign({}, received, {
+			[n.id]: Date.now()
+		});
+		if (n === popup || queue.includes(n) || held.includes(n) || quiet.includes(n))
+			return;
 		if (dnd && !breaksThrough(n)) {
 			quiet = quiet.concat([n]);
 			return;

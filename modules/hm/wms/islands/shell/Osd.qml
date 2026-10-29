@@ -66,9 +66,28 @@ Singleton {
 		show("brightness", to / 100, false);
 	}
 
-	// From the control centre's slider: no popup, the slider shows it
+	// From the control centre's slider: no popup, the slider shows it. One
+	// brightnessctl at a time, then the latest value: a drag moves faster
+	// than they finish, and several at once can land out of order.
+	property int wantedBrightness: -1
+
 	function setBrightness(percent: int) {
-		Quickshell.execDetached(["brightnessctl", "-q", "set", Math.max(5, Math.min(100, percent)) + "%"]);
+		wantedBrightness = Math.max(5, Math.min(100, percent));
+		if (!brightnessctl.running)
+			applyBrightness();
+	}
+
+	function applyBrightness() {
+		brightnessctl.command = ["brightnessctl", "-q", "set", wantedBrightness + "%"];
+		wantedBrightness = -1;
+		brightnessctl.running = true;
+	}
+
+	Process {
+		id: brightnessctl
+
+		onExited: if (root.wantedBrightness >= 0)
+			root.applyBrightness()
 	}
 
 	IpcHandler {

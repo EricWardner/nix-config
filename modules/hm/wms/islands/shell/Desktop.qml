@@ -16,14 +16,18 @@ Singleton {
 	// a time, anywhere
 	property string panel: ""
 	property HyprlandMonitor panelOn: null
-	// The page a panel opens on, when asked for one (the control centre's
-	// "wifi", say); its first page otherwise
+	// The page showing (the control centre's "wifi", say); "" for its first
 	property string panelPage: ""
+
+	// Its monitor unplugged: closed, or popups would stay held back for it
+	onPanelOnChanged: if (panelOn === null && panel !== "")
+		closePanel()
 
 	function togglePanel(name: string, monitor: HyprlandMonitor) {
 		if (panel === name && panelOn === monitor) {
 			closePanel();
 		} else {
+			panelPage = "";
 			panel = name;
 			panelOn = monitor;
 		}

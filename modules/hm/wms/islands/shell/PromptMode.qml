@@ -119,12 +119,18 @@ IslandMode {
 	onCurrentChanged: if (current)
 		questionChanged()
 
-	// The passkey shown to type: done once the device has paired
+	// The passkey shown to type: done once the device has paired, or the
+	// pairing started here has ended without (BlueZ withdraws nothing)
 	Connections {
 		target: root.kind === "bt-display" ? root.device : null
 
 		function onPairedChanged() {
 			if (root.device.paired)
+				Agent.answer(root.question.id, null);
+		}
+
+		function onPairingChanged() {
+			if (!root.device.pairing)
 				Agent.answer(root.question.id, null);
 		}
 	}

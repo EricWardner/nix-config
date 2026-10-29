@@ -129,6 +129,13 @@ in
 
     xdg.configFile."quickshell/islands".source = ./shell;
 
+    # blueman-manager (Bluetooth settings…) starts blueman's applet, whose
+    # agent would take pairing from islands-agent, with a tray icon
+    dconf.settings."org/blueman/general".plugin-list = [
+      "!AuthAgent"
+      "!StatusNotifierItem"
+    ];
+
     # Screen shares are chosen in the shell's capture overlay. Joined to the
     # restore-token setting from the Hyprland module; the portal reads it at
     # start.

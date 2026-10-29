@@ -4,8 +4,7 @@ import Quickshell.Bluetooth
 
 // Bluetooth: on or off, your devices (a click connects or disconnects one,
 // and shows its battery where it reports one), and others nearby to pair,
-// found while the page shows. Devices that want a PIN or passkey need the
-// pairing prompt still to come; until then, blueman's manager does those.
+// found while the page shows.
 Column {
 	id: root
 

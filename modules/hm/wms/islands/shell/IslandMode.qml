@@ -4,8 +4,10 @@ import QtQuick
 // active mode with the highest priority (the first one declared rests
 // there when nothing else is active), grown to the size the mode asks for,
 // and fades the others out. A mode's content keeps its own size while the
-// island morphs around it, so nothing reflows mid-animation.
-Item {
+// island morphs around it, so nothing reflows mid-animation. A focus scope,
+// so a field it hides hands the keyboard back to it (its Esc), not the
+// window.
+FocusScope {
 	id: root
 
 	readonly property bool isMode: true

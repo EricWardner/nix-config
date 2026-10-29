@@ -8,7 +8,10 @@ import QtQuick
 IslandMode {
 	id: root
 
-	property string page: "main"
+	// Desktop.panelPage alone says which page shows, so the bar's icons
+	// (which open their page, or close it if it's showing) see the page
+	// moved to in here
+	readonly property string page: ["wifi", "bluetooth", "sound"].includes(Desktop.panelPage) ? Desktop.panelPage : "main"
 	readonly property Item shown: ({
 			"main": main,
 			"wifi": wifi,
@@ -22,29 +25,14 @@ IslandMode {
 	islandHeight: shown.implicitHeight + 28
 
 	focus: current
-	onCurrentChanged: {
-		if (current) {
-			page = Desktop.panelPage || "main";
-			forceActiveFocus();
-		} else {
-			page = "main";
-		}
-	}
-	// Asked for a page while already open
-	Connections {
-		target: Desktop
-
-		function onPanelPageChanged() {
-			if (root.current && Desktop.panelPage !== "")
-				root.page = Desktop.panelPage;
-		}
-	}
+	onCurrentChanged: if (current)
+		forceActiveFocus()
 
 	Keys.onEscapePressed: {
 		if (page === "main")
 			Desktop.closePanel();
 		else
-			page = "main";
+			Desktop.panelPage = "";
 	}
 
 	ControlMain {
@@ -54,7 +42,7 @@ IslandMode {
 		y: 14
 		width: parent.width - 28
 		visible: root.page === "main"
-		onOpen: name => root.page = name
+		onOpen: name => Desktop.panelPage = name
 	}
 
 	WifiPage {
@@ -64,7 +52,7 @@ IslandMode {
 		y: 14
 		width: parent.width - 28
 		visible: root.page === "wifi"
-		onBack: root.page = "main"
+		onBack: Desktop.panelPage = ""
 	}
 
 	BluetoothPage {
@@ -74,7 +62,7 @@ IslandMode {
 		y: 14
 		width: parent.width - 28
 		visible: root.page === "bluetooth"
-		onBack: root.page = "main"
+		onBack: Desktop.panelPage = ""
 	}
 
 	SoundPage {
@@ -84,6 +72,6 @@ IslandMode {
 		y: 14
 		width: parent.width - 28
 		visible: root.page === "sound"
-		onBack: root.page = "main"
+		onBack: Desktop.panelPage = ""
 	}
 }
