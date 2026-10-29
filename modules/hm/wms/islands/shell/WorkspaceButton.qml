@@ -4,7 +4,7 @@ import Quickshell.Hyprland
 // A workspace: its name and an icon per window. The one showing on this
 // monitor is underlined, brightly while the monitor has focus; one without
 // windows is dimmed. A click switches to it (activate() sends Lua's
-// hl.dsp.focus in a Lua-config session).
+// hl.dsp.focus in a Lua-config session), or toggles a special one.
 Item {
 	id: root
 
@@ -53,6 +53,6 @@ Item {
 
 	MouseArea {
 		anchors.fill: parent
-		onClicked: root.modelData.activate()
+		onClicked: root.modelData.id < 0 ? Hyprland.dispatch(`hl.dsp.workspace.toggle_special("${root.name}")`) : root.modelData.activate()
 	}
 }
