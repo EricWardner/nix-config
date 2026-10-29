@@ -37,7 +37,10 @@ Rectangle {
 		font.family: Theme.sans
 		font.pixelSize: 14
 		clip: true
-		onAccepted: root.accepted()
+		// Taken here, or TextInput passes the key on to the next question
+		// once this one is answered
+		Keys.onReturnPressed: root.accepted()
+		Keys.onEnterPressed: root.accepted()
 
 		RegularExpressionValidator {
 			id: digits

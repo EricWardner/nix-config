@@ -55,7 +55,6 @@ IslandMode {
 		return true;
 	}
 
-	// Enter reaches here twice, from the field and then from this
 	function submit() {
 		if (!question || !ready)
 			return;
@@ -79,6 +78,8 @@ IslandMode {
 	}
 
 	function cancel() {
+		if (!question)
+			return;
 		if (kind === "bt-display")
 			device?.cancelPair();
 		Agent.answer(question.id, kind === "bt-authorize" ? false : null);
@@ -93,8 +94,12 @@ IslandMode {
 	Keys.onEscapePressed: cancel()
 	Keys.onReturnPressed: submit()
 
+	// Nothing to take when the last question has gone: the focus belongs to
+	// whatever shows instead
 	function focusFirst() {
-		if (question?.login)
+		if (!question)
+			return;
+		if (question.login)
 			identity.focusField();
 		else if (wifi || typed || keyringPassword)
 			secret.focusField();
@@ -157,6 +162,8 @@ IslandMode {
 				BarText {
 					width: parent.width
 					text: root.title
+					// Plain text: networks, devices and keyrings name themselves
+					textFormat: Text.PlainText
 					color: Theme.ink
 					font.pixelSize: 14
 					font.weight: Font.DemiBold
@@ -167,6 +174,7 @@ IslandMode {
 					visible: text !== ""
 					width: parent.width
 					text: root.detail
+					textFormat: Text.PlainText
 					color: Theme.inkDim
 					font.pixelSize: 12
 					wrapMode: Text.Wrap
@@ -177,6 +185,7 @@ IslandMode {
 					visible: text !== ""
 					width: parent.width
 					text: root.keyring ? root.question.warning : ""
+					textFormat: Text.PlainText
 					color: Theme.red
 					font.pixelSize: 12
 					font.weight: Font.DemiBold
@@ -251,6 +260,7 @@ IslandMode {
 				width: parent.width - choice.width - 10
 				anchors.verticalCenter: parent.verticalCenter
 				text: root.keyring ? root.question.choice : ""
+				textFormat: Text.PlainText
 				color: Theme.ink
 				font.pixelSize: 12
 				wrapMode: Text.Wrap

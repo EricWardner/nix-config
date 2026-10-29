@@ -55,12 +55,16 @@ impl Shell {
         (id, rx)
     }
 
-    /// Asks the shell, and waits: None if it was cancelled, by either side
-    async fn ask(&self, key: &str, question: Json) -> Option<Json> {
+    /// Asks the shell now, so `cancel` reaches it from here on; the answer
+    /// is None if it was cancelled, by either side
+    fn ask(&self, key: &str, question: Json) -> impl Future<Output = Option<Json>> + use<> {
         let (id, rx) = self.send(key, question);
-        let answer = rx.recv().await.ok();
-        self.waiting.lock().unwrap().remove(&id);
-        answer.filter(|value| !value.is_null())
+        let waiting = self.waiting.clone();
+        async move {
+            let answer = rx.recv().await.ok();
+            waiting.lock().unwrap().remove(&id);
+            answer.filter(|value| !value.is_null())
+        }
     }
 
     /// Shows something without waiting for an answer (a passkey to type on
@@ -439,7 +443,10 @@ async fn prompt_for_keyring(shell: Shell) -> zbus::Result<Connection> {
 }
 
 async fn run(shell: Shell) -> zbus::Result<()> {
-    let _session = prompt_for_keyring(shell.clone()).await?;
+    // Wi-Fi and pairing don't need it
+    let _session = prompt_for_keyring(shell.clone())
+        .await
+        .inspect_err(|e| eprintln!("can't prompt for the keyring: {e}"));
     let conn = Connection::system().await?;
     conn.object_server()
         .at(

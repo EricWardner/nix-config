@@ -1,12 +1,5 @@
-//! The keyring's prompter. gnome-keyring asks whoever owns
-//! org.gnome.keyring.SystemPrompter (gcr's dialog, started on demand when
-//! nobody does) for a password, to unlock a keyring or for a new one, or for
-//! a yes or no. This owns the name and asks in the centre island instead.
-//!
-//! Each prompt goes BeginPrompting, then PerformPrompt as often as the
-//! asker likes (again after a wrong password), then StopPrompting; answers
-//! go back to the asker's callback object as PromptReady, and PromptDone
-//! once it's over.
+//! gnome-keyring's prompter, in place of gcr's dialog (D-Bus starts that
+//! only while nothing owns the name).
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -23,7 +16,6 @@ pub const NAME: &str = "org.gnome.keyring.SystemPrompter";
 pub const PATH: &str = "/org/gnome/keyring/Prompter";
 const CALLBACK: &str = "org.gnome.keyring.internal.Prompter.Callback";
 
-/// Who a prompt is for: the asker's bus name and its callback object
 #[derive(Clone)]
 struct Caller {
     name: String,
@@ -42,8 +34,7 @@ impl Caller {
         format!("keyring {} {}", self.name, self.path)
     }
 
-    /// The answer so far ("yes", "no", or "" before the first), the
-    /// properties it changed, and our half of the exchange
+    /// `reply` is "" before the first answer
     async fn ready(
         &self,
         conn: &Connection,
@@ -81,10 +72,9 @@ impl Caller {
     }
 }
 
-/// A prompt begun: its half of the secret exchange, and its properties so
-/// far (each PerformPrompt brings only those that changed)
 struct Prompt {
     exchange: Exchange,
+    // Each PerformPrompt brings only the properties that changed
     properties: HashMap<String, OwnedValue>,
 }
 
@@ -205,18 +195,23 @@ impl Prompter {
                 "cancel": prompt.text("cancel-label"),
             })
         };
+        // Asked before the reply, so a StopPrompting right after it finds
+        // the question to withdraw
+        let answer = self.shell.ask(&caller.key(), question);
         let (reply, sent) = ResponseDispatchNotifier::new(());
-        let (shell, prompts, conn2) = (self.shell.clone(), self.prompts.clone(), conn.clone());
+        let (prompts, conn2) = (self.prompts.clone(), conn.clone());
         after_reply(conn, sent, async move {
-            let answer = shell.ask(&caller.key(), question).await;
+            let answer = answer.await;
+            let chosen = answer
+                .as_ref()
+                .map(|a| a["chosen"].as_bool().unwrap_or_default());
             let secret = answer
                 .as_ref()
                 .filter(|_| !confirm)
                 .map(|a| a["secret"].as_str().unwrap_or_default().to_owned());
             // gcr wraps each value in a second variant, and unwraps it so
             let mut changed = HashMap::<&str, Value<'_>>::new();
-            if let Some(answer) = &answer {
-                let chosen = answer["chosen"].as_bool().unwrap_or_default();
+            if let Some(chosen) = chosen {
                 changed.insert("choice-chosen", Value::new(Value::from(chosen)));
             }
             // 0 is no password at all, which gnome-keyring checks before
@@ -226,12 +221,14 @@ impl Prompter {
                 changed.insert("password-strength", Value::new(Value::from(strength)));
             }
             // Gone if the asker stopped while the question was up
-            let Some(ours) = prompts
-                .lock()
-                .unwrap()
-                .get(&caller.key())
-                .map(|p| p.exchange.send(secret.as_deref()))
-            else {
+            let Some(ours) = prompts.lock().unwrap().get_mut(&caller.key()).map(|p| {
+                // For a retry after a wrong password: gnome-keyring doesn't
+                // send the choice again
+                if let Some(chosen) = chosen {
+                    p.properties.insert("choice-chosen".into(), chosen.into());
+                }
+                p.exchange.send(secret.as_deref())
+            }) else {
                 return;
             };
             let reply = if answer.is_some() { "yes" } else { "no" };

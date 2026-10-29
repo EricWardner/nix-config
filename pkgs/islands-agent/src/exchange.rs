@@ -1,7 +1,7 @@
-//! gcr's secret exchange (`sx-aes-1`), by which a keyring prompter hands
-//! back the password typed into it: AES-128-CBC under a key both sides
-//! agree by Diffie-Hellman, as key-file text (`[sx-aes-1]` then
-//! `public=`, `secret=`, `iv=`, in base64).
+//! gcr's secret exchange (`sx-aes-1`), which must match gcr's byte for byte:
+//! the prompter's way of handing the typed password back.
+
+use std::sync::LazyLock;
 
 use aes::cipher::{BlockEncryptMut as _, KeyIvInit as _, block_padding::Pkcs7};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
@@ -10,17 +10,19 @@ use num_bigint::BigUint;
 const GROUP: &str = "[sx-aes-1]";
 
 /// RFC 3526's 1536-bit MODP group (its generator is 2)
-const PRIME: &[u8] = b"FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74\
+static PRIME: LazyLock<BigUint> = LazyLock::new(|| {
+    BigUint::parse_bytes(
+        b"FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74\
 020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D\
 6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5\
 AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8\
 FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804\
-F1746C08CA237327FFFFFFFFFFFFFFFF";
+F1746C08CA237327FFFFFFFFFFFFFFFF",
+        16,
+    )
+    .expect("the prime is hex")
+});
 const PRIME_BYTES: usize = 1536 / 8;
-
-fn prime() -> BigUint {
-    BigUint::parse_bytes(PRIME, 16).expect("the prime is hex")
-}
 
 fn random<const N: usize>() -> [u8; N] {
     let mut bytes = [0; N];
@@ -28,7 +30,6 @@ fn random<const N: usize>() -> [u8; N] {
     bytes
 }
 
-/// One prompt's side of the exchange
 pub struct Exchange {
     private: BigUint,
     public: BigUint,
@@ -37,9 +38,9 @@ pub struct Exchange {
 
 impl Exchange {
     pub fn new() -> Self {
-        let prime = prime();
-        let private = BigUint::from_bytes_be(&random::<PRIME_BYTES>()) % (&prime - 3u32) + 2u32;
-        let public = BigUint::from(2u32).modpow(&private, &prime);
+        let prime = &*PRIME;
+        let private = BigUint::from_bytes_be(&random::<PRIME_BYTES>()) % (prime - 3u32) + 2u32;
+        let public = BigUint::from(2u32).modpow(&private, prime);
         Self {
             private,
             public,
@@ -52,15 +53,15 @@ impl Exchange {
         if self.key.is_some() {
             return true;
         }
-        let prime = prime();
+        let prime = &*PRIME;
         let Some(peer) = field(text, "public").map(|bytes| BigUint::from_bytes_be(&bytes)) else {
             return false;
         };
-        if peer < BigUint::from(2u32) || peer > &prime - 2u32 {
+        if peer < BigUint::from(2u32) || peer > prime - 2u32 {
             return false;
         }
         // Padded to the prime's length, as gcr does
-        let shared = peer.modpow(&self.private, &prime).to_bytes_be();
+        let shared = peer.modpow(&self.private, prime).to_bytes_be();
         let mut ikm = vec![0; PRIME_BYTES - shared.len()];
         ikm.extend(shared);
         let mut key = [0; 16];
@@ -94,7 +95,6 @@ impl Exchange {
     }
 }
 
-/// A base64 field from the exchange's group
 fn field(text: &str, name: &str) -> Option<Vec<u8>> {
     text.lines()
         .map(str::trim)

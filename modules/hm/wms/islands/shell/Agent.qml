@@ -16,6 +16,8 @@ Singleton {
 	// Oldest first: each {id, kind, …} as the agent sent it
 	property var questions: []
 	readonly property var current: questions[0] ?? null
+	// It has a field to type into
+	readonly property bool typing: current !== null && (["wifi", "bt-pin", "bt-passkey"].includes(current.kind) || current.kind === "keyring" && !current.confirm)
 	// The questions PromptMode knows how to ask
 	readonly property var kinds: ["wifi", "bt-confirm", "bt-display", "bt-pin", "bt-passkey", "bt-authorize", "keyring"]
 
