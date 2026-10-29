@@ -3,10 +3,11 @@ import Quickshell.Networking
 import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
 
-// The control centre's main page: tiles for Wi-Fi, Bluetooth, Do Not
-// Disturb and push-to-talk; sliders for the output, the microphone and the
-// screen; the camera; the power profile; and the CPU, memory and
-// temperature (a click opens btop), the battery, lock and the power menu
+// The control centre's main page: tiles for Wi-Fi, Bluetooth, the camera
+// and push-to-talk; sliders for the output and the microphone, and for the
+// screen; the power profile; and the CPU, memory and temperature (a click
+// opens btop), the battery, lock and the power menu. Do Not Disturb is the
+// notification centre's.
 Column {
 	id: root
 
@@ -27,7 +28,7 @@ Column {
 	Grid {
 		width: parent.width
 		columns: 2
-		spacing: 8
+		spacing: root.spacing
 
 		Tile {
 			width: (parent.width - parent.spacing) / 2
@@ -56,11 +57,11 @@ Column {
 
 		Tile {
 			width: (parent.width - parent.spacing) / 2
-			glyph: Glyphs.moonFill
-			title: "Do Not Disturb"
-			subtitle: Inbox.dnd ? "On" : "Off"
-			on: Inbox.dnd
-			onToggled: Inbox.dnd = !Inbox.dnd
+			glyph: root.cameraOff ? Glyphs.videoSlash : Glyphs.video
+			title: "Camera"
+			subtitle: Desktop.webcam === "in-use" ? "In use" : Desktop.webcam === "disconnected" ? "None connected" : root.cameraOff ? "Off" : "On"
+			on: !root.cameraOff
+			onToggled: Desktop.launch(["sudo", "/run/current-system/sw/bin/webcam-toggle", "toggle"])
 		}
 
 		Tile {
@@ -75,124 +76,124 @@ Column {
 		}
 	}
 
-	Rectangle {
-		width: parent.width
-		height: levels.implicitHeight + 24
+	component Card: Rectangle {
+		default property alias content: inside.data
+
+		height: inside.implicitHeight + 24
 		radius: 16
 		color: Theme.alpha(Theme.ink, 0.06)
 
 		Column {
-			id: levels
+			id: inside
 
 			x: 12
 			y: 12
 			width: parent.width - 24
 			spacing: 12
+		}
+	}
 
-			// The output, and which device it is (a click picks another)
-			Column {
+	Card {
+		width: parent.width
+
+		// The output, and which device it is (a click picks another)
+		Column {
+			width: parent.width
+			spacing: 6
+
+			Item {
 				width: parent.width
-				spacing: 6
-
-				Item {
-					width: parent.width
-					height: soundLabel.implicitHeight
-
-					BarText {
-						id: soundLabel
-
-						text: "Sound"
-						color: Theme.inkDim
-						font.pixelSize: 12
-					}
-
-					BarText {
-						anchors.right: parent.right
-						width: Math.min(implicitWidth, parent.width - soundLabel.width - 12)
-						text: (root.sink?.description || root.sink?.nickname || "No output") + "  ›"
-						color: Theme.inkDim
-						font.pixelSize: 12
-						elide: Text.ElideMiddle
-
-						MouseArea {
-							anchors.fill: parent
-							onClicked: root.open("sound")
-						}
-					}
-				}
-
-				Slider {
-					width: parent.width
-					value: root.sink?.audio?.volume ?? 0
-					dimmed: root.sink?.audio?.muted ?? false
-					onMoved: value => {
-						if (root.sink?.audio)
-							root.sink.audio.volume = value;
-					}
-				}
-			}
-
-			Column {
-				width: parent.width
-				spacing: 6
-
-				Item {
-					width: parent.width
-					height: micLabel.implicitHeight
-
-					BarText {
-						id: micLabel
-
-						text: "Microphone"
-						color: Theme.inkDim
-						font.pixelSize: 12
-					}
-
-					BarText {
-						anchors.right: parent.right
-						text: Desktop.mic === "ptt-active" ? "Talking" : root.ptt ? "Muted until you hold Right Alt" : root.source?.audio?.muted ? "Muted" : ""
-						color: Desktop.mic === "ptt-active" ? Theme.inkGreen : Theme.inkDim
-						font.pixelSize: 12
-					}
-				}
-
-				Slider {
-					width: parent.width
-					value: root.source?.audio?.volume ?? 0
-					dimmed: Desktop.mic === "ptt-muted" || Desktop.mic === "muted"
-					onMoved: value => {
-						if (root.source?.audio)
-							root.source.audio.volume = value;
-					}
-				}
-			}
-
-			Column {
-				width: parent.width
-				spacing: 6
+				height: soundLabel.implicitHeight
 
 				BarText {
-					text: "Brightness"
+					id: soundLabel
+
+					text: "Sound"
 					color: Theme.inkDim
 					font.pixelSize: 12
 				}
 
-				Slider {
-					width: parent.width
-					value: Metrics.backlight / 100
-					onMoved: value => Osd.setBrightness(Math.round(value * 100))
+				BarText {
+					anchors.right: parent.right
+					width: Math.min(implicitWidth, parent.width - soundLabel.width - 12)
+					text: (root.sink?.description || root.sink?.nickname || "No output") + "  ›"
+					color: Theme.inkDim
+					font.pixelSize: 12
+					elide: Text.ElideMiddle
+
+					MouseArea {
+						anchors.fill: parent
+						onClicked: root.open("sound")
+					}
+				}
+			}
+
+			Slider {
+				width: parent.width
+				value: root.sink?.audio?.volume ?? 0
+				dimmed: root.sink?.audio?.muted ?? false
+				onMoved: value => {
+					if (root.sink?.audio)
+						root.sink.audio.volume = value;
+				}
+			}
+		}
+
+		Column {
+			width: parent.width
+			spacing: 6
+
+			Item {
+				width: parent.width
+				height: micLabel.implicitHeight
+
+				BarText {
+					id: micLabel
+
+					text: "Microphone"
+					color: Theme.inkDim
+					font.pixelSize: 12
+				}
+
+				BarText {
+					anchors.right: parent.right
+					text: Desktop.mic === "ptt-active" ? "Talking" : root.ptt ? "Muted until you hold Right Alt" : root.source?.audio?.muted ? "Muted" : ""
+					color: Desktop.mic === "ptt-active" ? Theme.inkGreen : Theme.inkDim
+					font.pixelSize: 12
+				}
+			}
+
+			Slider {
+				width: parent.width
+				value: root.source?.audio?.volume ?? 0
+				dimmed: Desktop.mic === "ptt-muted" || Desktop.mic === "muted"
+				onMoved: value => {
+					if (root.source?.audio)
+						root.source.audio.volume = value;
 				}
 			}
 		}
 	}
 
-	Tile {
+	Card {
 		width: parent.width
-		glyph: root.cameraOff ? Glyphs.videoSlash : Glyphs.video
-		title: "Camera"
-		subtitle: Desktop.webcam === "in-use" ? "In use" : Desktop.webcam === "disconnected" ? "None connected" : root.cameraOff ? "Off" : "On"
-		on: !root.cameraOff
-		onToggled: Desktop.launch(["sudo", "/run/current-system/sw/bin/webcam-toggle", "toggle"])
+
+		Column {
+			width: parent.width
+			spacing: 6
+
+			BarText {
+				text: "Brightness"
+				color: Theme.inkDim
+				font.pixelSize: 12
+			}
+
+			Slider {
+				width: parent.width
+				value: Metrics.backlight / 100
+				onMoved: value => Osd.setBrightness(Math.round(value * 100))
+			}
+		}
 	}
 
 	// The power profile, as a segmented control
