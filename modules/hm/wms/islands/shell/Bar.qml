@@ -74,6 +74,14 @@ PanelWindow {
 
 		width: parent.width
 		height: Theme.barTop + Theme.barHeight
+
+		// The focus grab only sees clicks outside the bar, so its empty
+		// stretches close a panel here; what's on the bar sits above this
+		MouseArea {
+			anchors.fill: parent
+			enabled: bar.panelOpen
+			onClicked: Desktop.closePanel()
+		}
 	}
 
 	Row {

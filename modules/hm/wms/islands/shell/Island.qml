@@ -107,6 +107,13 @@ Item {
 		}
 	}
 
+	// Clicks that miss a grown island's controls stop here, short of the
+	// bar beneath (which closes the panel) and the faded-out tray
+	MouseArea {
+		anchors.fill: parent
+		enabled: !root.resting
+	}
+
 	Item {
 		id: stage
 
