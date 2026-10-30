@@ -48,7 +48,7 @@ Singleton {
 	// A day's events: all-day ones, then the rest by time
 	function onDay(day: date): var {
 		const start = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
-		const end = start + 24 * 60 * 60 * 1000;
+		const end = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime();
 		return events.filter(e => e.start < end && (e.allDay ? e.end > start : e.start >= start)).sort((a, b) => (b.allDay - a.allDay) || (a.start - b.start));
 	}
 
