@@ -28,8 +28,12 @@ in
         ]
       );
       profiles.default = {
+        mutableUserSettings = true;
         enableUpdateCheck = false;
-        enableExtensionUpdateCheck = false;
+        userSettings = {
+          "nix.enableLanguageServer" = true;
+          "nix.serverPath" = lib.getExe pkgs.nixd;
+        };
       };
     };
   };
