@@ -221,6 +221,11 @@ in
         hl.on("hyprland.start", function()
           hl.exec_cmd(${toLua ghostty}, { workspace = "1 silent" })
         end)
+        hl.on("workspace.created", function(ws)
+          if ws.addressable_name == "special:monitor" and ws.is_empty then
+            hl.exec_cmd(${toLua "${ghostty} -e ${btop}"}, { workspace = "special:monitor" })
+          end
+        end)
       '';
       settings =
         let
@@ -293,10 +298,6 @@ in
             ];
 
           workspace_rule = [
-            {
-              workspace = "special:monitor";
-              on_created_empty = "${ghostty} -e ${btop}";
-            }
             {
               workspace = "special:chat";
               monitor = "eDP-1";
