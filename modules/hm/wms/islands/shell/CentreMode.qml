@@ -1,18 +1,23 @@
 import QtQuick
 import Quickshell
 
-// The notification centre: the clock's island grown into the time and date,
-// a calendar with a dot on each day with an event, the picked day's events,
-// UTC and what's playing, beside the notification history with Do Not
+// The notification centre: the clock's island grown into the time, date and
+// UTC, a calendar with a dot on each day with an event and the picked day's
+// events, beside what's playing and the notification history with Do Not
 // Disturb and "Clear all". A click on the clock opens it (or `qs ipc -c
 // islands call panel toggle centre`); Esc or a click outside closes it, as
 // a popup does.
 IslandMode {
 	id: root
 
+	// The bar window below the island, less its shadow: past it the island
+	// is cut off
+	readonly property real room: Theme.windowHeight - Theme.barTop - 2 - 10
+
 	priority: 40
 	islandWidth: 724
-	// Taller for a day with more events than fit
+	// Taller for a day with more events than fit, up to the room; past it
+	// they scroll
 	islandHeight: Math.max(476, (content.item?.sideHeight ?? 0) + 36)
 
 	focus: current
@@ -47,6 +52,8 @@ IslandMode {
 				spacing: 12
 
 				Column {
+					id: time
+
 					BarText {
 						text: Qt.formatTime(clock.date, "h:mm AP")
 						color: Theme.ink
@@ -54,14 +61,20 @@ IslandMode {
 						font.weight: Font.DemiBold
 					}
 
+					// With the other zone the old bar's clock could show
 					BarText {
-						text: Qt.formatDate(clock.date, "dddd d MMMM")
+						text: Qt.formatDate(clock.date, "dddd d MMMM") + " · " + String(clock.date.getUTCHours()).padStart(2, "0") + ":" + String(clock.date.getUTCMinutes()).padStart(2, "0") + " UTC"
 						color: Theme.inkDim
 						font.pixelSize: 14
+						font.features: {
+							"tnum": 1
+						}
 					}
 				}
 
 				Rectangle {
+					id: month
+
 					width: parent.width
 					height: calendar.implicitHeight + 20
 					radius: 16
@@ -79,41 +92,9 @@ IslandMode {
 
 				DayEvents {
 					width: parent.width
+					height: Math.min(implicitHeight, root.room - 36 - time.height - month.height - 2 * side.spacing)
 					day: calendar.selected
 					onOpened: Desktop.closePanel()
-				}
-
-				// The other zone the old bar's clock could show
-				Rectangle {
-					width: parent.width
-					height: 40
-					radius: 12
-					color: Theme.alpha(Theme.ink, 0.06)
-
-					BarText {
-						x: 12
-						anchors.verticalCenter: parent.verticalCenter
-						text: "UTC"
-						color: Theme.inkDim
-						font.pixelSize: 12
-					}
-
-					BarText {
-						anchors.right: parent.right
-						anchors.rightMargin: 12
-						anchors.verticalCenter: parent.verticalCenter
-						text: String(clock.date.getUTCHours()).padStart(2, "0") + ":" + String(clock.date.getUTCMinutes()).padStart(2, "0")
-						color: Theme.ink
-						font.pixelSize: 14
-						font.weight: Font.DemiBold
-						font.features: {
-							"tnum": 1
-						}
-					}
-				}
-
-				MediaCard {
-					width: parent.width
 				}
 			}
 
@@ -209,10 +190,16 @@ IslandMode {
 					}
 				}
 
+				MediaCard {
+					id: media
+
+					width: parent.width
+				}
+
 				// Newest first
 				ListView {
 					width: parent.width
-					height: parent.height - header.height - parent.spacing
+					height: parent.height - header.height - parent.spacing - (media.visible ? media.height + parent.spacing : 0)
 					clip: true
 					spacing: 8
 					boundsBehavior: Flickable.StopAtBounds
