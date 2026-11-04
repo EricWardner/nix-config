@@ -31,14 +31,52 @@ PanelWindow {
 	implicitHeight: Theme.windowHeight
 	exclusiveZone: Theme.barTop + Theme.barHeight
 	color: "transparent"
-	// Hyprland blurs behind it only where it's over 50% opaque
-	// (hypr/lua/rules.lua), so the bare bar's text gets no halo
 	WlrLayershell.namespace: "islands-bar"
 	// An open panel takes the keyboard (Esc closes it), and a click anywhere
 	// but the bar closes it, as a popup's would. A question to type into
 	// holds the keyboard until it's answered or Esc'd: it can turn up unasked
 	// (a keyring's password), and has to take typing without a click first.
 	WlrLayershell.keyboardFocus: asking && Agent.typing ? WlrKeyboardFocus.Exclusive : panelOpen || asking ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+	// Hyprland blurs behind the islands' glass here, however clear the glass
+	// is: told by opacity alone, it switched the blur on partway through a
+	// growing island's fade-in, and the windows behind flashed
+	BackgroundEffect.blurRegion: Region {
+		Region {
+			item: centre
+			radius: centre.radius
+		}
+
+		Region {
+			item: weather.visible ? weather : null
+			radius: weather.radius
+		}
+
+		Region {
+			item: dnd.visible ? dnd : null
+			radius: dnd.radius
+		}
+
+		Region {
+			item: meeting.visible ? meeting : null
+			radius: meeting.radius
+		}
+
+		Region {
+			item: held.visible ? held : null
+			radius: held.radius
+		}
+
+		Region {
+			item: tray.visible ? tray : null
+			radius: tray.radius
+		}
+
+		Region {
+			item: status
+			radius: status.radius
+		}
+	}
 
 	HyprlandFocusGrab {
 		windows: [bar]

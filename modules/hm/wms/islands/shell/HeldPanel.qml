@@ -25,6 +25,8 @@ Item {
 		return Object.values(byName).sort((a, b) => b.count - a.count);
 	}
 
+	readonly property real radius: glass.radius
+
 	implicitWidth: 300
 	implicitHeight: column.implicitHeight + 24
 	focus: visible

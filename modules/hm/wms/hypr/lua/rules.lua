@@ -1,6 +1,6 @@
--- The islands bar (modules/hm/wms/islands): blurred only where it's over
--- 50% opaque, so the text on the bare bar gets no halo
-hl.layer_rule({ match = { namespace = "^islands-bar$" }, blur = true, ignore_alpha = 0.5 })
+-- The islands bar (modules/hm/wms/islands) asks for blur behind its islands
+-- itself (ext-background-effect). A blur rule here would also apply its
+-- ignore_alpha inside them, and blur a growing island only partway through.
 -- The glass panels of fuzzel (menus) and vicinae (the launcher and its
 -- HUD). Global blur xray is off (hyprland.nix), so they frost the windows
 -- under them.

@@ -17,6 +17,7 @@ Item {
 	readonly property var modeList: Array.from(stage.children).filter(child => child.isMode)
 	readonly property IslandMode current: modeList.length === 0 ? null : modeList.reduce((best, mode) => mode.active && mode.priority > best.priority ? mode : best, modeList[0])
 	readonly property bool resting: current?.resting ?? true
+	readonly property real radius: glass.radius
 
 	function syncCurrent() {
 		for (const mode of modeList)
