@@ -1,7 +1,7 @@
 import QtQuick
 import Quickshell.Hyprland
 
-// The next meeting, in an island of its own beside the clock, from half an
+// The next meeting, in an island of its own after the clock, from half an
 // hour before it starts until it ends: "Team sync · in 12m". A click joins
 // it, if it has a link, or opens the notification centre and today's list.
 Island {

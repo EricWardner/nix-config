@@ -124,7 +124,17 @@ PanelWindow {
 		y: Theme.barTop + 2
 	}
 
-	// Beside the clock while it's at rest
+	// Beside the clock while it's at rest: the weather before it, Do Not
+	// Disturb after it, then the next meeting
+	WeatherIsland {
+		id: weather
+
+		monitor: bar.monitor
+		visible: Weather.ready && (open || centre.resting)
+		x: centre.x - width - 8
+		y: centre.y
+	}
+
 	DndIsland {
 		id: dnd
 
@@ -134,22 +144,12 @@ PanelWindow {
 		y: centre.y
 	}
 
-	// And the next meeting before it, or the weather
 	EventIsland {
 		id: meeting
 
 		monitor: bar.monitor
-		visible: soon && centre.resting && !weather.open
-		x: centre.x - width - 8
-		y: centre.y
-	}
-
-	WeatherIsland {
-		id: weather
-
-		monitor: bar.monitor
-		visible: Weather.ready && (open || centre.resting && !meeting.visible)
-		x: centre.x - width - 8
+		visible: soon && centre.resting
+		x: (dnd.visible ? dnd.x + dnd.width : centre.x + centre.width) + 8
 		y: centre.y
 	}
 
