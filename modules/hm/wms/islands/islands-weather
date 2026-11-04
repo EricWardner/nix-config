@@ -1,0 +1,52 @@
+# islands-weather [--locate]: the forecast for the weather island
+# (shell/Weather.qml) in $XDG_CACHE_HOME/islands/weather.json, from
+# Open-Meteo. --locate first finds this machine by its IP address; otherwise
+# the place found last time is used.
+unit=$(jq -r '.temperatureUnit // "fahrenheit"' "${XDG_CONFIG_HOME:-$HOME/.config}/islands/config.json" 2>/dev/null || echo fahrenheit)
+cache=${XDG_CACHE_HOME:-$HOME/.cache}/islands
+place=$cache/place.json
+mkdir -p "$cache"
+
+if [[ ${1:-} == --locate || ! -s $place ]]; then
+  if found=$(curl -fsS --max-time 10 https://ipinfo.io/json); then
+    jq '{city, loc}' <<<"$found" >"$place.new"
+    mv "$place.new" "$place"
+  elif [[ ! -s $place ]]; then
+    exit 1
+  fi
+fi
+
+IFS=, read -r latitude longitude < <(jq -r .loc "$place")
+
+curl -fsS --max-time 15 --get https://api.open-meteo.com/v1/forecast \
+  -d "latitude=$latitude" -d "longitude=$longitude" \
+  -d current=temperature_2m,apparent_temperature,weather_code,is_day \
+  -d hourly=temperature_2m,precipitation_probability,weather_code,is_day \
+  -d daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max \
+  -d forecast_hours=13 -d forecast_days=5 \
+  -d timezone=auto -d timeformat=unixtime -d "temperature_unit=$unit" |
+  jq --slurpfile place "$place" '{
+    fetched: now,
+    place: $place[0].city,
+    now: {
+      temp: .current.temperature_2m,
+      feels: .current.apparent_temperature,
+      code: .current.weather_code,
+      day: (.current.is_day == 1)
+    },
+    hours: [range(.hourly.time | length) as $i | {
+      time: .hourly.time[$i],
+      temp: .hourly.temperature_2m[$i],
+      code: .hourly.weather_code[$i],
+      day: (.hourly.is_day[$i] == 1),
+      rain: (.hourly.precipitation_probability[$i] // 0)
+    }],
+    days: [range(.daily.time | length) as $i | {
+      time: .daily.time[$i],
+      code: .daily.weather_code[$i],
+      high: .daily.temperature_2m_max[$i],
+      low: .daily.temperature_2m_min[$i],
+      rain: (.daily.precipitation_probability_max[$i] // 0)
+    }]
+  }' >"$cache/weather.json.new"
+mv "$cache/weather.json.new" "$cache/weather.json"

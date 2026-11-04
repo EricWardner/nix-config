@@ -91,6 +91,15 @@ let
           builtins.readFile ./islands-calendar.py
         )
       );
+  islandsWeather = pkgs.writeShellApplication {
+    name = "islands-weather";
+    runtimeInputs = with pkgs; [
+      curl
+      jq
+      coreutils
+    ];
+    text = builtins.readFile ./islands-weather;
+  };
   # The control centre's load line opens it. The class must be a valid app
   # ID (with a dot) or ghostty ignores it; the floating rule in
   # hypr/lua/rules.lua matches it.
@@ -124,6 +133,14 @@ in
         can be matched.
       '';
     };
+    temperatureUnit = mkOption {
+      type = lib.types.enum [
+        "fahrenheit"
+        "celsius"
+      ];
+      default = "fahrenheit";
+      description = "The weather island's temperatures.";
+    };
   };
 
   config = mkIf (config.modules.hyprland.enable && cfg.enable) {
@@ -141,6 +158,7 @@ in
       islandsAgent
       islandsCapture
       islandsCalendar
+      islandsWeather
       # nm-connection-editor, behind the Wi-Fi page's "Network settings…"
       pkgs.networkmanagerapplet
     ];
@@ -189,7 +207,7 @@ in
       };
     };
     xdg.configFile."islands/config.json".text = builtins.toJSON {
-      inherit (cfg) temperatureSensor;
+      inherit (cfg) temperatureSensor temperatureUnit;
       attentionSound = "${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/dialog-warning.oga";
     };
 

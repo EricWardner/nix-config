@@ -71,6 +71,10 @@ PanelWindow {
 		Region {
 			item: meeting.visible ? meeting : null
 		}
+
+		Region {
+			item: weather.visible ? weather : null
+		}
 	}
 
 	Item {
@@ -130,12 +134,21 @@ PanelWindow {
 		y: centre.y
 	}
 
-	// And the next meeting before it
+	// And the next meeting before it, or the weather
 	EventIsland {
 		id: meeting
 
 		monitor: bar.monitor
-		visible: soon && centre.resting
+		visible: soon && centre.resting && !weather.open
+		x: centre.x - width - 8
+		y: centre.y
+	}
+
+	WeatherIsland {
+		id: weather
+
+		monitor: bar.monitor
+		visible: Weather.ready && (open || centre.resting && !meeting.visible)
 		x: centre.x - width - 8
 		y: centre.y
 	}

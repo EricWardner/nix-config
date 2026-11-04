@@ -67,6 +67,25 @@ PanelWindow {
 			opacity: 0.92
 			font.pixelSize: 22
 		}
+
+		Row {
+			anchors.horizontalCenter: parent.horizontalCenter
+			visible: Weather.ready
+			opacity: 0.92
+			spacing: 10
+
+			WeatherIcon {
+				anchors.verticalCenter: parent.verticalCenter
+				glyph: Weather.current ? Weather.glyph(Weather.current.code, Weather.current.day) : "cloud"
+				size: 24
+			}
+
+			BarText {
+				anchors.verticalCenter: parent.verticalCenter
+				text: Weather.line
+				font.pixelSize: 20
+			}
+		}
 	}
 
 	Row {
