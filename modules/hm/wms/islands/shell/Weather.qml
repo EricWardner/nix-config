@@ -172,34 +172,25 @@ Singleton {
 			onRead: line => console.warn("islands-weather:", line)
 		}
 		onExited: code => {
-			if (code !== 0) {
-				retry.start();
+			if (code !== 0)
 				return;
-			}
 			located = true;
 			cache.reload();
 		}
 	}
 
-	// A fetch on waking from sleep fails until the network is back
-	Timer {
-		id: retry
-
-		interval: 30 * 1000
-		onTriggered: fetch.running = true
-	}
-
-	Timer {
-		interval: 15 * 60 * 1000
-		repeat: true
-		running: true
-		onTriggered: fetch.running = true
-	}
-
+	// Fetched again once it's 15 minutes old, by the clock: a Timer doesn't
+	// count time asleep, so one 15 minutes long left the forecast hidden for
+	// most of that after waking. Also tries a failed fetch again, as one on
+	// waking fails until the network is back.
 	Timer {
 		interval: 60 * 1000
 		repeat: true
 		running: true
-		onTriggered: root.now = Date.now()
+		onTriggered: {
+			root.now = Date.now();
+			if (!fetch.running && (!root.forecast || root.now / 1000 - root.forecast.fetched >= 15 * 60))
+				fetch.running = true;
+		}
 	}
 }
