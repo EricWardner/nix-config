@@ -17,7 +17,9 @@ Item {
 	readonly property var modeList: Array.from(stage.children).filter(child => child.isMode)
 	readonly property IslandMode current: modeList.length === 0 ? null : modeList.reduce((best, mode) => mode.active && mode.priority > best.priority ? mode : best, modeList[0])
 	readonly property bool resting: current?.resting ?? true
-	readonly property real radius: glass.radius
+	// Where Hyprland may blur behind it: a little past the glass, which (by
+	// its alpha) trims the blur to its own smooth edge
+	readonly property Item blurArea: blurArea
 
 	function syncCurrent() {
 		for (const mode of modeList)
@@ -82,6 +84,13 @@ Item {
 				layer.enabled: true
 			}
 		}
+	}
+
+	Item {
+		id: blurArea
+
+		anchors.fill: parent
+		anchors.margins: -2
 	}
 
 	Rectangle {

@@ -40,41 +40,38 @@ PanelWindow {
 
 	// Hyprland blurs behind the islands' glass here, however clear the glass
 	// is: told by opacity alone, it switched the blur on partway through a
-	// growing island's fade-in, and the windows behind flashed
+	// growing island's fade-in, and the windows behind flashed. Each area
+	// reaches a little past its island, and Hyprland's ignore_alpha
+	// (rules.lua) trims it to the glass: a region's rounded corners are
+	// whole logical pixels, and its steps showed against anything bright
+	// beside the islands.
 	BackgroundEffect.blurRegion: Region {
 		Region {
-			item: centre
-			radius: centre.radius
+			item: centre.blurArea
 		}
 
 		Region {
-			item: weather.visible ? weather : null
-			radius: weather.radius
+			item: weather.visible ? weather.blurArea : null
 		}
 
 		Region {
-			item: dnd.visible ? dnd : null
-			radius: dnd.radius
+			item: dnd.visible ? dnd.blurArea : null
 		}
 
 		Region {
-			item: meeting.visible ? meeting : null
-			radius: meeting.radius
+			item: meeting.visible ? meeting.blurArea : null
 		}
 
 		Region {
-			item: held.visible ? held : null
-			radius: held.radius
+			item: held.visible ? held.blurArea : null
 		}
 
 		Region {
-			item: tray.visible ? tray : null
-			radius: tray.radius
+			item: tray.visible ? tray.blurArea : null
 		}
 
 		Region {
-			item: status
-			radius: status.radius
+			item: status.blurArea
 		}
 	}
 

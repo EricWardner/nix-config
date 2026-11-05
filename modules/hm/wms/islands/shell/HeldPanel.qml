@@ -25,7 +25,9 @@ Item {
 		return Object.values(byName).sort((a, b) => b.count - a.count);
 	}
 
-	readonly property real radius: glass.radius
+	// Where Hyprland may blur behind it: a little past the glass, which (by
+	// its alpha) trims the blur to its own smooth edge
+	readonly property Item blurArea: blurArea
 
 	implicitWidth: 300
 	implicitHeight: column.implicitHeight + 24
@@ -42,6 +44,13 @@ Item {
 		offset.y: 2
 		blur: 6
 		color: Qt.rgba(0, 0, 0, 0.25)
+	}
+
+	Item {
+		id: blurArea
+
+		anchors.fill: parent
+		anchors.margins: -2
 	}
 
 	Rectangle {
