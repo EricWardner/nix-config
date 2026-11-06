@@ -1,0 +1,128 @@
+# Claude Code's hooks call this, so a prompt Claude is still working on
+# after 10 seconds shows in the bar's job island like a terminal's command
+# (shell/Jobs.qml), then when it's done. Agents it starts count too: a
+# review's reviewers can outlast the turn that started them, so the job is
+# done once the turn has ended and the last agent has stopped. One file per
+# session, in the bar's format: run|end, started, ended, exit code, no
+# command, then the name: what's being done, and the project. "claude ·
+# nix-config" for a prompt, "code-review · nix-config" for /code-review, an
+# agent's type ("Explore") once only agents are left.
+#
+#   islands-claude-job start         UserPromptSubmit
+#   islands-claude-job stop          Stop
+#   islands-claude-job agent-start   SubagentStart
+#   islands-claude-job agent-stop    SubagentStop
+#   islands-claude-job end           SessionEnd
+#
+# There's no hook for a turn stopped with Esc, so the job runs on until the
+# next one stops. It prints nothing and always succeeds, so it never gets in
+# Claude's way.
+
+# Fields joined by a separator that isn't whitespace, so an empty one
+# (agent_id, for most hooks) doesn't vanish. A prompt that's a slash command
+# names the turn; one that brings a background job's result (a skill's, or
+# an agent's report) is marked, to keep that job's name.
+IFS=$'\x1f' read -r session cwd agent type command < <(jq -r '[.session_id // "", .cwd // "", .agent_id // "", .agent_type // "", ((.prompt // "") | ltrimstr(" ") | if startswith("/") then (ltrimstr("/") | split(" ")[0]) elif (contains("<task-notification>") or contains("<agent-message")) then "@result" else "" end)] | join("\u001f")' 2>/dev/null) || true
+if [[ -z ${session:-} || -z ${XDG_RUNTIME_DIR:-} ]]; then
+	exit 0
+fi
+file=$XDG_RUNTIME_DIR/islands/jobs/claude-$session
+# What's busy: "turn" while Claude answers, "agent-<id>" per running agent,
+# each holding its name
+state=$XDG_RUNTIME_DIR/islands/claude/$session
+event=${1:-}
+printf -v now '%(%s)T' -1
+mkdir -p "${file%/*}" "${state%/*}"
+
+# Parallel agents start and stop together: one at a time. The (empty) lock
+# lives beside the session's folder, which end removes, and stays.
+exec 9>"$state.lock"
+flock 9
+
+# A hook that arrives after the session ended leaves nothing behind
+if [[ ! -d $state && $event != start && $event != agent-start ]]; then
+	exit 0
+fi
+
+# Tabs are whitespace to read, so the empty fields between them vanish: a
+# running job reads as state, started, name
+running() {
+	[[ -f $file ]] && IFS=$'\t' read -r status started name <"$file" && [[ $status == run ]]
+}
+
+# The turn's name while it runs, else the agents': "Explore & 2 more"
+label() {
+	local what='' more=0 agents=("$state"/agent-*)
+	if [[ -f $state/turn ]]; then
+		read -r what <"$state/turn" || true
+	elif [[ -e ${agents[0]} ]]; then
+		read -r what <"${agents[0]}" || true
+		more=$((${#agents[@]} - 1))
+		if ((more > 0)); then
+			what+=" & $more more"
+		fi
+	fi
+	printf '%s · %s' "${what:-claude}" "${cwd##*/}"
+}
+
+# Running, since whenever it began if it already was
+run() {
+	local since=$now
+	if running; then
+		since=$started
+	fi
+	printf 'run\t%s\t\t\t\t%s\n' "$since" "$(label)" >"$file"
+}
+
+# Done, unless the turn or an agent is still going; else running, under
+# whatever is left
+finish() {
+	local agents=("$state"/agent-*)
+	if [[ -e $state/turn || -e ${agents[0]} ]]; then
+		if running; then
+			run
+		fi
+	elif running; then
+		printf 'end\t%s\t%s\t0\t\t%s\n' "$started" "$now" "$name" >"$file"
+	fi
+}
+
+case $event in
+start)
+	mkdir -p "$state"
+	# A result goes under the name of the job it's from: the turn that
+	# started it, or the last job
+	if [[ $command == @result ]]; then
+		command=claude
+		if [[ -f $state/turn ]]; then
+			read -r command <"$state/turn" || true
+		elif [[ -f $file ]] && IFS=$'\t' read -ra fields <"$file"; then
+			command=${fields[-1]% · *}
+		fi
+	fi
+	printf '%s\n' "${command:-claude}" >"$state/turn"
+	run
+	;;
+stop)
+	rm -f "$state/turn"
+	finish
+	;;
+agent-start)
+	mkdir -p "$state"
+	# Its type ("Explore"), but Claude's own name for a general-purpose one
+	if [[ ${type:-general-purpose} == general-purpose ]]; then
+		type=claude
+	fi
+	printf '%s\n' "$type" >"$state/agent-${agent:-unknown}"
+	run
+	;;
+agent-stop)
+	rm -f "$state/agent-${agent:-unknown}"
+	finish
+	;;
+end)
+	rm -rf "$state"
+	rm -f "$file"
+	;;
+esac
+exit 0

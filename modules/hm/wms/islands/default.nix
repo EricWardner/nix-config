@@ -100,6 +100,17 @@ let
     ];
     text = builtins.readFile ./islands-weather;
   };
+  # Claude Code's prompt and agent hooks (~/.claude/settings.json) call it to
+  # put a prompt still being worked on in the job island
+  islandsClaudeJob = pkgs.writeShellApplication {
+    name = "islands-claude-job";
+    runtimeInputs = with pkgs; [
+      jq
+      coreutils
+      util-linux
+    ];
+    text = builtins.readFile ./islands-claude-job;
+  };
   # The control centre's load line opens it. The class must be a valid app
   # ID (with a dot) or ghostty ignores it; the floating rule in
   # hypr/lua/rules.lua matches it.
@@ -159,6 +170,7 @@ in
       islandsCapture
       islandsCalendar
       islandsWeather
+      islandsClaudeJob
       # nm-connection-editor, behind the Wi-Fi page's "Network settings…"
       pkgs.networkmanagerapplet
     ];
