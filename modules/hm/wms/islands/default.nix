@@ -165,6 +165,10 @@ in
 
     xdg.configFile."quickshell/islands".source = ./shell;
 
+    # Tells the bar what each terminal is running, for its job island
+    # (shell/Jobs.qml)
+    programs.zsh.initContent = lib.mkAfter (builtins.readFile ./islands-jobs.zsh);
+
     # blueman-manager (Bluetooth settings…) starts blueman's applet, whose
     # agent would take pairing from islands-agent, with a tray icon
     dconf.settings."org/blueman/general".plugin-list = [
@@ -233,6 +237,8 @@ in
         ];
       };
       Service = {
+        # The job island watches this for the shells' files (shell/Jobs.qml)
+        ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %t/islands/jobs";
         ExecStart = "${pkgs.quickshell}/bin/qs -c islands";
         Environment = [
           "QS_DISABLE_CRASH_HANDLER=1"

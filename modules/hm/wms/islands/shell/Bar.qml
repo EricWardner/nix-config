@@ -63,6 +63,10 @@ PanelWindow {
 		}
 
 		Region {
+			item: job.visible ? job.blurArea : null
+		}
+
+		Region {
 			item: held.visible ? held.blurArea : null
 		}
 
@@ -105,6 +109,10 @@ PanelWindow {
 
 		Region {
 			item: meeting.visible ? meeting : null
+		}
+
+		Region {
+			item: job.visible ? job : null
 		}
 
 		Region {
@@ -160,7 +168,7 @@ PanelWindow {
 	}
 
 	// Beside the clock while it's at rest: the weather before it, Do Not
-	// Disturb after it, then the next meeting
+	// Disturb after it, then the next meeting, then a terminal's job
 	WeatherIsland {
 		id: weather
 
@@ -185,6 +193,14 @@ PanelWindow {
 		monitor: bar.monitor
 		visible: soon && centre.resting
 		x: (dnd.visible ? dnd.x + dnd.width : centre.x + centre.width) + 8
+		y: centre.y
+	}
+
+	JobIsland {
+		id: job
+
+		visible: Jobs.shown.length > 0 && centre.resting
+		x: (meeting.visible ? meeting.x + meeting.width : dnd.visible ? dnd.x + dnd.width : centre.x + centre.width) + 8
 		y: centre.y
 	}
 

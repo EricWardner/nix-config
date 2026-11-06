@@ -23,6 +23,8 @@ FocusScope {
 	property bool resting: false
 	// The grown glass's rim; a state can colour it (critical: red)
 	property color rim: Theme.grownRim
+	// The rim at rest (a job that failed: red)
+	property color restRim: Theme.islandRim
 	// Set by the island
 	property bool current: false
 

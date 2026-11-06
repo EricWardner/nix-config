@@ -100,7 +100,7 @@ Item {
 		radius: root.current && root.current.cornerRadius >= 0 ? root.current.cornerRadius : Math.min(height / 2, 24)
 		color: root.resting ? Theme.islandFill : Theme.grownFill
 		border.width: 1
-		border.color: root.resting ? Theme.islandRim : root.current.rim
+		border.color: root.resting ? (root.current?.restRim ?? Theme.islandRim) : root.current.rim
 
 		Behavior on radius {
 			Morph {}
