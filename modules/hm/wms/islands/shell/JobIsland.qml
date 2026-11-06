@@ -1,16 +1,30 @@
 import QtQuick
+import Quickshell.Hyprland
 
 // A command a terminal has been running for over 10 seconds, in an island
 // after the clock: "test:e2e 3:12", and "+1" for each other job. When it
 // ends, how: "test:e2e passed 6m 04s" or "test:e2e failed exit 1", until
 // its terminal is looked at. A click goes to that terminal; a right click
-// dismisses a result.
+// dismisses a result. A click on the "+1" grows it into every job
+// (JobsMode).
 Island {
 	id: root
 
+	required property HyprlandMonitor monitor
+	readonly property bool open: Desktop.panel === "jobs" && Desktop.panelOn === monitor
 	readonly property var job: Jobs.shown[0] ?? null
 	readonly property bool running: job?.state === "run"
 	readonly property bool passed: job?.state === "end" && job.code === 0
+
+	// Nothing left to list
+	Connections {
+		target: Jobs
+
+		function onShownChanged() {
+			if (root.open && Jobs.shown.length === 0)
+				Desktop.closePanel();
+		}
+	}
 
 	IslandMode {
 		active: true
@@ -53,15 +67,17 @@ Island {
 
 			// How many other jobs there are
 			Rectangle {
+				id: more
+
 				visible: Jobs.shown.length > 1
 				anchors.verticalCenter: parent.verticalCenter
-				width: more.implicitWidth + 12
+				width: count.implicitWidth + 12
 				height: 18
 				radius: 9
 				color: Theme.alpha(Theme.fg, 0.16)
 
 				BarText {
-					id: more
+					id: count
 
 					anchors.centerIn: parent
 					text: "+" + (Jobs.shown.length - 1)
@@ -74,19 +90,28 @@ Island {
 		}
 
 		// A right click puts a result away without going there; it leaves a
-		// running job alone
+		// running job alone. The "+1" (and the pill's end beyond it) opens
+		// the list instead.
 		MouseArea {
+			id: area
+
 			anchors.fill: parent
 			acceptedButtons: Qt.LeftButton | Qt.RightButton
 			cursorShape: Qt.PointingHandCursor
 			onClicked: mouse => {
 				if (!root.job)
 					return;
-				if (mouse.button === Qt.LeftButton)
+				if (more.visible && mouse.button === Qt.LeftButton && mouse.x >= more.mapToItem(area, 0, 0).x - 4)
+					Desktop.togglePanel("jobs", root.monitor);
+				else if (mouse.button === Qt.LeftButton)
 					Jobs.open(root.job);
 				else if (!root.running)
 					Jobs.dismiss(root.job);
 			}
 		}
+	}
+
+	JobsMode {
+		active: root.open
 	}
 }

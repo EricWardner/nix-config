@@ -199,7 +199,8 @@ PanelWindow {
 	JobIsland {
 		id: job
 
-		visible: Jobs.shown.length > 0 && centre.resting
+		monitor: bar.monitor
+		visible: Jobs.shown.length > 0 && (open || centre.resting)
 		x: (meeting.visible ? meeting.x + meeting.width : dnd.visible ? dnd.x + dnd.width : centre.x + centre.width) + 8
 		y: centre.y
 	}
