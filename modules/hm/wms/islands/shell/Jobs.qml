@@ -58,7 +58,7 @@ Singleton {
 	// watchers that run until stopped, and shells within the shell. A REPL
 	// only counts without arguments (`python` but not `python build.py`).
 	// Matched against the command with its aliases expanded too.
-	readonly property var interactive: ["vi", "vim", "nvim", "nano", "hx", "emacs", "micro", "less", "more", "man", "ssh", "mosh", "tmux", "zellij", "screen", "top", "htop", "btop", "watch", "claude", "lazygit", "yazi", "ranger", "nnn", "fzf", "psql", "mysql", "sqlite3", "nix-shell", "systemd-inhibit"]
+	readonly property var interactive: ["vi", "vim", "nvim", "nano", "hx", "emacs", "micro", "less", "more", "man", "ssh", "mosh", "tmux", "zellij", "screen", "top", "htop", "btop", "watch", "claude", "lazygit", "yazi", "ranger", "nnn", "fzf", "psql", "mysql", "sqlite3", "nix-shell", "systemd-inhibit", "pc", "process-compose"]
 	readonly property var repls: ["python", "python3", "ipython", "node", "irb", "ghci", "bash", "zsh", "fish", "sh"]
 	readonly property var patterns: [/^(npm|pnpm|yarn|bun)( run)? (dev|start|serve|watch|storybook)\b/, /^nix (develop|shell|repl)\b/, /^devenv shell\b/, /^docker[ -]compose\b.* up\b(?!.* -d\b)/, /^kubectl port-forward\b/, /\b(tail|journalctl|logs)\b.* (-f|--follow)\b/, / --watch\b/]
 	// Package manager flags whose value is the next word
