@@ -3,26 +3,51 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.Polkit
 
 // The questions NetworkManager, BlueZ and gnome-keyring ask (a Wi-Fi
 // password, a pairing passkey, a keyring's password), from islands-agent
-// (pkgs/islands-agent), for the centre island to ask in turn. The agent runs as this shell's child, so it stops with it,
-// and it's restarted if it exits. A copy of the shell run by hand for
-// development can leave it out (ISLANDS_NO_AGENT=1), so it doesn't take
-// BlueZ's default agent from the running one.
+// (pkgs/islands-agent), and polkit's, for an app that needs root (mounting
+// an internal disk), for the centre island to ask in turn. The agent runs
+// as this shell's child, so it stops with it, and it's restarted if it
+// exits. A copy of the shell run by hand for development can leave both
+// out (ISLANDS_NO_AGENT=1), so it doesn't take BlueZ's default agent or
+// polkit's from the running one.
 Singleton {
 	id: root
 
-	// Oldest first: each {id, kind, …} as the agent sent it
+	// Oldest first: each {id, kind, …} as the agent sent it, and polkit's
+	// request as {id: -1, kind: "polkit"}, its state in `flow`
 	property var questions: []
 	readonly property var current: questions[0] ?? null
 	// It has a field to type into
-	readonly property bool typing: current !== null && (["wifi", "bt-pin", "bt-passkey"].includes(current.kind) || current.kind === "keyring" && !current.confirm)
+	readonly property bool typing: current !== null && (["wifi", "bt-pin", "bt-passkey", "polkit"].includes(current.kind) || current.kind === "keyring" && !current.confirm)
 	// The questions PromptMode knows how to ask
 	readonly property var kinds: ["wifi", "bt-confirm", "bt-display", "bt-pin", "bt-passkey", "bt-authorize", "keyring"]
+	// Polkit's request, one at a time (it queues the rest)
+	readonly property AuthFlow flow: polkit.item?.flow ?? null
 
-	// `value` is null to cancel
+	onFlowChanged: {
+		questions = questions.filter(q => q.kind !== "polkit");
+		if (flow)
+			questions = questions.concat([
+				{
+					"id": -1,
+					"kind": "polkit"
+				}
+			]);
+	}
+
+	// `value` is null to cancel. A polkit request goes once polkit's done
+	// with it: a wrong password asks again.
 	function answer(id: int, value: var) {
+		if (id === -1) {
+			if (value === null)
+				flow?.cancelAuthenticationRequest();
+			else
+				flow?.submit(value);
+			return;
+		}
 		agent.write(JSON.stringify({
 			"id": id,
 			"value": value
@@ -56,9 +81,17 @@ Singleton {
 			onRead: line => console.warn("islands-agent:", line)
 		}
 		onExited: {
-			root.questions = [];
+			root.questions = root.questions.filter(q => q.kind === "polkit");
 			restart.start();
 		}
+	}
+
+	LazyLoader {
+		id: polkit
+
+		active: !Quickshell.env("ISLANDS_NO_AGENT")
+
+		PolkitAgent {}
 	}
 
 	// For a keybind: `qs ipc -c islands call prompt cancel` turns down the

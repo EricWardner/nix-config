@@ -4,6 +4,5 @@
     ./hypridle.nix
     ./hyprlock.nix
     ./wallpaper.nix
-    ./hyprpolkitagent.nix
   ];
 }

@@ -21,7 +21,8 @@ PanelWindow {
 	// The notification or control centre (or the held notifications) is open
 	// on this monitor
 	readonly property bool panelOpen: Desktop.panel !== "" && Desktop.panelOn === monitor
-	// A question from NetworkManager or BlueZ is in this monitor's island
+	// A question (a Wi-Fi password, a pairing step, polkit's password) is in
+	// this monitor's island
 	readonly property bool asking: Agent.current !== null && Hyprland.focusedMonitor === monitor
 
 	screen: modelData

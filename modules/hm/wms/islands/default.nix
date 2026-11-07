@@ -121,16 +121,17 @@ in
 {
   # The islands desktop shell (Quickshell): the bar, the islands that grow
   # out of it (notifications, the volume popup, the notification and control
-  # centres, Wi-Fi and pairing prompts), and the notification server. It
-  # replaced waybar, mako, swayosd, net-panel and blueman's applet. Home
-  # Manager installs a copy as the `islands` config, which the service below
-  # runs. To work on it with reload on every save:
+  # centres, Wi-Fi, pairing and password prompts), the notification server
+  # and the polkit agent. It replaced waybar, mako, swayosd, net-panel,
+  # blueman's applet and hyprpolkitagent. Home Manager installs a copy as
+  # the `islands` config, which the service below runs. To work on it with
+  # reload on every save:
   #
   #   systemctl --user stop islands
   #   qs -p ~/nix-config/modules/hm/wms/islands/shell
   #
   # (Run a second copy beside the service with ISLANDS_NO_AGENT=1, so it
-  # leaves the prompts to the running one.)
+  # leaves the prompts, polkit's too, to the running one.)
   options.modules.hyprland.islands = {
     enable = mkEnableOption "the islands Quickshell shell" // {
       default = true;

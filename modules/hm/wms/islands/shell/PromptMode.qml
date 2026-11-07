@@ -1,12 +1,13 @@
 import QtQuick
 import Quickshell.Bluetooth
 
-// A question from NetworkManager, BlueZ or gnome-keyring (Agent), over
-// everything else in the centre island until it's answered: a Wi-Fi
+// A question from NetworkManager, BlueZ, gnome-keyring or polkit (Agent),
+// over everything else in the centre island until it's answered: a Wi-Fi
 // password (and a login, for a work network), a pairing step (confirm a
 // passkey, type one shown here on a keyboard, enter a PIN, allow a device
-// in), or a keyring's password (to unlock it, or a new one) or yes or no.
-// Enter answers it, Esc cancels it; it keeps the keyboard while it shows.
+// in), a keyring's password (to unlock it, or a new one) or yes or no, or
+// your password for an app that needs root. Enter answers it, Esc cancels
+// it; it keeps the keyboard while it shows.
 IslandMode {
 	id: root
 
@@ -14,6 +15,8 @@ IslandMode {
 	readonly property string kind: question?.kind ?? ""
 	readonly property bool wifi: kind === "wifi"
 	readonly property bool keyring: kind === "keyring"
+	readonly property bool polkit: kind === "polkit"
+	readonly property var flow: polkit ? Agent.flow : null
 	readonly property bool keyringPassword: keyring && !question.confirm
 	readonly property bool newPassword: keyringPassword && question.new
 	readonly property bool typed: kind === "bt-pin" || kind === "bt-passkey"
@@ -41,11 +44,23 @@ IslandMode {
 			return "Allow " + q.device + " to connect?";
 		case "keyring":
 			return q.message || q.title;
+		case "polkit":
+			return flow?.message ?? "";
 		}
 		return "";
 	}
-	readonly property string detail: kind === "bt-confirm" ? "Check that it shows this number" : keyring ? question.description : ""
+	readonly property string detail: kind === "bt-confirm" ? "Check that it shows this number" : keyring ? question.description : flow && !flow.supplementaryIsError ? flow.supplementaryMessage : ""
+	// The last password didn't work, or the new ones don't match
+	readonly property string warning: {
+		if (keyring)
+			return question.warning ?? "";
+		if (flow?.supplementaryIsError)
+			return flow.supplementaryMessage;
+		return flow?.failed ? "That password didn't work" : "";
+	}
 	readonly property bool ready: {
+		if (polkit)
+			return flow !== null && flow.isResponseRequired && secret.text !== "";
 		if (wifi)
 			return question.login ? identity.text !== "" && secret.text !== "" : secret.text.length >= 8;
 		if (newPassword)
@@ -69,7 +84,7 @@ IslandMode {
 				"secret": secret.text,
 				"chosen": choice.on
 			});
-		else if (typed)
+		else if (typed || polkit)
 			Agent.answer(id, secret.text);
 		else if (kind === "bt-display")
 			Agent.answer(id, null);
@@ -101,7 +116,7 @@ IslandMode {
 			return;
 		if (question.login)
 			identity.focusField();
-		else if (wifi || typed || keyringPassword)
+		else if (wifi || typed || keyringPassword || polkit)
 			secret.focusField();
 		else
 			forceActiveFocus();
@@ -135,6 +150,18 @@ IslandMode {
 		}
 	}
 
+	// A wrong password: polkit asks again, into an empty field
+	Connections {
+		target: root.flow
+
+		function onIsResponseRequiredChanged() {
+			if (root.flow.isResponseRequired && root.flow.failed) {
+				secret.text = "";
+				secret.focusField();
+			}
+		}
+	}
+
 	Column {
 		id: content
 
@@ -155,7 +182,7 @@ IslandMode {
 
 				BarText {
 					anchors.centerIn: parent
-					text: root.wifi ? Glyphs.wifi : root.keyring ? Glyphs.lock : Glyphs.bluetooth
+					text: root.wifi ? Glyphs.wifi : root.keyring || root.polkit ? Glyphs.lock : Glyphs.bluetooth
 					color: Theme.ink
 					font.pixelSize: 15
 				}
@@ -186,13 +213,12 @@ IslandMode {
 					wrapMode: Text.Wrap
 				}
 
-				// The last password didn't work, or the new ones don't match
 				BarText {
 					visible: text !== ""
 					width: parent.width
-					text: root.keyring ? root.question.warning : ""
+					text: root.warning
 					textFormat: Text.PlainText
-					color: Theme.red
+					color: Theme.inkRed
 					font.pixelSize: 12
 					font.weight: Font.DemiBold
 					wrapMode: Text.Wrap
@@ -230,11 +256,11 @@ IslandMode {
 		Field {
 			id: secret
 
-			visible: root.wifi || root.typed || root.keyringPassword
+			visible: root.wifi || root.typed || root.keyringPassword || root.polkit
 			width: parent.width
-			password: root.wifi || root.keyring
+			password: root.wifi || root.keyring || root.polkit && !root.flow?.responseVisible
 			numeric: root.kind === "bt-passkey"
-			placeholder: root.wifi || root.keyring ? "Password" : root.kind === "bt-pin" ? "PIN" : "Passkey"
+			placeholder: root.wifi || root.keyring || root.polkit ? "Password" : root.kind === "bt-pin" ? "PIN" : "Passkey"
 			onAccepted: root.newPassword ? confirmation.focusField() : root.submit()
 		}
 
@@ -286,7 +312,7 @@ IslandMode {
 				visible: root.kind !== "bt-display"
 				primary: true
 				enabled: root.ready
-				text: root.wifi ? "Join" : root.keyring ? root.question.continue || "Continue" : root.kind === "bt-authorize" ? "Allow" : "Pair"
+				text: root.wifi ? "Join" : root.keyring ? root.question.continue || "Continue" : root.polkit ? "Authenticate" : root.kind === "bt-authorize" ? "Allow" : "Pair"
 				onClicked: root.submit()
 			}
 		}
