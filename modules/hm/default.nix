@@ -86,7 +86,22 @@
           "x-scheme-handler/http" = [ "google-chrome.desktop" ];
           "text/html" = [ "google-chrome.desktop" ];
           "inode/directory" = [ "thunar.desktop" ];
-        };
+        }
+        # Images in Loupe: with nothing set they opened in Brave, which
+        # claims them. SVGs too, to look at; Inkscape is in Open With.
+        // lib.genAttrs [
+          "image/apng"
+          "image/avif"
+          "image/bmp"
+          "image/gif"
+          "image/heic"
+          "image/jpeg"
+          "image/jxl"
+          "image/png"
+          "image/svg+xml"
+          "image/tiff"
+          "image/webp"
+        ] (_: [ "org.gnome.Loupe.desktop" ]);
       };
       desktopEntries."com.google.Chrome" = {
         name = "Google Chrome (duplicate)";
@@ -128,6 +143,9 @@
         # Chat
         slack
         signal-desktop
+
+        # Image viewer (the default for images, above)
+        loupe
       ];
       file."Wallpapers" = {
         recursive = true;
