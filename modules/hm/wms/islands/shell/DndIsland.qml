@@ -2,9 +2,9 @@ import QtQuick
 import Quickshell.Hyprland
 
 // Keep Awake and Do Not Disturb while either is on, in an island of its own
-// beside the clock: a cup for Keep Awake; a slashed bell, and how many
-// notifications it has kept quiet, for Do Not Disturb. A click opens the
-// notification centre, which lists them and turns both off.
+// beside the clock: a steaming cup for Keep Awake; a slashed bell, and how
+// many notifications it has kept quiet, for Do Not Disturb. A click opens
+// the notification centre, which lists them and turns both off.
 Island {
 	id: root
 
@@ -25,7 +25,7 @@ Island {
 			BarText {
 				visible: KeepAwake.on
 				anchors.verticalCenter: parent.verticalCenter
-				text: Glyphs.cup
+				text: Glyphs.cupHeatWavesFill
 				font.pixelSize: 14
 			}
 
