@@ -317,12 +317,13 @@ Column {
 		onTriggered: historyCall.running = true
 	}
 
-	// top over two seconds, every three. Its config is pointed at nothing,
-	// so a saved toprc can't move the columns read.
+	// top over two seconds, every three; over half a second the first time,
+	// so the apps show soon after the page opens. Its config is pointed at
+	// nothing, so a saved toprc can't move the columns read.
 	Process {
 		id: top
 
-		command: ["top", "-b", "-n", "2", "-d", "2", "-w", "512"]
+		command: ["top", "-b", "-n", "2", "-d", root.appsRead ? "2" : "0.5", "-w", "512"]
 		environment: ({
 				"LC_ALL": "C",
 				"HOME": "/var/empty",
