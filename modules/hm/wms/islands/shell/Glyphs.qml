@@ -31,6 +31,8 @@ Singleton {
 	readonly property string recordCircle: String.fromCodePoint(0x10075C)
 	readonly property string stopCircle: String.fromCodePoint(0x10072A)
 	readonly property string bellSlash: String.fromCodePoint(0x1002DD)
+	readonly property string cup: String.fromCodePoint(0x100E18)
+	readonly property string cupFill: String.fromCodePoint(0x100E19)
 	readonly property string terminal: String.fromCodePoint(0x100A7C)
 	readonly property string globe: String.fromCodePoint(0x1001AA)
 	readonly property string folder: String.fromCodePoint(0x100215)
@@ -56,7 +58,6 @@ Singleton {
 	readonly property string power: String.fromCodePoint(0xF0425)
 	readonly property string checkCircle: String.fromCodePoint(0xF05E1)
 	readonly property string xCircle: String.fromCodePoint(0xF015A)
-	readonly property string coffee: String.fromCodePoint(0xF0176)
 	// Wi-Fi signal, weakest to strongest
 	readonly property var wifiStrength: [0xF091F, 0xF0922, 0xF0925, 0xF0928].map(c => String.fromCodePoint(c))
 

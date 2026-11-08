@@ -123,7 +123,7 @@ IslandMode {
 						spacing: 4
 
 						TogglePill {
-							glyph: Glyphs.coffee
+							glyph: Glyphs.cupFill
 							text: "Keep Awake"
 							on: KeepAwake.on
 							onToggled: KeepAwake.on = !KeepAwake.on

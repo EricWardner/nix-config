@@ -25,7 +25,7 @@ Island {
 			BarText {
 				visible: KeepAwake.on
 				anchors.verticalCenter: parent.verticalCenter
-				text: Glyphs.coffee
+				text: Glyphs.cup
 				font.pixelSize: 14
 			}
 
