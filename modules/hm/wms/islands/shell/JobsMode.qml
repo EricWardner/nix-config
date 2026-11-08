@@ -7,9 +7,24 @@ import QtQuick
 IslandMode {
 	id: root
 
+	// The widest row as its text would lay out: measured from the jobs, as
+	// the rows themselves are the island's width, not their own
+	readonly property real widest: Math.max(0, ...Jobs.shown.map(job => 8 + 18 + 10 + Math.ceil(nameMetrics.advanceWidth(job.name)) + 24 + Math.ceil(statusMetrics.advanceWidth(status(job))) + 8))
+
+	// "1:05" while it runs; "done · 5m 00s", "passed · 12s", "failed · exit 1"
+	function status(job: var): string {
+		if (job.state === "run")
+			return Jobs.clock(Jobs.now - job.started);
+		const took = Jobs.duration(job.ended - job.started);
+		return !job.shell ? "done · " + took : job.code === 0 ? "passed · " + took : "failed · exit " + job.code;
+	}
+
+
 	priority: 40
 	cornerRadius: 20
-	islandWidth: Math.max(260, column.implicitWidth + 24)
+	// Wide enough for the widest row, up to a point: past it, names are cut
+	// short
+	islandWidth: Math.max(260, Math.min(480, widest + 24))
 	islandHeight: column.implicitHeight + 16
 
 	focus: current
@@ -17,6 +32,23 @@ IslandMode {
 		forceActiveFocus()
 
 	Keys.onEscapePressed: Desktop.closePanel()
+
+	FontMetrics {
+		id: nameMetrics
+
+		font.family: Theme.sans
+		font.pixelSize: 14
+	}
+
+	FontMetrics {
+		id: statusMetrics
+
+		font.family: Theme.sans
+		font.pixelSize: 13
+		font.features: {
+			"tnum": 1
+		}
+	}
 
 	Column {
 		id: column
@@ -37,7 +69,6 @@ IslandMode {
 				readonly property bool passed: job.code === 0
 
 				width: column.width
-				implicitWidth: 18 + 10 + name.implicitWidth + 24 + status.implicitWidth + 16
 				height: 34
 
 				Rectangle {
@@ -60,15 +91,16 @@ IslandMode {
 				}
 
 				BarText {
-					id: name
-
 					anchors.left: icon.right
 					anchors.leftMargin: 10
+					anchors.right: status.left
+					anchors.rightMargin: 24
 					anchors.verticalCenter: parent.verticalCenter
 					text: row.job.name
 					textFormat: Text.PlainText
+					elide: Text.ElideRight
 					color: Theme.ink
-					font.pixelSize: 14
+					font: nameMetrics.font
 				}
 
 				BarText {
@@ -77,18 +109,9 @@ IslandMode {
 					anchors.right: parent.right
 					anchors.rightMargin: 8
 					anchors.verticalCenter: parent.verticalCenter
-					text: {
-						const job = row.job;
-						if (row.running)
-							return Jobs.clock(Jobs.now - job.started);
-						const took = Jobs.duration(job.ended - job.started);
-						return !job.shell ? "done · " + took : row.passed ? "passed · " + took : "failed · exit " + job.code;
-					}
+					text: root.status(row.job)
 					color: Theme.inkDim
-					font.pixelSize: 13
-					font.features: {
-						"tnum": 1
-					}
+					font: statusMetrics.font
 				}
 
 				MouseArea {
