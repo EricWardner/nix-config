@@ -145,6 +145,23 @@ in
         can be matched.
       '';
     };
+    powerSensor = mkOption {
+      type = lib.types.str;
+      default = "";
+      description = ''
+        The file the battery page reads the chip's power draw from, in
+        microwatts (an AMD APU's amdgpu power1_average, say), as a shell
+        glob; "" leaves it out.
+      '';
+    };
+    fanSensor = mkOption {
+      type = lib.types.str;
+      default = "";
+      description = ''
+        The file the battery page reads the fan's speed from, in rpm, as a
+        shell glob; "" leaves it out.
+      '';
+    };
     temperatureUnit = mkOption {
       type = lib.types.enum [
         "fahrenheit"
@@ -224,7 +241,12 @@ in
       };
     };
     xdg.configFile."islands/config.json".text = builtins.toJSON {
-      inherit (cfg) temperatureSensor temperatureUnit;
+      inherit (cfg)
+        temperatureSensor
+        temperatureUnit
+        powerSensor
+        fanSensor
+        ;
       attentionSound = "${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/dialog-warning.oga";
     };
 

@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell.Io
-import Quickshell.Services.UPower
 
 // The machine, in a line at the foot of Sky: the battery, CPU, memory and
 // how long it's been up
@@ -8,15 +7,12 @@ Rectangle {
 	id: root
 
 	property bool shown: false
-	readonly property UPowerDevice battery: UPower.displayDevice
 	property real uptime: 0
 
 	readonly property var parts: {
 		const parts = [];
-		if (battery?.isLaptopBattery) {
-			const level = battery.percentage * 100;
-			parts.push("Battery " + Math.round(level) + "% · " + (UPower.onBattery ? "on battery" : "on power"));
-		}
+		if (Battery.present)
+			parts.push("Battery " + Math.round(Battery.level) + "% · " + (Battery.draining ? "draining on power" : Battery.plugged ? "on power" : "on battery"));
 		parts.push("CPU " + Metrics.cpu + "%", "Memory " + Metrics.memory + "%");
 		const hours = Math.floor(uptime / 3600);
 		if (hours >= 48)

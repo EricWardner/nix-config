@@ -3,8 +3,8 @@ import Quickshell.Hyprland
 
 // The status island at rest: recording, the camera, the microphone,
 // Bluetooth while it's on, the network, the volume, the control centre's
-// switches, and the battery. The network, Bluetooth and volume open the
-// control centre on their page, the switches on its first.
+// switches, and the battery. The network, Bluetooth, volume and battery open
+// the control centre on their page, the switches on its first.
 IslandMode {
 	id: root
 
@@ -95,6 +95,8 @@ IslandMode {
 			onClicked: root.open("")
 		}
 
-		BatteryIcon {}
+		BatteryIcon {
+			onOpenBattery: root.open("battery")
+		}
 	}
 }

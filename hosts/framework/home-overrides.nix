@@ -29,4 +29,7 @@
   # 00:18.3) so the critical threshold means something; hwmonN numbers
   # aren't stable across boots, hence the device path and the glob.
   modules.hyprland.islands.temperatureSensor = "/sys/devices/pci0000:00/0000:00:18.3/hwmon/hwmon*/temp1_input";
+  # The battery page's chip power (amdgpu's PPT, the whole APU) and fan
+  modules.hyprland.islands.powerSensor = "/sys/devices/pci0000:00/0000:00:08.1/0000:c1:00.0/hwmon/hwmon*/power1_average";
+  modules.hyprland.islands.fanSensor = "/sys/devices/platform/framework_laptop/hwmon/hwmon*/fan1_input";
 }

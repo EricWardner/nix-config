@@ -1,13 +1,12 @@
 import QtQuick
 import Quickshell.Networking
 import Quickshell.Services.Pipewire
-import Quickshell.Services.UPower
 
 // The control centre's main page: tiles for Wi-Fi, Bluetooth, the camera
 // and push-to-talk; sliders for the output and the microphone, and for the
 // screen; the power profile; and the CPU, memory and temperature (a click
-// opens btop), the battery, lock and the power menu. Do Not Disturb is the
-// notification centre's.
+// opens btop), the battery (a click opens its page), lock and the power
+// menu. Do Not Disturb is the notification centre's.
 Column {
 	id: root
 
@@ -18,13 +17,6 @@ Column {
 	// The mics are pttd's while push-to-talk is armed
 	readonly property bool ptt: Desktop.mic.startsWith("ptt")
 	readonly property bool cameraOff: Desktop.webcam === "muted" || Desktop.webcam === "disconnected"
-
-	// "3h 20m", "45m"
-	function duration(seconds: real): string {
-		const minutes = Math.round(seconds / 60);
-		const hours = Math.floor(minutes / 60);
-		return hours > 0 ? hours + "h " + minutes % 60 + "m" : minutes + "m";
-	}
 
 	spacing: 10
 
@@ -80,23 +72,6 @@ Column {
 			// Green while Right Alt is held, as the bar's mic gets its dot
 			tint: Desktop.mic === "ptt-active" ? Theme.green : Theme.accent
 			onToggled: Desktop.launch(["micctl", "ptt"])
-		}
-	}
-
-	component Card: Rectangle {
-		default property alias content: inside.data
-
-		height: inside.implicitHeight + 24
-		radius: 16
-		color: Theme.alpha(Theme.ink, 0.06)
-
-		Column {
-			id: inside
-
-			x: 12
-			y: 12
-			width: parent.width - 24
-			spacing: 12
 		}
 	}
 
@@ -203,63 +178,12 @@ Column {
 		}
 	}
 
-	// The power profile, as a segmented control
-	Rectangle {
+	PowerModes {
 		width: parent.width
-		height: 36
-		radius: 12
-		color: Theme.alpha(Theme.ink, 0.06)
-
-		Row {
-			anchors.fill: parent
-			anchors.margins: 3
-
-			Repeater {
-				model: [
-					{
-						"name": "Saver",
-						"profile": PowerProfile.PowerSaver
-					},
-					{
-						"name": "Balanced",
-						"profile": PowerProfile.Balanced
-					},
-					{
-						"name": "Performance",
-						"profile": PowerProfile.Performance
-					}
-				]
-
-				Rectangle {
-					required property var modelData
-
-					readonly property bool chosen: PowerProfiles.profile === modelData.profile
-
-					width: parent.width / 3
-					height: parent.height
-					radius: 9
-					color: chosen ? Theme.ink : "transparent"
-					opacity: modelData.profile === PowerProfile.Performance && !PowerProfiles.hasPerformanceProfile ? 0.35 : 1
-
-					BarText {
-						anchors.centerIn: parent
-						text: modelData.name
-						color: chosen ? Theme.fg : Theme.ink
-						font.pixelSize: 12
-						font.weight: chosen ? Font.DemiBold : Font.Medium
-					}
-
-					MouseArea {
-						anchors.fill: parent
-						onClicked: PowerProfiles.profile = modelData.profile
-					}
-				}
-			}
-		}
 	}
 
-	// The machine's load (a click opens btop) and the battery; lock; the power
-	// menu
+	// The machine's load (a click opens btop) and the battery (a click opens
+	// its page); lock; the power menu
 	Item {
 		width: parent.width
 		height: Math.max(32, footer.implicitHeight)
@@ -289,33 +213,22 @@ Column {
 				}
 			}
 
+			// "62% · 17 W · Empty in 3h 20m", "96% · Charging at 45 W · Full in
+			// 19m"
 			BarText {
-				visible: text !== ""
-				// "62% · 17 W · Empty in 3h 20m", "96% · Charging at 45 W · Full
-				// in 19m"; UPower leaves a time out (0) until it has an estimate
-				text: {
-					const device = UPower.displayDevice;
-					if (!device?.isLaptopBattery)
-						return "";
-					const parts = [Math.round(device.percentage * 100) + "%"];
-					const rate = Math.abs(device.changeRate);
-					const watts = rate >= 10 ? Math.round(rate) + " W" : rate.toFixed(1) + " W";
-					if (device.state === UPowerDeviceState.Charging) {
-						parts.push(rate > 0 ? "Charging at " + watts : "Charging");
-						if (device.timeToFull > 0)
-							parts.push("Full in " + root.duration(device.timeToFull));
-					} else if (UPower.onBattery) {
-						if (rate > 0)
-							parts.push(watts);
-						if (device.timeToEmpty > 0)
-							parts.push("Empty in " + root.duration(device.timeToEmpty));
-					} else {
-						parts.push("On power");
-					}
-					return parts.join(" · ");
-				}
-				color: Theme.inkDim
+				visible: Battery.present
+				text: [Math.round(Battery.level) + "%", Battery.status].filter(s => s !== "").join(" · ")
+				color: batteryHover.hovered ? Theme.ink : Theme.inkDim
 				font.pixelSize: 12
+
+				HoverHandler {
+					id: batteryHover
+				}
+
+				TapHandler {
+					cursorShape: Qt.PointingHandCursor
+					onTapped: root.open("battery")
+				}
 			}
 		}
 

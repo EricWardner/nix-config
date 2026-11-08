@@ -19,6 +19,7 @@ Singleton {
 	property int memory: 0 // % used
 	property real temperature: 0 // °C
 	property int backlight: 100 // %
+	property int cores: 1 // the CPUs /proc/stat counts, threads included
 
 
 	property var lastCpu: null
@@ -26,7 +27,9 @@ Singleton {
 	function readCpu() {
 		stat.reload();
 		// user nice system idle iowait irq softirq steal
-		const ticks = stat.text().split("\n")[0].trim().split(/\s+/).slice(1, 9).map(Number);
+		const lines = stat.text().split("\n");
+		cores = Math.max(1, lines.filter(l => /^cpu\d/.test(l)).length);
+		const ticks = lines[0].trim().split(/\s+/).slice(1, 9).map(Number);
 		const idle = ticks[3] + ticks[4];
 		const total = ticks.reduce((sum, t) => sum + t, 0);
 		if (lastCpu && total > lastCpu.total)

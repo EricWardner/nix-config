@@ -12,6 +12,8 @@ Singleton {
 	property var config: ({})
 
 	readonly property string temperatureFile: temperature.path
+	readonly property string powerFile: power.path
+	readonly property string fanFile: fan.path
 	readonly property string backlightDir: backlight.path
 	// For the YubiKey touch prompt
 	readonly property string attentionSound: config.attentionSound ?? ""
@@ -33,6 +35,18 @@ Singleton {
 		id: temperature
 
 		pattern: root.config.temperatureSensor ?? ""
+	}
+
+	Glob {
+		id: power
+
+		pattern: root.config.powerSensor ?? ""
+	}
+
+	Glob {
+		id: fan
+
+		pattern: root.config.fanSensor ?? ""
 	}
 
 	// The first backlight, as waybar's module took

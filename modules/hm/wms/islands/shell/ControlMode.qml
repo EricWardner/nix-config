@@ -1,22 +1,24 @@
 import QtQuick
 
 // The control centre: the status island grown into tiles and sliders (the
-// main page), with pages for Wi-Fi, Bluetooth and sound devices that the
-// island resizes to. The network, Bluetooth and volume open it on their
-// page (or `qs ipc -c islands call panel open control wifi`); Esc goes back
-// a page, then closes it, and so does a click outside.
+// main page), with pages for Wi-Fi, Bluetooth, sound devices and the
+// battery that the island resizes to. The network, Bluetooth, volume and
+// battery open it on their page (or `qs ipc -c islands call panel open
+// control wifi`); Esc goes back a page, then closes it, and so does a click
+// outside.
 IslandMode {
 	id: root
 
 	// Desktop.panelPage alone says which page shows, so the bar's icons
 	// (which open their page, or close it if it's showing) see the page
 	// moved to in here
-	readonly property string page: ["wifi", "bluetooth", "sound"].includes(Desktop.panelPage) ? Desktop.panelPage : "main"
+	readonly property string page: ["wifi", "bluetooth", "sound", "battery"].includes(Desktop.panelPage) ? Desktop.panelPage : "main"
 	readonly property Item shown: ({
 			"main": main,
 			"wifi": wifi,
 			"bluetooth": bluetooth,
-			"sound": sound
+			"sound": sound,
+			"battery": battery
 		})[page]
 
 	priority: 40
@@ -72,6 +74,17 @@ IslandMode {
 		y: 14
 		width: parent.width - 28
 		visible: root.page === "sound"
+		onBack: Desktop.panelPage = ""
+	}
+
+	BatteryPage {
+		id: battery
+
+		x: 14
+		y: 14
+		width: parent.width - 28
+		visible: root.page === "battery"
+		showing: root.active && root.page === "battery"
 		onBack: Desktop.panelPage = ""
 	}
 }

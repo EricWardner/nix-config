@@ -2,7 +2,8 @@ import QtQuick
 
 // A row in a control centre list: an icon (a glyph, or an image from the
 // icon theme), a title with a line of state under it, and something on the
-// right (a lock, a check, "Pair"). Hover-highlighted; `clicked` on a click.
+// right (a lock, a check, "Pair"). Hover-highlighted; `clicked` on a click,
+// unless it's only showing something (not `interactive`).
 Rectangle {
 	id: root
 
@@ -12,6 +13,7 @@ Rectangle {
 	property string subtitle
 	property string trailing
 	property bool chosen: false
+	property bool interactive: true
 
 	signal clicked
 
@@ -21,10 +23,13 @@ Rectangle {
 
 	HoverHandler {
 		id: hover
+
+		enabled: root.interactive
 	}
 
 	MouseArea {
 		anchors.fill: parent
+		enabled: root.interactive
 		onClicked: root.clicked()
 	}
 
