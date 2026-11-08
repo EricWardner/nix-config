@@ -6,7 +6,7 @@ import Quickshell.Services.Pipewire
 // and push-to-talk; sliders for the output and the microphone, and for the
 // screen; the power profile; and the CPU, memory and temperature (a click
 // opens btop), the battery (a click opens its page), lock and the power
-// menu. Do Not Disturb is the notification centre's.
+// menu. Keep Awake and Do Not Disturb are the notification centre's.
 Column {
 	id: root
 

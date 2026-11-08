@@ -56,6 +56,7 @@ Singleton {
 	readonly property string power: String.fromCodePoint(0xF0425)
 	readonly property string checkCircle: String.fromCodePoint(0xF05E1)
 	readonly property string xCircle: String.fromCodePoint(0xF015A)
+	readonly property string coffee: String.fromCodePoint(0xF0176)
 	// Wi-Fi signal, weakest to strongest
 	readonly property var wifiStrength: [0xF091F, 0xF0922, 0xF0925, 0xF0928].map(c => String.fromCodePoint(c))
 

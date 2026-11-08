@@ -168,8 +168,9 @@ PanelWindow {
 		y: Theme.barTop + 2
 	}
 
-	// Beside the clock while it's at rest: the weather before it, Do Not
-	// Disturb after it, then the next meeting, then a terminal's job
+	// Beside the clock while it's at rest: the weather before it, Keep Awake
+	// and Do Not Disturb after it, then the next meeting, then a terminal's
+	// job
 	WeatherIsland {
 		id: weather
 
@@ -183,7 +184,7 @@ PanelWindow {
 		id: dnd
 
 		monitor: bar.monitor
-		visible: Inbox.dnd && centre.resting
+		visible: (KeepAwake.on || Inbox.dnd) && centre.resting
 		x: centre.x + centre.width + 8
 		y: centre.y
 	}

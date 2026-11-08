@@ -3,10 +3,10 @@ import Quickshell
 
 // The notification centre: the clock's island grown into the time, date and
 // UTC, a calendar with a dot on each day with an event and the picked day's
-// events, beside what's playing and the notification history with Do Not
-// Disturb and "Clear all". A click on the clock opens it (or `qs ipc -c
-// islands call panel toggle centre`); Esc or a click outside closes it, as
-// a popup does.
+// events, beside what's playing and the notification history with Keep
+// Awake, Do Not Disturb and "Clear all". A click on the clock opens it (or
+// `qs ipc -c islands call panel toggle centre`); Esc or a click outside
+// closes it, as a popup does.
 IslandMode {
 	id: root
 
@@ -15,7 +15,7 @@ IslandMode {
 	readonly property real room: Theme.windowHeight - Theme.barTop - 2 - 10
 
 	priority: 40
-	islandWidth: 724
+	islandWidth: 756
 	// Taller for a day with more events than fit, up to the room; past it
 	// they scroll
 	islandHeight: Math.max(476, (content.item?.sideHeight ?? 0) + 36)
@@ -122,43 +122,18 @@ IslandMode {
 						anchors.verticalCenter: parent.verticalCenter
 						spacing: 4
 
-						// Filled in the accent while it's on
-						Rectangle {
-							width: dndRow.implicitWidth + 22
-							height: 28
-							radius: 14
-							color: Inbox.dnd ? Theme.accent : Theme.alpha(Theme.ink, dndHover.hovered ? 0.12 : 0.06)
+						TogglePill {
+							glyph: Glyphs.coffee
+							text: "Keep Awake"
+							on: KeepAwake.on
+							onToggled: KeepAwake.on = !KeepAwake.on
+						}
 
-							Row {
-								id: dndRow
-
-								anchors.centerIn: parent
-								spacing: 6
-
-								BarText {
-									text: Glyphs.moonFill
-									color: Theme.ink
-									font.pixelSize: 13
-									anchors.verticalCenter: parent.verticalCenter
-								}
-
-								BarText {
-									text: "Do Not Disturb"
-									color: Theme.ink
-									font.pixelSize: 13
-									font.weight: Font.Medium
-									anchors.verticalCenter: parent.verticalCenter
-								}
-							}
-
-							HoverHandler {
-								id: dndHover
-							}
-
-							MouseArea {
-								anchors.fill: parent
-								onClicked: Inbox.dnd = !Inbox.dnd
-							}
+						TogglePill {
+							glyph: Glyphs.moonFill
+							text: "Do Not Disturb"
+							on: Inbox.dnd
+							onToggled: Inbox.dnd = !Inbox.dnd
 						}
 
 						Rectangle {
