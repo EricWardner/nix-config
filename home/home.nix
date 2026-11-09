@@ -42,7 +42,6 @@
     mpv
     stremio-linux-shell
     inkscape
-    brave
     discord
     unzip
     claude-code

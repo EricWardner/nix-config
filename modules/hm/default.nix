@@ -87,7 +87,7 @@
           "text/html" = [ "google-chrome.desktop" ];
           "inode/directory" = [ "thunar.desktop" ];
         }
-        # Images in Loupe: with nothing set they opened in Brave, which
+        # Images in Loupe: with nothing set they opened in a browser, which
         # claims them. SVGs too, to look at; Inkscape is in Open With.
         // lib.genAttrs [
           "image/apng"
