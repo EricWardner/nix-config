@@ -70,9 +70,11 @@ Singleton {
 		return dismissed[job.pid] === job.started + ":" + job.ended;
 	}
 
-	// The command without the assignments and wrappers before it
+	// The command without the assignments and wrappers before it, or the cd
+	// into where it runs ("cd ~/Workspace && claude --resume …", which
+	// Claude Code prints on its way out)
 	function words(command: string): var {
-		const list = command.trim().split(/\s+/);
+		const list = command.trim().replace(/^((cd|pushd)\s+("[^"]*"|'[^']*'|\S+)\s*(&&|;)\s*)+/, "").split(/\s+/);
 		while (list.length > 1 && (/^\w+=/.test(list[0]) || ["sudo", "time", "noglob", "nocorrect", "command", "exec", "env", "nice"].includes(list[0])))
 			list.shift();
 		return list;
