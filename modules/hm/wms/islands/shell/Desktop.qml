@@ -12,8 +12,9 @@ Singleton {
 	id: root
 
 	// The panel an island is grown into ("centre", the notification centre;
-	// "control", the control centre; "held", the notifications held during a
-	// share) and the monitor it's open on: one at a time, anywhere
+	// "control", the control centre; "keys", the keyboard shortcuts; "held",
+	// the notifications held during a share) and the monitor it's open on:
+	// one at a time, anywhere
 	property string panel: ""
 	property HyprlandMonitor panelOn: null
 	// The page showing (the control centre's "wifi", say); "" for its first

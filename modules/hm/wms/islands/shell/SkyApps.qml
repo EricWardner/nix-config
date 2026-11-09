@@ -57,7 +57,7 @@ SkyCard {
 	}
 
 	BarText {
-		text: "Super+Space for everything else"
+		text: "Super+Space for everything else · Super+/ for shortcuts"
 		color: Theme.alpha(Theme.fg, 0.8)
 		font.pixelSize: 12
 	}

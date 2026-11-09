@@ -47,6 +47,7 @@ let
     keepAwake = "${islands} keepawake toggle";
     controlCentre = "${islands} panel toggle control";
     notificationCentre = "${islands} panel toggle centre";
+    shortcuts = "${islands} panel toggle keys";
     # The bar's centre island shows any volume change for a moment
     # (wms/islands). Raising it unmutes, as swayosd's did; 150% at most.
     volumeUp = "${wpctl} set-mute @DEFAULT_AUDIO_SINK@ 0; ${wpctl} set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+";

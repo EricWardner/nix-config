@@ -5,7 +5,9 @@ local dsp = hl.dsp
 
 -- Super + a key goes there or opens it. Shift moves the window there (or
 -- is the key's close variant: N and Shift+N), Ctrl resizes, Alt is groups.
--- The arrows do what H/J/K/L do. On Tab, Shift goes backwards.
+-- The arrows do what H/J/K/L do. On Tab, Shift goes backwards. Super+/
+-- shows them all (islands shell/KeysMode.qml), written out by hand there:
+-- change it with them.
 
 hl.bind(mod .. " + Q", dsp.window.close())
 hl.bind(mod .. " + S", dsp.layout("togglesplit"))
@@ -29,6 +31,7 @@ local applications = {
 	{ "Z", cmd.keepAwake },
 	{ "M", cmd.micMute },
 	{ "SHIFT + M", cmd.pushToTalk },
+	{ "slash", cmd.shortcuts },
 }
 for _, binding in ipairs(applications) do
 	hl.bind(mod .. " + " .. binding[1], dsp.exec_cmd(binding[2]))

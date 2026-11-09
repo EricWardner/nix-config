@@ -5,8 +5,9 @@ import Quickshell.Hyprland
 // the notification centre), a screen recording or share on every monitor
 // while one runs, and on the focused monitor, by rising priority,
 // notifications, a meeting about to start, the volume popup, the
-// notification centre, and the questions NetworkManager, BlueZ and
-// gnome-keyring ask (a Wi-Fi password, a passkey, a keyring's password)
+// notification centre, the keyboard shortcuts, and the questions
+// NetworkManager, BlueZ and gnome-keyring ask (a Wi-Fi password, a
+// passkey, a keyring's password)
 Island {
 	id: root
 
@@ -49,6 +50,10 @@ Island {
 
 	CentreMode {
 		active: Desktop.panel === "centre" && Desktop.panelOn === root.monitor
+	}
+
+	KeysMode {
+		active: Desktop.panel === "keys" && Desktop.panelOn === root.monitor
 	}
 
 	PromptMode {
