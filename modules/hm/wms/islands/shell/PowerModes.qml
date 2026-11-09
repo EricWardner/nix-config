@@ -31,12 +31,15 @@ Rectangle {
 				required property var modelData
 
 				readonly property bool chosen: PowerProfiles.profile === modelData.profile
+				readonly property bool available: modelData.profile !== PowerProfile.Performance || PowerProfiles.hasPerformanceProfile
+				// A profile that can be picked, tinted under the pointer
+				readonly property bool pickable: !chosen && available
 
 				width: parent.width / 3
 				height: parent.height
 				radius: 9
-				color: chosen ? Theme.ink : "transparent"
-				opacity: modelData.profile === PowerProfile.Performance && !PowerProfiles.hasPerformanceProfile ? 0.35 : 1
+				color: chosen ? Theme.ink : pickable && hover.hovered ? Theme.alpha(Theme.ink, 0.08) : "transparent"
+				opacity: available ? 1 : 0.35
 
 				BarText {
 					anchors.centerIn: parent
@@ -44,6 +47,12 @@ Rectangle {
 					color: chosen ? Theme.fg : Theme.ink
 					font.pixelSize: 12
 					font.weight: chosen ? Font.DemiBold : Font.Medium
+				}
+
+				HoverHandler {
+					id: hover
+
+					cursorShape: parent.pickable ? Qt.PointingHandCursor : Qt.ArrowCursor
 				}
 
 				MouseArea {
