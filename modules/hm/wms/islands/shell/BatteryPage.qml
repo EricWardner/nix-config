@@ -51,7 +51,7 @@ Column {
 		if (name === "quickshell")
 			return {
 				"name": "Islands",
-				"icon": ""
+				"icon": Qt.resolvedUrl("icons/quickshell.svg")
 			};
 		const entry = DesktopEntries.heuristicLookup(({
 					"chrome": "google-chrome",
