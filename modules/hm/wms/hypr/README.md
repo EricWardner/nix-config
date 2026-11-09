@@ -109,11 +109,7 @@ installed version; the live wiki describes newer Git builds too.
    terminal, and browser workflow on the M32U without changing your other Dwindle
    workspaces. Add `hl.workspace_rule({ workspace = "2", layout = "scrolling" })`
    to a Lua module. See the [scrolling layout](https://wiki.hypr.land/Configuring/Layouts/Scrolling-Layout/).
-3. **Expose your existing btop scratchpad.** `special:monitor` already launches
-   btop when first created, but has no keybinding. Add
-   `hl.bind(mod .. " + M", dsp.workspace.toggle_special("monitor"))` in
-   `bindings.lua`. This uses an otherwise unused shortcut in your config.
-4. **Try spring animations for window movement.** Keep your current fade timings
+3. **Try spring animations for window movement.** Keep your current fade timings
    and use a spring curve only for `windows`/`windowsIn` for a different feel.
    On your 0.56.2 build the parameter is spelled `dampening`; the current wiki
    uses `damping`. This example passed the installed compositor's verifier:
@@ -126,7 +122,7 @@ installed version; the live wiki describes newer Git builds too.
    See [animation curves](https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/)
    when upgrading.
 
-5. **Consolidate shared display profiles.** The M32U and portable-display entries
+4. **Consolidate shared display profiles.** The M32U and portable-display entries
    are duplicated across both hosts. A shared Nix list with only the laptop scale
    defined per host would reduce future drift. The unused legacy width/height
    monitor fields can also be removed once external overrides are ruled out.

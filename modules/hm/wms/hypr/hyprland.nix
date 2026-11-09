@@ -18,11 +18,9 @@ let
   ghostty = "${pkgs.ghostty}/bin/ghostty";
   thunar = "${pkgs.thunar}/bin/thunar";
   vicinae = "${config.programs.vicinae.package}/bin/vicinae";
-  brightnessctl = "${pkgs.brightnessctl}/bin/brightnessctl";
   wpctl = "${pkgs.wireplumber}/bin/wpctl";
   playerctl = "${pkgs.playerctl}/bin/playerctl";
   islands = "${pkgs.quickshell}/bin/qs ipc -c islands call";
-  btop = "${pkgs.btop}/bin/btop";
   slack = "${pkgs.slack}/bin/slack";
   chrome = "${pkgs.google-chrome}/bin/google-chrome-stable";
   toLua = lib.generators.toLua { };
@@ -36,8 +34,6 @@ let
     # config change (the window class comes from this URL too: lua/rules.lua)
     gather = "launch-webapp https://work.tiberius.com";
     lock = "${pkgs.systemd}/bin/loginctl lock-session";
-    keyboardBrighter = "${brightnessctl} -d '*::kbd_backlight' set +33%";
-    keyboardDimmer = "${brightnessctl} -d '*::kbd_backlight' set 33%-";
     # The islands shell's capture overlay (wms/islands): Print to choose,
     # Shift+Print and Ctrl+Print to take the window or the screen at once
     screenshot = "${islands} capture open screenshot area";
@@ -48,14 +44,17 @@ let
     record = "${islands} capture record";
     # The islands shell is the notification server (wms/islands)
     doNotDisturb = "${islands} notifications toggleDnd";
+    keepAwake = "${islands} keepawake toggle";
     controlCentre = "${islands} panel toggle control";
-    notificationRestore = "${islands} notifications restore";
+    notificationCentre = "${islands} panel toggle centre";
     # The bar's centre island shows any volume change for a moment
     # (wms/islands). Raising it unmutes, as swayosd's did; 150% at most.
     volumeUp = "${wpctl} set-mute @DEFAULT_AUDIO_SINK@ 0; ${wpctl} set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+";
     volumeDown = "${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-";
     volumeMute = "${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle";
-    micMute = "micctl mute"; # from bar-tools (islands module)
+    # micctl is from bar-tools (islands module)
+    micMute = "micctl mute";
+    pushToTalk = "micctl ptt";
     # The shell makes the change, so the island shows it (idle dimming
     # changes the brightness too, and shouldn't)
     brighter = "${islands} brightness up";
@@ -220,11 +219,6 @@ in
         -- user services.
         hl.on("hyprland.start", function()
           hl.exec_cmd(${toLua ghostty}, { workspace = "1 silent" })
-        end)
-        hl.on("workspace.created", function(ws)
-          if ws.addressable_name == "special:monitor" and ws.is_empty then
-            hl.exec_cmd(${toLua "${ghostty} -e ${btop}"}, { workspace = "special:monitor" })
-          end
         end)
       '';
       settings =
