@@ -29,13 +29,24 @@ Column {
 
 	// "chrome", or ".claude-unwrapp" (a Nix wrapper's name, cut to 15
 	// characters) as "claude", by its desktop entry where it has one; some
-	// entries are named for neither the command nor the window
+	// entries are named for neither the command nor the window. Docker's
+	// daemons count as one app.
 	function app(command: string): var {
 		const name = command.startsWith(".") ? command.slice(1).replace(/-(un)?wra?p?p?e?d?$/, "") : command;
 		if (name === "claude")
 			return {
 				"name": "Claude Code",
 				"icon": Qt.resolvedUrl("icons/claude.svg")
+			};
+		if (name === "Hyprland")
+			return {
+				"name": "Hyprland",
+				"icon": Qt.resolvedUrl("icons/hyprland.svg")
+			};
+		if (["dockerd", "containerd", "containerd-shim"].includes(name))
+			return {
+				"name": "Docker",
+				"icon": Quickshell.iconPath("docker-desktop", true)
 			};
 		if (name === "quickshell")
 			return {
