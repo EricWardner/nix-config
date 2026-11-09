@@ -204,6 +204,7 @@ PanelWindow {
 		monitor: bar.monitor
 		visible: Jobs.shown.length > 0 && (open || centre.resting)
 		x: (meeting.visible ? meeting.x + meeting.width : dnd.visible ? dnd.x + dnd.width : centre.x + centre.width) + 8
+		room: (tray.visible ? tray.x : statusRest.x) - 8 - x
 		y: centre.y
 	}
 

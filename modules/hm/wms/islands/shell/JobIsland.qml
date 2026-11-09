@@ -15,6 +15,9 @@ Island {
 	readonly property var job: Jobs.shown[0] ?? null
 	readonly property bool running: job?.state === "run"
 	readonly property bool passed: job?.state === "end" && job.code === 0
+	// The most it may be wide: the bar's room before the tray. Past it the
+	// name is cut short; the time and the "+1" stay.
+	property real room: Infinity
 
 	// Nothing left to list
 	Connections {
@@ -40,6 +43,8 @@ Island {
 			spacing: 8
 
 			BarText {
+				id: icon
+
 				anchors.verticalCenter: parent.verticalCenter
 				text: root.running ? Glyphs.terminal : root.passed ? Glyphs.checkCircle : Glyphs.xCircle
 				color: root.running ? Theme.cyan : root.passed ? Theme.green : Theme.red
@@ -49,13 +54,17 @@ Island {
 
 			BarText {
 				anchors.verticalCenter: parent.verticalCenter
+				width: Math.max(0, Math.min(implicitWidth, root.room - 24 - icon.implicitWidth - clock.implicitWidth - (more.visible ? more.width + row.spacing : 0) - 2 * row.spacing))
 				// A Claude prompt is just done
 				text: !root.job ? "" : root.running ? root.job.name : root.job.name + (!root.job.shell ? " done" : root.passed ? " passed" : " failed")
 				textFormat: Text.PlainText
+				elide: Text.ElideRight
 				font.pixelSize: 14
 			}
 
 			BarText {
+				id: clock
+
 				anchors.verticalCenter: parent.verticalCenter
 				text: !root.job ? "" : root.running ? Jobs.clock(Jobs.now - root.job.started) : root.passed ? Jobs.duration(root.job.ended - root.job.started) : "exit " + root.job.code
 				color: Theme.alpha(Theme.fg, 0.72)
