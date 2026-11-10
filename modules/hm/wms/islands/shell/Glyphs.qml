@@ -42,6 +42,7 @@ Singleton {
 	readonly property string camera: String.fromCodePoint(0x10031E)
 	readonly property string textViewfinder: String.fromCodePoint(0x100E43)
 	readonly property string eyedropper: String.fromCodePoint(0x100397)
+	readonly property string magnifyingGlass: String.fromCodePoint(0x1002AB)
 	readonly property string nix: String.fromCodePoint(0xF1105)
 	readonly property string wifi: String.fromCodePoint(0x100647)
 	readonly property string wifiSlash: String.fromCodePoint(0x100648)
