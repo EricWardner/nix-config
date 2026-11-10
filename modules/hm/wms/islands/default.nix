@@ -302,6 +302,9 @@ in
           output-filename = "~/Pictures/Screenshots/%m-%d-%Y-%H-%M-%S.png";
           initial-tool = "arrow";
           no-window-decoration = true;
+          # An image too big for the screen opens scaled down to fit, not
+          # at its own size in pixels, which a whole screen's is well past
+          resize.mode = "smart";
           # Named for Hyprland's float rule (rules.lua)
           app-id = "com.gabm.satty";
         };
