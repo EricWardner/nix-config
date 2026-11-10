@@ -64,5 +64,24 @@ in
       };
     };
 
+    # thefuck's successor (thefuck is gone from nixpkgs: unmaintained, and
+    # broken on current Python). After a command fails, `fuck` runs it again
+    # to read the error, suggests a fix and runs that on Enter; Ctrl+X
+    # Ctrl+X fixes the line being typed instead. --nocnf: mistyped commands
+    # stay with the nix-index handler (nix-index.nix).
+    programs.pay-respects = {
+      enable = true;
+      options = [
+        "--alias"
+        "fuck"
+        "--nocnf"
+      ];
+    };
+    # When no rule matches it would offer to send the command and its error
+    # to a hosted AI service. Off: commands here can hold work details.
+    xdg.configFile."pay-respects/config.toml".text = ''
+      [module.request-ai]
+      enabled = false
+    '';
   };
 }
