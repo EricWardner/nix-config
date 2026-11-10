@@ -31,7 +31,8 @@ let
     clipboard = "${vicinae} deeplink vicinae://launch/clipboard/history";
     oath = "oath 19125157";
     # Redirects to the current Gather space, so a new Gather link needs no
-    # config change (the window class comes from this URL too: lua/rules.lua)
+    # config change (the window class comes from this URL too: lua/rules.lua).
+    # The launcher's "Open Gather" runs the same (launchers/vicinae.nix).
     gather = "launch-webapp https://work.tiberius.com";
     lock = "${pkgs.systemd}/bin/loginctl lock-session";
     # The islands shell's capture overlay (wms/islands): Print to choose,

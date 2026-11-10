@@ -161,7 +161,16 @@ let
     micSlash = ''<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/>'';
     camera = ''<rect x="2.5" y="6.5" width="13" height="11" rx="2.5"/><path d="M15.5 10.5l6-3.5v10l-6-3.5"/>'';
     wifi = ''<path d="M2.5 9.5a14 14 0 0 1 19 0M5.5 12.8a9.5 9.5 0 0 1 13 0M8.6 16a5 5 0 0 1 6.8 0"/><circle cx="12" cy="19" r="1.2" fill="${ink}" stroke="none"/>'';
+    # Gather's logo, the outline the bar's workspace icon is made from,
+    # filled and scaled to stand 21 high in the middle of the glyphs' box
+    gather = ''<path transform="translate(3.45 0) scale(0.012195)" fill="${ink}" stroke="none" d="${gatherLogo}"/>'';
   };
+  # The one path in the logo's SVG
+  gatherLogo = lib.head (
+    lib.splitString "\"" (
+      lib.last (lib.splitString "\nd=\"" (builtins.readFile ../../../../pkgs/gather-symbol/gather.svg))
+    )
+  );
 
   # Desktop actions in the launcher's search, as vicinae script commands.
   # In silent mode vicinae runs the script with its window still open, then
@@ -387,6 +396,20 @@ let
       script = ''
         ${islands} panel open control wifi
         echo "Wi-Fi"
+      '';
+    };
+    gather = {
+      title = "Open Gather";
+      icon = tile "gather" colors.base0E glyphs.gather;
+      keywords = [
+        "meeting"
+        "call"
+        "office"
+      ];
+      # What Super+G runs (hypr/hyprland.nix)
+      script = ''
+        ${afterLauncher} launch-webapp https://work.tiberius.com
+        echo "Opening Gather"
       '';
     };
   };
