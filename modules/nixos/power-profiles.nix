@@ -72,11 +72,14 @@ let
           balanced) TITLE=Balanced ;;
           *) TITLE="Power saver" ;;
         esac
-        # This runs as root; the notification belongs on the user's session bus
+        # This runs as root; the notification belongs on the user's session
+        # bus. Its icon, a gauge with the needle where the profile is, is
+        # named for the icon theme to find (Papirus has them dark, as the
+        # islands bar's light cards want).
         uid=$(id -u ${user.username})
         setpriv --reuid="$uid" --regid="$(id -g ${user.username})" --init-groups \
           env DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" \
-          notify-send --transient --app-name=Power "$TITLE" "$WHY" || true
+          notify-send --transient --app-name=Power --icon="power-profile-$WANT-symbolic" "$TITLE" "$WHY" || true
       fi
     '';
   };

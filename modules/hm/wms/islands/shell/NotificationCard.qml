@@ -32,6 +32,9 @@ Item {
 	// The colour picker's notification carries the colour as its image: a
 	// bigger swatch than an app icon
 	readonly property int iconSize: n?.appName === "Screenshot" && n.image !== "" ? 56 : yubikey ? 48 : 40
+	// A symbolic icon (the power profile's gauge) fills its box where an
+	// app's has a margin of its own: drawn smaller to look the same size
+	readonly property bool symbolic: /-symbolic(\.svg)?$/.test(icon)
 
 	signal activated
 
@@ -65,7 +68,9 @@ Item {
 		color: "transparent"
 
 		Image {
-			anchors.fill: parent
+			anchors.centerIn: parent
+			width: root.symbolic ? Math.round(root.iconSize * 0.7) : root.iconSize
+			height: width
 			source: root.icon
 			sourceSize: Qt.size(root.iconSize * 2, root.iconSize * 2)
 			fillMode: Image.PreserveAspectFit
