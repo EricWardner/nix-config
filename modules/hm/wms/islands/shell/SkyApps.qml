@@ -57,7 +57,10 @@ SkyCard {
 	}
 
 	BarText {
-		text: "Super+Space for everything else · Super+/ for shortcuts"
+		width: parent.width
+		text: "Super+Space for everything else\nSuper+/ for shortcuts"
+		wrapMode: Text.Wrap
+		lineHeight: 1.2
 		color: Theme.alpha(Theme.fg, 0.8)
 		font.pixelSize: 12
 	}
