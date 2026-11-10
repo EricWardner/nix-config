@@ -97,7 +97,10 @@ Item {
 		id: glass
 
 		anchors.fill: parent
-		radius: root.current && root.current.cornerRadius >= 0 ? root.current.cornerRadius : Math.min(height / 2, 24)
+		// From the height the island is growing to, not the one it has on
+		// the way: following that, the morph below started again on every
+		// frame, and ran on for as long again after the island had settled
+		radius: root.current && root.current.cornerRadius >= 0 ? root.current.cornerRadius : Math.min((root.current?.islandHeight ?? 0) / 2, 24)
 		color: root.resting ? Theme.islandFill : Theme.grownFill
 		border.width: 1
 		border.color: root.resting ? (root.current?.restRim ?? Theme.islandRim) : root.current.rim
