@@ -279,6 +279,10 @@ in
           "QS_DISABLE_CRASH_HANDLER=1"
           # Apps' and notifications' icons, from the GTK apps' theme
           "QS_ICON_THEME=${config.gtk.iconTheme.name}"
+          # The agent is handed the keyring's and the networks' passwords:
+          # this build of it, not whichever islands-agent is first on PATH
+          # (shell/Agent.qml)
+          "ISLANDS_AGENT=${lib.getExe islandsAgent}"
         ];
         Restart = "always";
         RestartSec = 1;

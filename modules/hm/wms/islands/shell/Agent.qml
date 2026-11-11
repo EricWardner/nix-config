@@ -58,7 +58,8 @@ Singleton {
 	Process {
 		id: agent
 
-		// ISLANDS_AGENT: a stand-in, to try the prompts without a real request
+		// ISLANDS_AGENT: the service names its own build of the agent; by
+		// hand, a stand-in to try the prompts without a real request
 		command: [Quickshell.env("ISLANDS_AGENT") || "islands-agent"]
 		running: !Quickshell.env("ISLANDS_NO_AGENT")
 		stdinEnabled: true
