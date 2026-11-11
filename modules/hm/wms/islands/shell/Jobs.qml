@@ -34,8 +34,10 @@ Singleton {
 	property var jobs: ({})
 	// The window each was typed in (its address), by file name; "" if unknown
 	property var windows: ({})
-	// The results put away (clicked, or their terminal looked at), by file
-	// name: "started:ended"
+	// The jobs put away, by file name: "started:ended". A result, once
+	// clicked or its terminal looked at; a running job (ended 0), by a right
+	// click, for one whose shell was killed and so never ends. Its result
+	// still shows if it does end.
 	property var dismissed: ({})
 
 	// Shown, most important first: failures not yet seen, then passes, then
@@ -46,7 +48,7 @@ Singleton {
 			if (job.ignored)
 				return false;
 			if (job.state === "run")
-				return t - job.started >= after;
+				return t - job.started >= after && !putAway(job);
 			// Ctrl+C and Ctrl+Z: you stopped it yourself
 			return job.ended - job.started >= after && job.code !== 130 && job.code !== 148 && !putAway(job);
 		});
@@ -64,7 +66,7 @@ Singleton {
 	// Package manager flags whose value is the next word
 	readonly property var valueFlags: ["--filter", "-F", "-w", "--workspace", "-C", "--dir", "--prefix", "--cwd"]
 
-	// A result is told apart from the one before it in the same shell by its
+	// A job is told apart from the one before it in the same shell by its
 	// start and end: two commands can start in the same second
 	function putAway(job: var): bool {
 		return dismissed[job.pid] === job.started + ":" + job.ended;
@@ -229,11 +231,11 @@ Singleton {
 	}
 
 	// The clocks on running jobs (and the 10 seconds before one shows); idle
-	// shells, and jobs never shown, don't tick
+	// shells, and jobs never shown or put away, don't tick
 	Timer {
 		interval: 1000
 		repeat: true
-		running: Object.values(root.jobs).some(job => job.state === "run" && !job.ignored)
+		running: Object.values(root.jobs).some(job => job.state === "run" && !job.ignored && !root.putAway(job))
 		onTriggered: root.now = Date.now() / 1000
 	}
 

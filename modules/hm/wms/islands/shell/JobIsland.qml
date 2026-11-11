@@ -5,8 +5,8 @@ import Quickshell.Hyprland
 // after the clock: "test:e2e 3:12", and "+1" for each other job. When it
 // ends, how: "test:e2e passed 6m 04s" or "test:e2e failed exit 1", until
 // its terminal is looked at. A click goes to that terminal; a right click
-// dismisses a result. A click on the "+1" grows it into every job
-// (JobsMode).
+// puts the job away, running or not. A click on the "+1" grows it into
+// every job (JobsMode).
 Island {
 	id: root
 
@@ -98,9 +98,9 @@ Island {
 			}
 		}
 
-		// A right click puts a result away without going there; it leaves a
-		// running job alone. The "+1" (and the pill's end beyond it) opens
-		// the list instead.
+		// A right click puts the job away without going there: a result, or
+		// a running job (one whose shell was killed never ends). The "+1"
+		// (and the pill's end beyond it) opens the list instead.
 		MouseArea {
 			id: area
 
@@ -114,7 +114,7 @@ Island {
 					Desktop.togglePanel("jobs", root.monitor);
 				else if (mouse.button === Qt.LeftButton)
 					Jobs.open(root.job);
-				else if (!root.running)
+				else
 					Jobs.dismiss(root.job);
 			}
 		}

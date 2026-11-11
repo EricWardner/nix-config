@@ -1,9 +1,9 @@
 import QtQuick
 
 // The job island grown, from its "+N": every job, a row each, failures
-// first. A click on a row goes to that job's terminal; a right click puts a
-// finished one away. Esc or a click outside closes it, and so does the last
-// job going.
+// first. A click on a row goes to that job's terminal; a right click puts
+// it away, running or not. Esc or a click outside closes it, and so does
+// the last job going.
 IslandMode {
 	id: root
 
@@ -125,7 +125,7 @@ IslandMode {
 						if (mouse.button === Qt.LeftButton) {
 							Desktop.closePanel();
 							Jobs.open(row.job);
-						} else if (!row.running) {
+						} else {
 							Jobs.dismiss(row.job);
 						}
 					}
