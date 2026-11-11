@@ -47,6 +47,9 @@
   # stable virtual keyboard for push-to-talk (see modules/nixos/peripherals)
   modules.peripherals.keyd.enable = true;
   services.fwupd.enable = true;
+  # nixos-hardware turns this on; the reader is unused, and when its USB
+  # controller died on resume fprintd hung sudo and stalled shutdown
+  services.fprintd.enable = false;
   fonts.packages = [
     pkgs.nerd-fonts.jetbrains-mono
     pkgs.font-awesome
