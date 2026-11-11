@@ -96,8 +96,7 @@
       devShells.${system} = {
         default = pkgs.mkShell {
           inherit (self.checks.${system}.pre-commit-check) shellHook;
-          packages = [
-            (self.checks.${system}.pre-commit-check.enabledPackages)
+          packages = self.checks.${system}.pre-commit-check.enabledPackages ++ [
             treefmtEval.config.build.wrapper
           ];
           env = {
