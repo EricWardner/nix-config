@@ -11,6 +11,11 @@ let
 
   webcamToggle = pkgs.writeShellApplication {
     name = "webcam-toggle";
+    # It runs as root through the NOPASSWD rule below, and sudo keeps the
+    # caller's PATH (NixOS sets no secure_path): only these tools, never
+    # whatever `readlink` or `cat` the caller put first.
+    runtimeInputs = [ pkgs.coreutils ];
+    inheritPath = false;
     text = builtins.readFile ./webcam-toggle;
   };
 in
