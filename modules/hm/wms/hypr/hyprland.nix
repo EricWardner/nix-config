@@ -119,20 +119,6 @@ in
               '';
             };
 
-            # DEPRECATED: Keep for backwards compatibility
-            width = mkOption {
-              type = types.nullOr types.int;
-              default = null;
-            };
-            height = mkOption {
-              type = types.nullOr types.int;
-              default = null;
-            };
-            refreshRate = mkOption {
-              type = types.nullOr types.int;
-              default = null;
-            };
-
             scale = mkOption {
               type = types.oneOf [
                 types.str
@@ -242,11 +228,6 @@ in
             if builtins.isAttrs m.resolution then
               # Structured resolution
               "${toString m.resolution.width}x${toString m.resolution.height}@${toString m.resolution.refreshRate}"
-            else if m.width != null && m.height != null then
-              # Backwards compatibility
-              "${toString m.width}x${toString m.height}@${
-                toString (if m.refreshRate != null then m.refreshRate else 60)
-              }"
             else
               # String resolution (preferred, highrr, highres, etc.)
               m.resolution;
