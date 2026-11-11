@@ -7,7 +7,6 @@
   ];
   modules = {
     hostName = "tiberius";
-    grub = false;
     peripherals = {
       enable = true;
       scarlettRite.enable = true;

@@ -39,11 +39,6 @@ in
       default = "";
       description = "The system hostname.";
     };
-    modules.grub = mkOption {
-      type = types.bool;
-      default = true;
-      description = "Enable GRUB bootloader.";
-    };
   };
   config = mkIf cfg.enable {
     nix = {
@@ -82,11 +77,7 @@ in
     systemd.services.nix-daemon.serviceConfig.EnvironmentFile = "-/etc/nix/private-modules.env";
 
     boot = {
-      loader.grub = mkIf cfg.grub {
-        enable = true;
-        efiSupport = true;
-      };
-      loader.systemd-boot = mkIf (!cfg.grub) {
+      loader.systemd-boot = {
         enable = true;
         # A new generation gets 3 tries: one that never reaches
         # boot-complete.target (systemd-bless-boot) is skipped for the one
@@ -157,10 +148,6 @@ in
     };
 
     security = {
-      sudo-rs = {
-        enable = false;
-        execWheelOnly = true;
-      };
       sudo.enable = true;
       auditd.enable = true;
       audit = {

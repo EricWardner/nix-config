@@ -11,7 +11,6 @@
   ];
   modules = {
     hostName = "framework";
-    grub = false;
     peripherals = {
       enable = true;
       scarlettRite.enable = true;
