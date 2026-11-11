@@ -5,7 +5,6 @@
 let
   inherit (config.lib.stylix) colors;
 
-  capturePreview = pkgs.callPackage ../../../../pkgs/capture-preview { };
   theme = pkgs.writeText "capture-preview-theme.css" ''
     @define-color cp_fg #${colors.base05};
     @define-color cp_bg alpha(#${colors.base00}, 0.78);
@@ -19,5 +18,5 @@ let
   '';
 in
 pkgs.writeShellScriptBin "capture-preview" ''
-  exec ${capturePreview}/bin/capture-preview --css ${theme} "$@"
+  exec ${pkgs.capture-preview}/bin/capture-preview --css ${theme} "$@"
 ''

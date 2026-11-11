@@ -62,6 +62,7 @@
         config.allowUnfree = true;
         overlays = [
           claude-code.overlays.default
+          self.overlays.default
         ];
       };
       user = {
@@ -87,11 +88,15 @@
           inherit pre-commit-hooks treefmtEval;
         };
       };
+      # Our own packages (pkgs/), in pkgs for every module
+      overlays.default = import ./pkgs/overlay.nix;
       packages.${system} = {
-        bar-tools = pkgs.callPackage ./pkgs/bar-tools { };
-        islands-agent = pkgs.callPackage ./pkgs/islands-agent { };
-        capture-preview = pkgs.callPackage ./pkgs/capture-preview { };
-        gather-symbol = pkgs.callPackage ./pkgs/gather-symbol { };
+        inherit (pkgs)
+          bar-tools
+          islands-agent
+          capture-preview
+          gather-symbol
+          ;
       };
       devShells.${system} = {
         default = pkgs.mkShell {

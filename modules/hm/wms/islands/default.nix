@@ -9,17 +9,6 @@ let
   cfg = config.modules.hyprland.islands;
   inherit (config.lib.stylix) colors;
 
-  # Push-to-talk (pttd) and the status watchers the bar reads (pkgs/bar-tools)
-  barTools = pkgs.callPackage ../../../../pkgs/bar-tools { };
-
-  # NetworkManager's secret agent, BlueZ's pairing agent and gnome-keyring's
-  # prompter, whose questions the shell asks in its centre island
-  # (shell/Agent.qml)
-  islandsAgent = pkgs.callPackage ../../../../pkgs/islands-agent { };
-
-  # The Gather logo, a one-glyph font at U+FFF00 for Gather's workspace icon
-  gatherSymbol = pkgs.callPackage ../../../../pkgs/gather-symbol { };
-
   # Each time it opens a camera with pan/tilt/zoom (the Brio's digital
   # ones count), cameractrls runs three helpers in turn to list gamepad,
   # MIDI and SpaceMouse controllers for steering it: ~0.8s of a ~1.6s
@@ -177,14 +166,20 @@ in
       # nixpkgs' build is in cache.nixos.org; the upstream flake's isn't,
       # and overriding it would compile it locally on every Qt update
       pkgs.quickshell
-      # micctl for keybinds, and the watchers the bar runs
-      barTools
-      gatherSymbol
+      # Push-to-talk (pttd), micctl for keybinds, and the status watchers
+      # the bar runs (pkgs/bar-tools)
+      pkgs.bar-tools
+      # The Gather logo, a one-glyph font at U+FFF00 for Gather's workspace
+      # icon
+      pkgs.gather-symbol
       cameraSettings
       systemMonitor
       # the brightness keys go through the shell (shell/Osd.qml)
       pkgs.brightnessctl
-      islandsAgent
+      # NetworkManager's secret agent, BlueZ's pairing agent and
+      # gnome-keyring's prompter, whose questions the shell asks in its
+      # centre island (shell/Agent.qml)
+      pkgs.islands-agent
       islandsCapture
       islandsCalendar
       islandsWeather
@@ -265,8 +260,8 @@ in
         # theme and settings files are read once, at start.
         X-Restart-Triggers = [
           "${./shell}"
-          "${islandsAgent}"
-          "${barTools}"
+          "${pkgs.islands-agent}"
+          "${pkgs.bar-tools}"
           "${config.xdg.configFile."islands/theme.json".source}"
           "${config.xdg.configFile."islands/config.json".source}"
         ];
@@ -282,7 +277,7 @@ in
           # The agent is handed the keyring's and the networks' passwords:
           # this build of it, not whichever islands-agent is first on PATH
           # (shell/Agent.qml)
-          "ISLANDS_AGENT=${lib.getExe islandsAgent}"
+          "ISLANDS_AGENT=${lib.getExe pkgs.islands-agent}"
         ];
         Restart = "always";
         RestartSec = 1;
@@ -335,7 +330,7 @@ in
         StartLimitIntervalSec = 0;
       };
       Service = {
-        ExecStart = "${barTools}/bin/pttd /dev/input/by-id/keyd-virtual-keyboard-event-kbd";
+        ExecStart = "${pkgs.bar-tools}/bin/pttd /dev/input/by-id/keyd-virtual-keyboard-event-kbd";
         Restart = "always";
         RestartSec = 1;
       };
