@@ -4,10 +4,9 @@ import Quickshell
 
 // The bar's icons. Status icons are SF Symbols, which ship inside SF Pro as
 // private-use characters from U+100000, unnamed in the font; these code
-// points were found by rendering them (bar-tools' sf module has the same
-// set). SF Symbols has no logos, so the launcher and the workspaces' app
-// icons are Nerd Font glyphs, and Gather's is the one-glyph gather-symbol
-// font at U+FFF00.
+// points were found by rendering them. SF Symbols has no logos, so the
+// launcher and the workspaces' app icons are Nerd Font glyphs, and Gather's
+// is the one-glyph gather-symbol font at U+FFF00.
 Singleton {
 	readonly property string sunMin: String.fromCodePoint(0x1001AB)
 	readonly property string sunMax: String.fromCodePoint(0x1001AD)
