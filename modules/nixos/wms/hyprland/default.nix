@@ -25,6 +25,12 @@ in
       # package defaults it on, so off meant a Hyprland (and portal) the
       # binary cache never has, compiled on each update.
       withUWSM = true;
+      # A failed frame copy (routine while a shared window is resized) freezes
+      # the share for good in 1.5.0; drop once upstream fixes
+      # hyprwm/xdg-desktop-portal-hyprland#445.
+      portalPackage = pkgs.xdg-desktop-portal-hyprland.overrideAttrs (old: {
+        patches = (old.patches or [ ]) ++ [ ./xdph-retry-failed-copy.patch ];
+      });
     };
     xdg.portal = {
       enable = true;

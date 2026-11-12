@@ -1,0 +1,30 @@
+diff --git a/src/portals/Screencopy.cpp b/src/portals/Screencopy.cpp
+index c5b0baf..cd78a27 100644
+--- a/src/portals/Screencopy.cpp
++++ b/src/portals/Screencopy.cpp
+@@ -537,7 +537,12 @@ void CScreencopyPortal::SSession::initCallbacks() {
+             Debug::log(TRACE, "[sc] wlrOnFailed for {}", (void*)self.get());
+             if (!self)
+                 return;
+-            sharingData.status = FRAME_FAILED;
++            // Copies do fail, e.g. while a shared window is being resized. Requeue as the
++            // out-of-buffers path does: nothing else schedules the next frame, and a
++            // callback left installed would make startCopy() refuse a new one.
++            sharingData.status = FRAME_NONE;
++            g_pPortalManager->m_sPortals.screencopy->queueNextShareFrame(this);
++            sharingData.frameCallback.reset();
+         });
+         sharingData.frameCallback->setDamage([this, self = self](CCZwlrScreencopyFrameV1* r, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+             Debug::log(TRACE, "[sc] wlrOnDamage for {}", (void*)self.get());
+@@ -655,7 +660,10 @@ void CScreencopyPortal::SSession::initCallbacks() {
+             Debug::log(TRACE, "[sc] hlOnFailed for {}", (void*)self.get());
+             if (!self)
+                 return;
+-            sharingData.status = FRAME_FAILED;
++            // See wlrOnFailed.
++            sharingData.status = FRAME_NONE;
++            g_pPortalManager->m_sPortals.screencopy->queueNextShareFrame(this);
++            sharingData.windowFrameCallback.reset();
+         });
+         sharingData.windowFrameCallback->setDamage([this, self = self](CCHyprlandToplevelExportFrameV1* r, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+             Debug::log(TRACE, "[sc] hlOnDamage for {}", (void*)self.get());
