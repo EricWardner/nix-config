@@ -4,6 +4,17 @@
   lib,
   ...
 }:
+let
+  chromeHere = pkgs.writeShellApplication {
+    name = "chrome-here";
+    runtimeInputs = [
+      pkgs.hyprland
+      pkgs.jq
+      config.programs.google-chrome.finalPackage
+    ];
+    text = builtins.readFile ./chrome-here;
+  };
+in
 {
   imports = [
     ./wms
@@ -82,9 +93,9 @@
       mimeApps = {
         enable = true;
         defaultApplications = {
-          "x-scheme-handler/https" = [ "google-chrome.desktop" ];
-          "x-scheme-handler/http" = [ "google-chrome.desktop" ];
-          "text/html" = [ "google-chrome.desktop" ];
+          "x-scheme-handler/https" = [ "chrome-here.desktop" ];
+          "x-scheme-handler/http" = [ "chrome-here.desktop" ];
+          "text/html" = [ "chrome-here.desktop" ];
           "inode/directory" = [ "thunar.desktop" ];
         }
         # Images in Loupe: with nothing set they opened in a browser, which
@@ -108,8 +119,21 @@
         noDisplay = true;
         exec = "";
       };
+      # Links open in Chrome on the workspace they're clicked from
+      desktopEntries.chrome-here = {
+        name = "Google Chrome (this workspace)";
+        noDisplay = true;
+        exec = "${chromeHere}/bin/chrome-here %U";
+        mimeType = [
+          "x-scheme-handler/http"
+          "x-scheme-handler/https"
+          "text/html"
+        ];
+      };
     };
     home = {
+      # CLI tools open links through $BROWSER, not xdg-open
+      sessionVariables.BROWSER = "${chromeHere}/bin/chrome-here";
       packages = with pkgs; [
         # DevOpts
         awscli2

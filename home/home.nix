@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 {
   imports = [
     ./tools/oath.nix
@@ -62,7 +62,7 @@
         -libfile ${pkgs.opensc}/lib/opensc-pkcs11.so
     '')
     (pkgs.writeShellScriptBin "launch-webapp" ''
-      exec ${pkgs.google-chrome}/bin/google-chrome-stable --app="$1" "''${@:2}"
+      exec ${config.programs.google-chrome.finalPackage}/bin/google-chrome-stable --app="$1" "''${@:2}"
     '')
     (pkgs.writeShellScriptBin "system-menu" ''
       choice=$(printf "󰌾  Lock\n󰤄  Sleep\n  Reboot\n󰐥  Shutdown\n󰗽  Logout" | ${pkgs.fuzzel}/bin/fuzzel --dmenu -p "System: ")
@@ -80,10 +80,12 @@
     google-chrome = {
       enable = true;
       package = pkgs.google-chrome;
+      # Links go to chrome-here.desktop, so Chrome would keep offering to be
+      # the default, and accepting overwrites the managed mimeapps.list
+      commandLineArgs = [ "--no-default-browser-check" ];
     };
   };
   home.sessionVariables = {
-    BROWSER = "google-chrome-stable";
     EDITOR = "vim";
     SOPS_AGE_SSH_PRIVATE_KEY_FILE = "$HOME/.ssh/id_ed25519_sops";
   };

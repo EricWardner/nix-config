@@ -1,0 +1,26 @@
+# chrome-here: the link handler. Chrome opens a link in whichever of its
+# windows was used last, anywhere; this opens it in the browser window on the
+# workspace it was clicked from, or in a new window there if it has none.
+# From a special workspace (chat) it's the browser window used last, wherever
+# it is. Without Hyprland, Chrome picks.
+
+workspace=$(hyprctl activewindow -j | jq -r '.workspace.name // empty') || workspace=""
+[ -n "$workspace" ] || workspace=$(hyprctl activeworkspace -j | jq -r '.name // empty') || workspace=""
+[ -n "$workspace" ] || exec google-chrome-stable "$@"
+
+# Browser windows' titles end in " - Google Chrome"; app windows (Gather),
+# DevTools and the screen-sharing bar's don't. Special workspaces have no id,
+# only a special: name.
+address=$(hyprctl clients -j | jq -r --arg ws "$workspace" '
+  map(select(.class == "google-chrome" and (.title | endswith(" - Google Chrome"))
+    and (.workspace.name == $ws or ($ws | startswith("special:")))))
+  | sort_by(.focusHistoryID) | first | .address // empty') || address=""
+
+if [ -z "$address" ]; then
+  exec google-chrome-stable --new-window "$@"
+fi
+
+# Focused, it's the window Chrome opens the link in (from chat, this also
+# leaves chat for it)
+hyprctl dispatch "hl.dsp.focus({ window = \"address:$address\" })" >/dev/null
+exec google-chrome-stable "$@"

@@ -22,7 +22,7 @@ let
   playerctl = "${pkgs.playerctl}/bin/playerctl";
   islands = "${pkgs.quickshell}/bin/qs ipc -c islands call";
   slack = "${pkgs.slack}/bin/slack";
-  chrome = "${pkgs.google-chrome}/bin/google-chrome-stable";
+  chrome = "${config.programs.google-chrome.finalPackage}/bin/google-chrome-stable";
   toLua = lib.generators.toLua { };
   commands = {
     terminal = ghostty;
