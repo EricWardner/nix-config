@@ -3,12 +3,13 @@ pragma Singleton
 import Quickshell
 import Quickshell.Services.Mpris
 
-// What's playing (Mpris): the player that's playing, or else the first
-// paused on a track. Chrome keeps a player for any tab that has had media,
-// titled with the page's title when it names no track (Gather's sounds), so
-// a paused one counts only with an artist.
+// What's playing (Mpris): of the players that name a track and an artist,
+// the one that's playing, or else the first. Chrome keeps a player for any
+// tab that has had media, titled with the page's title when the page names
+// no track, and Gather's stays "Playing" through a whole call without
+// making a sound. Without an artist, a player is a page, not a track.
 Singleton {
-	readonly property var players: Array.from(Mpris.players.values).filter(p => p.trackTitle !== "" && (p.isPlaying || p.trackArtist !== ""))
+	readonly property var players: Array.from(Mpris.players.values).filter(p => p.trackTitle !== "" && p.trackArtist !== "")
 	readonly property MprisPlayer player: players.find(p => p.isPlaying) ?? players[0] ?? null
 
 	// Material Design icons from the Nerd Font fallback: SF Symbols' media
