@@ -200,6 +200,10 @@ in
 
     powerManagement.enable = true;
 
+    # One report has below's recorder growing to 60 GB over weeks; past
+    # this it's killed and restarted (Restart=always upstream)
+    systemd.services.below.serviceConfig.MemoryMax = "1G";
+
     systemd.sleep.settings.Sleep = {
       HibernateDelaySec = "1h";
       HibernateOnACPower = "no";
@@ -221,6 +225,19 @@ in
         enable = true;
         interval = "monthly";
         fileSystems = [ "/" ];
+      };
+      # A recording of what every app and service used (CPU, memory, IO,
+      # pressure), every 5 s, to look back at a slow stretch with
+      # `below replay -t "20 min ago"`: three days of it, compressed. Its
+      # btrfs stats stay off (the default): upstream warns they can corrupt
+      # data.
+      below = {
+        enable = true;
+        compression.enable = true;
+        retention = {
+          time = 3 * 24 * 3600;
+          size = 2 * 1024 * 1024 * 1024;
+        };
       };
       blueman.enable = true;
       pcscd.enable = true;
