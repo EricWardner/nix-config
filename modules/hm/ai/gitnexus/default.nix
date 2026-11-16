@@ -6,6 +6,7 @@
 }:
 let
   cfg = config.modules.ai.gitnexus;
+  hookEnv.GITNEXUS_HOOK_CLI_PATH = "${config.home.profileDirectory}/lib/node_modules/gitnexus/dist/cli/index.js";
   inherit (lib)
     mkIf
     mkEnableOption
@@ -55,5 +56,14 @@ in
       # so a node must be on PATH; the package above only bundles one internally.
       pkgs.nodejs
     ];
+
+    # `gitnexus setup` bakes the CLI's /nix/store path into the hook. Once that
+    # path is garbage-collected the hook silently falls back to `npx -y
+    # gitnexus`, a second, unmanaged copy. The hook checks this variable first,
+    # and the profile path always points at the current package. Set for
+    # shells and for the systemd user manager, so Claude Code started from a
+    # launcher or a terminal it spawned has it too.
+    home.sessionVariables = { inherit (hookEnv) GITNEXUS_HOOK_CLI_PATH; };
+    systemd.user.sessionVariables = { inherit (hookEnv) GITNEXUS_HOOK_CLI_PATH; };
   };
 }
