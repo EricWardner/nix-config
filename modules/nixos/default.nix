@@ -230,13 +230,14 @@ in
       # pressure), every 5 s, to look back at a slow stretch with
       # `below replay -t "20 min ago"`: three days of it, compressed. Its
       # btrfs stats stay off (the default): upstream warns they can corrupt
-      # data.
+      # data. A busy day stores about 1.1 GB, so 2 GiB only covered two of
+      # those days; 4 GiB lets the three-day limit apply.
       below = {
         enable = true;
         compression.enable = true;
         retention = {
           time = 3 * 24 * 3600;
-          size = 2 * 1024 * 1024 * 1024;
+          size = 4 * 1024 * 1024 * 1024;
         };
       };
       blueman.enable = true;
