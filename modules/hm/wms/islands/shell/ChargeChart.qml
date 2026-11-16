@@ -1,14 +1,18 @@
 import QtQuick
 
 // The battery's charge over the last hours: a line over a faint fill, 0 to
-// 100%, now at the right edge. Under it, how far back it reaches and "Now",
-// or, while hovered, the time and charge under the pointer.
+// 100%, now at the right edge, and a stretch of time tinted if one is asked
+// for. Under it, how far back it reaches and "Now", or, while hovered, the
+// time and charge under the pointer.
 Item {
 	id: root
 
 	// [{t: seconds since the epoch, v: %}], oldest first; the last is now
 	property var points: []
 	property real span: 6 * 3600 // seconds across
+	// A stretch to tint (the apps list's time on battery), {from, to} in
+	// seconds since the epoch, `to` null for up to now; or null for none
+	property var band: null
 
 	readonly property real now: points.length > 0 ? points[points.length - 1].t : Date.now() / 1000
 	readonly property real plotHeight: height - axis.height - 6
@@ -34,6 +38,30 @@ Item {
 	onHoveredChanged: canvas.requestPaint()
 	onWidthChanged: canvas.requestPaint()
 	onPlotHeightChanged: canvas.requestPaint()
+	onBandChanged: if (band !== null)
+		tint.last = band
+
+	// The band, behind the line, as much of it as is on the chart. It fades
+	// in and out, keeping the last band's place while it fades.
+	Rectangle {
+		id: tint
+
+		property var last: null
+		readonly property real startX: last ? Math.max(0, root.xOf(last.from)) : 0
+		readonly property real endX: last ? Math.min(root.width, root.xOf(last.to ?? root.now)) : 0
+
+		x: startX
+		width: Math.max(0, endX - startX)
+		height: root.plotHeight
+		color: Theme.alpha(Theme.ink, 0.1)
+		opacity: root.band !== null ? 1 : 0
+
+		Behavior on opacity {
+			NumberAnimation {
+				duration: 300
+			}
+		}
+	}
 
 	Canvas {
 		id: canvas

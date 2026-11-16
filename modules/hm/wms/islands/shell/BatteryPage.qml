@@ -27,6 +27,10 @@ Column {
 	// Which apps list shows: "now" (top's, of the whole CPU), or "battery"
 	// or "today" (islands-usage's, of the CPU used then)
 	property string view: "now"
+	// The lists in the order the title steps through them, and which way it
+	// last stepped (1 on, -1 back), for its roll
+	readonly property var views: ["now", "battery", "today"]
+	property int stepped: 1
 	// islands-usage's report, null until read: {battery, today}, each
 	// {from, to, apps: [{name, icon, share}]} (the battery's stretch also
 	// ongoing, levelFrom, levelTo), or null for no time on battery yet
@@ -158,6 +162,17 @@ Column {
 		return Qt.formatDateTime(date, date.toDateString() === new Date().toDateString() ? "h:mm AP" : "ddd h:mm AP");
 	}
 
+	// A stretch of time, short enough to share a line: "9:12–11:39 AM",
+	// "10:52 AM–12:52 PM", "Sun 8:37–11:02 PM", "Sun 8:37 PM–1:02 AM"
+	function range(from: real, to: real): string {
+		const a = new Date(from * 1000);
+		const b = new Date(to * 1000);
+		const sameDay = a.toDateString() === b.toDateString();
+		const sameHalf = sameDay && (a.getHours() < 12) === (b.getHours() < 12);
+		const start = sameHalf ? time(from).replace(Qt.formatDateTime(a, " AP"), "") : time(from);
+		return start + "–" + (sameDay ? Qt.formatDateTime(b, "h:mm AP") : time(to));
+	}
+
 	function readHistory(json: string) {
 		try {
 			history = JSON.parse(json).data[0].filter(([t, v, state]) => t > 0 && state !== 0).map(([t, v]) => ({
@@ -193,6 +208,12 @@ Column {
 		top.running = false;
 		apps = [];
 		appsRead = false;
+	}
+
+	// On to the next list (or back, -1), as the title is clicked or scrolled
+	function step(by: int) {
+		stepped = by;
+		view = views[(views.indexOf(view) + by + views.length) % views.length];
 	}
 
 	component Stat: Column {
@@ -252,6 +273,11 @@ Column {
 			width: parent.width
 			height: 84
 			span: root.span
+			// The time on battery, while the apps list shows it
+			band: root.view === "battery" && root.period ? {
+				"from": root.period.from,
+				"to": root.period.ongoing ? null : root.period.to
+			} : null
 			// Up to now: UPower adds a point only as the level changes
 			points: root.history.concat([
 				{
@@ -310,50 +336,122 @@ Column {
 			width: parent.width
 			spacing: 6
 
-			Segments {
-				width: parent.width
-				options: ["Now", "On battery", "Today"]
-				current: ["now", "battery", "today"].indexOf(root.view)
-				onPicked: index => root.view = ["now", "battery", "today"][index]
-			}
-
-			// What the shares are of; for the battery, when, and how far
-			// the level went
+			// "Busiest right now", the list's title and its switch: a click
+			// rolls it on to on battery, then today (a scroll goes either
+			// way). On the right, what the shares are of, and for the
+			// battery when and how far the level went.
 			Item {
 				width: parent.width
-				height: caption.implicitHeight
+				height: 28
 
-				BarText {
-					id: caption
+				// Its hover tint reaches past the text, the text lined up
+				// with the stats above
+				Rectangle {
+					id: title
 
-					width: parent.width - levels.implicitWidth - 8
-					text: {
-						const p = root.period;
-						if (root.view === "now")
-							return "Of the whole CPU, right now";
-						if (root.usage === null)
-							return "";
-						if (p === null)
-							return root.view === "battery" ? "No time on battery recorded yet" : "Nothing recorded";
-						if (root.view === "today")
-							return "Of the CPU used since midnight";
-						return "Of the CPU used " + (p.ongoing ? "since " + root.time(p.from) : root.time(p.from) + " – " + root.time(p.to));
+					x: -8
+					width: titleText.implicitWidth + 16
+					height: parent.height
+					radius: 8
+					color: titleHover.hovered ? Theme.alpha(Theme.ink, 0.06) : "transparent"
+
+					Row {
+						id: titleText
+
+						x: 8
+						anchors.verticalCenter: parent.verticalCenter
+						spacing: 4
+
+						BarText {
+							anchors.verticalCenter: parent.verticalCenter
+							text: "Busiest"
+							color: Theme.inkDim
+							font.pixelSize: 12
+						}
+
+						RollingText {
+							anchors.verticalCenter: parent.verticalCenter
+							text: ({
+									"now": "right now",
+									"battery": "on battery",
+									"today": "today"
+								})[root.view]
+							direction: root.stepped
+							color: Theme.ink
+							pixelSize: 12
+							weight: Font.DemiBold
+						}
+
+						BarText {
+							anchors.verticalCenter: parent.verticalCenter
+							text: Glyphs.chevronUpChevronDown
+							color: Theme.ink
+							font.pixelSize: 10
+						}
 					}
-					color: Theme.inkDim
-					font.pixelSize: 11
-					elide: Text.ElideRight
+
+					HoverHandler {
+						id: titleHover
+
+						cursorShape: Qt.PointingHandCursor
+					}
+
+					// A wheel's notch, or a swipe's worth, steps once, and
+					// the rest of that swipe is let go
+					MouseArea {
+						property real scrolled: 0
+						property real steppedAt: 0
+
+						anchors.fill: parent
+						onClicked: root.step(1)
+						onWheel: wheel => {
+							if (Date.now() - steppedAt < 350)
+								return;
+							scrolled += wheel.angleDelta.y;
+							if (Math.abs(scrolled) >= 120) {
+								root.step(scrolled < 0 ? 1 : -1);
+								scrolled = 0;
+								steppedAt = Date.now();
+							}
+						}
+					}
 				}
 
 				BarText {
 					id: levels
 
 					anchors.right: parent.right
-					text: root.view === "battery" && root.period ? Math.round(root.period.levelFrom) + "% → " + Math.round(root.period.ongoing ? Battery.level : root.period.levelTo) + "%" : ""
+					anchors.verticalCenter: parent.verticalCenter
+					text: root.view === "battery" && root.period ? "· " + Math.round(root.period.levelFrom) + "% → " + Math.round(root.period.ongoing ? Battery.level : root.period.levelTo) + "%" : ""
 					color: Theme.inkDim
 					font.pixelSize: 11
 					font.features: {
 						"tnum": 1
 					}
+				}
+
+				BarText {
+					anchors.right: levels.left
+					anchors.rightMargin: levels.text !== "" ? 4 : 0
+					anchors.verticalCenter: parent.verticalCenter
+					width: Math.min(implicitWidth, levels.x - anchors.rightMargin - (title.x + title.width))
+					text: {
+						const p = root.period;
+						if (root.view === "now")
+							return "of the whole CPU";
+						if (p === null)
+							return "";
+						if (root.view === "today")
+							return "since midnight";
+						return p.ongoing ? "since " + root.time(p.from) : root.range(p.from, p.to);
+					}
+					color: Theme.inkDim
+					font.pixelSize: 11
+					font.features: {
+						"tnum": 1
+					}
+					horizontalAlignment: Text.AlignRight
+					elide: Text.ElideRight
 				}
 			}
 
@@ -366,7 +464,7 @@ Column {
 				BarText {
 					visible: root.shownApps.length === 0
 					topPadding: 4
-					text: root.view === "now" ? (root.appsRead ? "Nothing much" : "…") : root.usage === null ? "…" : root.period === null ? "" : "Nothing much"
+					text: root.view === "now" ? (root.appsRead ? "Nothing much" : "…") : root.usage === null ? "…" : root.period === null ? (root.view === "battery" ? "No time on battery recorded yet" : "Nothing recorded") : "Nothing much"
 					color: Theme.inkDim
 					font.pixelSize: 12
 				}
