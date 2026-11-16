@@ -5,8 +5,9 @@ import Quickshell.Services.UPower
 
 // The battery: its level and what it's doing, its charge over the last six
 // hours (UPower's own history), the power profile, the machine's load, the
-// apps using the most CPU, and the battery's health. The history, the
-// apps, the chip's power and the fan are read only while the page shows.
+// apps using the most CPU (now, on battery, or today), and the battery's
+// health. The history, the apps, the chip's power and the fan are read
+// only while the page shows.
 Column {
 	id: root
 
@@ -23,6 +24,15 @@ Column {
 	// [{name, icon, share}], the biggest first, once top has been read
 	property var apps: []
 	property bool appsRead: false
+	// Which apps list shows: "now" (top's, of the whole CPU), or "battery"
+	// or "today" (islands-usage's, of the CPU used then)
+	property string view: "now"
+	// islands-usage's report, null until read: {battery, today}, each
+	// {from, to, apps: [{name, icon, share}]} (the battery's stretch also
+	// ongoing, levelFrom, levelTo), or null for no time on battery yet
+	property var usage: null
+	readonly property var period: view === "now" || usage === null ? null : usage[view]
+	readonly property var shownApps: view === "now" ? apps : period?.apps ?? []
 	// -1 until read, or with no sensor (Host)
 	property real power: -1 // W
 	property int fan: -1 // rpm
@@ -30,9 +40,31 @@ Column {
 	// "chrome", or ".claude-unwrapp" (a Nix wrapper's name, cut to 15
 	// characters) as "claude", by its desktop entry where it has one; some
 	// entries are named for neither the command nor the window. Docker's
-	// daemons count as one app.
+	// daemons count as one app. islands-usage's names (cgroups': app IDs,
+	// services, "docker" for the containers) go through here too.
 	function app(command: string): var {
 		const name = command.startsWith(".") ? command.slice(1).replace(/-(un)?wra?p?p?e?d?$/, "") : command;
+		if (name === "nix-daemon")
+			return {
+				"name": "Nix builds",
+				"icon": Quickshell.iconPath("nix-snowflake", true)
+			};
+		if (["pipewire", "pipewire-pulse", "wireplumber"].includes(name))
+			return {
+				"name": "PipeWire",
+				"icon": ""
+			};
+		// Nix's Chromium, as browser automation runs it
+		if (name === "org.chromium.Chromium")
+			return {
+				"name": "Chromium",
+				"icon": Quickshell.iconPath("chromium", true)
+			};
+		if (name === "other")
+			return {
+				"name": "Other apps",
+				"icon": ""
+			};
 		if (name === "claude")
 			return {
 				"name": "Claude Code",
@@ -43,18 +75,19 @@ Column {
 				"name": "Hyprland",
 				"icon": Qt.resolvedUrl("icons/hyprland.svg")
 			};
-		if (["dockerd", "containerd", "containerd-shim"].includes(name))
+		if (["docker", "dockerd", "containerd", "containerd-shim"].includes(name))
 			return {
 				"name": "Docker",
 				"icon": Quickshell.iconPath("docker-desktop", true)
 			};
-		if (name === "quickshell")
+		if (name === "quickshell" || name === "islands")
 			return {
 				"name": "Islands",
 				"icon": Qt.resolvedUrl("icons/quickshell.svg")
 			};
 		const entry = DesktopEntries.heuristicLookup(({
 					"chrome": "google-chrome",
+					"com.google.Chrome": "google-chrome",
 					"ghostty": "com.mitchellh.ghostty"
 				})[name] ?? name);
 		return {
@@ -63,10 +96,27 @@ Column {
 		};
 	}
 
+	// [[command or name, share %], ...] as the three biggest apps of at
+	// least `least` %, [{name, icon, share}], the names that are one app
+	// added together
+	function topApps(shares: var, least: real): var {
+		const byApp = {};
+		for (const [name, share] of shares) {
+			const a = app(name);
+			byApp[a.name] = byApp[a.name] ?? Object.assign(a, {
+				"share": 0
+			});
+			byApp[a.name].share += share;
+		}
+		return Object.values(byApp).filter(a => a.share >= least).sort((a, b) => b.share - a.share).slice(0, 3);
+	}
+
 	// top's second frame (the first counts from each process's start), its
-	// %CPU (of one CPU) summed by command, as a share of the whole machine
+	// %CPU (of one CPU) summed by command, as a share of the whole machine.
+	// A top stopped as the page hid or the list turned away still hands
+	// over what it had (its first frame, perhaps), which is dropped.
 	function readTop(text: string) {
-		if (!showing)
+		if (!showing || view !== "now")
 			return;
 		const lines = text.split("\n");
 		let header = 0;
@@ -82,16 +132,30 @@ Column {
 			if (fields.length >= 12 && cpu > 0 && command !== "top")
 				sums[command] = (sums[command] ?? 0) + cpu;
 		}
-		const byApp = {};
-		for (const [command, cpu] of Object.entries(sums)) {
-			const a = app(command);
-			byApp[a.name] = byApp[a.name] ?? Object.assign(a, {
-				"share": 0
-			});
-			byApp[a.name].share += cpu / Metrics.cores;
-		}
-		apps = Object.values(byApp).filter(a => a.share >= 0.1).sort((a, b) => b.share - a.share).slice(0, 3);
+		apps = topApps(Object.entries(sums).map(([command, cpu]) => [command, cpu / Metrics.cores]), 0.1);
 		appsRead = true;
+	}
+
+	// islands-usage's CPU seconds by app name, as shares of all the CPU used
+	// in each window
+	function readUsage(json: string) {
+		let report;
+		try {
+			report = JSON.parse(json);
+		} catch (e) {
+			console.warn("islands: can't read the apps' usage:", e);
+			return;
+		}
+		for (const w of [report.battery, report.today])
+			if (w)
+				w.apps = topApps(w.apps.map(([name, seconds]) => [name, w.total > 0 ? 100 * seconds / w.total : 0]), 0.5);
+		usage = report;
+	}
+
+	// "11:39 AM", or "Sun 8:37 PM" before today
+	function time(seconds: real): string {
+		const date = new Date(seconds * 1000);
+		return Qt.formatDateTime(date, date.toDateString() === new Date().toDateString() ? "h:mm AP" : "ddd h:mm AP");
 	}
 
 	function readHistory(json: string) {
@@ -119,7 +183,13 @@ Column {
 
 	spacing: 10
 
-	onShowingChanged: if (!showing) {
+	onShowingChanged: if (!showing)
+		stopTop()
+	onViewChanged: if (view !== "now")
+		stopTop()
+
+	// Back to the quick first read when the live list shows again
+	function stopTop() {
 		top.running = false;
 		apps = [];
 		appsRead = false;
@@ -238,12 +308,53 @@ Column {
 
 		Column {
 			width: parent.width
-			spacing: 2
+			spacing: 6
 
-			BarText {
-				text: "Using the most CPU"
-				color: Theme.inkDim
-				font.pixelSize: 11
+			Segments {
+				width: parent.width
+				options: ["Now", "On battery", "Today"]
+				current: ["now", "battery", "today"].indexOf(root.view)
+				onPicked: index => root.view = ["now", "battery", "today"][index]
+			}
+
+			// What the shares are of; for the battery, when, and how far
+			// the level went
+			Item {
+				width: parent.width
+				height: caption.implicitHeight
+
+				BarText {
+					id: caption
+
+					width: parent.width - levels.implicitWidth - 8
+					text: {
+						const p = root.period;
+						if (root.view === "now")
+							return "Of the whole CPU, right now";
+						if (root.usage === null)
+							return "";
+						if (p === null)
+							return root.view === "battery" ? "No time on battery recorded yet" : "Nothing recorded";
+						if (root.view === "today")
+							return "Of the CPU used since midnight";
+						return "Of the CPU used " + (p.ongoing ? "since " + root.time(p.from) : root.time(p.from) + " – " + root.time(p.to));
+					}
+					color: Theme.inkDim
+					font.pixelSize: 11
+					elide: Text.ElideRight
+				}
+
+				BarText {
+					id: levels
+
+					anchors.right: parent.right
+					text: root.view === "battery" && root.period ? Math.round(root.period.levelFrom) + "% → " + Math.round(root.period.ongoing ? Battery.level : root.period.levelTo) + "%" : ""
+					color: Theme.inkDim
+					font.pixelSize: 11
+					font.features: {
+						"tnum": 1
+					}
+				}
 			}
 
 			// Three rows high however many there are, so the island keeps
@@ -253,9 +364,9 @@ Column {
 				height: 3 * 36
 
 				BarText {
-					visible: root.apps.length === 0
+					visible: root.shownApps.length === 0
 					topPadding: 4
-					text: root.appsRead ? "Nothing much" : "…"
+					text: root.view === "now" ? (root.appsRead ? "Nothing much" : "…") : root.usage === null ? "…" : root.period === null ? "" : "Nothing much"
 					color: Theme.inkDim
 					font.pixelSize: 12
 				}
@@ -264,7 +375,7 @@ Column {
 					width: parent.width
 
 					Repeater {
-						model: root.apps
+						model: root.shownApps
 
 						// Its icon lined up with the text above
 						ListRow {
@@ -349,8 +460,30 @@ Column {
 		interval: 3000
 		repeat: true
 		triggeredOnStart: true
-		running: root.showing
+		running: root.showing && root.view === "now"
 		onTriggered: top.running = true
+	}
+
+	// The apps on battery and today, as the list turns to them and each
+	// minute while it shows them: islands-usage adds up its five-minute
+	// totals of below's recording (and the minutes since), a few
+	// hundredths of a second
+	Process {
+		id: usageCall
+
+		command: ["islands-usage", "report"]
+		stdout: StdioCollector {
+			onStreamFinished: if (text !== "")
+				root.readUsage(text)
+		}
+	}
+
+	Timer {
+		interval: 60000
+		repeat: true
+		triggeredOnStart: true
+		running: root.showing && root.view !== "now"
+		onTriggered: usageCall.running = true
 	}
 
 	FileView {

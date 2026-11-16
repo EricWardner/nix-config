@@ -89,6 +89,19 @@ let
     ];
     text = builtins.readFile ./islands-weather;
   };
+  # What used the CPU on battery and today, by app, from below's recording
+  # (the battery page's lists), and when the charger went in or out. It
+  # reads the store with the system's below, the recorder's own build.
+  islandsUsage = pkgs.writeShellApplication {
+    name = "islands-usage";
+    runtimeInputs = with pkgs; [
+      gawk
+      coreutils
+      util-linux
+      systemd
+    ];
+    text = builtins.readFile ./islands-usage;
+  };
   # Claude Code's prompt and agent hooks (~/.claude/settings.json) call it to
   # put a prompt still being worked on in the job island
   islandsClaudeJob = pkgs.writeShellApplication {
@@ -184,6 +197,7 @@ in
       islandsCalendar
       islandsWeather
       islandsClaudeJob
+      islandsUsage
       # nm-connection-editor, behind the Wi-Fi page's "Network settings…"
       pkgs.networkmanagerapplet
     ];
@@ -283,6 +297,31 @@ in
         RestartSec = 1;
       };
       Install.WantedBy = [ "hyprland-session.target" ];
+    };
+
+    # Adds below's new samples to islands-usage's per-app totals every five
+    # minutes and notes whether the charger's in, so the battery page reads
+    # back days of them in a few hundredths of a second. On a machine
+    # without below's store it's skipped.
+    systemd.user.services.islands-usage = {
+      Unit = {
+        Description = "Add up what used the CPU, for the islands battery page";
+        ConditionPathIsDirectory = "/var/log/below/store";
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${lib.getExe islandsUsage} update";
+        Nice = 19;
+        IOSchedulingClass = "idle";
+      };
+    };
+    systemd.user.timers.islands-usage = {
+      Unit.Description = "Add up what used the CPU every five minutes";
+      Timer = {
+        OnCalendar = "*:0/5";
+        AccuracySec = "1min";
+      };
+      Install.WantedBy = [ "timers.target" ];
     };
 
     # Annotating a screenshot, from the preview's Annotate or run by hand.

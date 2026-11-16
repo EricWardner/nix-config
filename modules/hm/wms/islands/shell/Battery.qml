@@ -15,6 +15,11 @@ Singleton {
 	// The charger connected. The battery can report discharging at 100%
 	// with it in, so that alone isn't draining.
 	readonly property bool plugged: !UPower.onBattery
+
+	// The moment it's plugged in or out, for the battery page's "On
+	// battery" stretch (islands-usage), as UPower's history can't say
+	onPluggedChanged: if (present)
+		Quickshell.execDetached(["islands-usage", "mark"])
 	readonly property bool charging: device?.state === UPowerDeviceState.Charging
 	readonly property real rate: Math.abs(device?.changeRate ?? 0)
 	// Losing charge with the charger in: one too weak for the load, or a

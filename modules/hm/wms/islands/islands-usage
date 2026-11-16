@@ -1,0 +1,336 @@
+# islands-usage update|mark|report: what used the CPU, by app, for the
+# battery page's "On battery" and "Today" lists (shell/BatteryPage.qml).
+#
+# below records every cgroup's CPU every 5 s (services.below), but reading
+# it back costs about a second of CPU per hour read, too much to do each
+# time the page opens. So `update` (a timer, every five minutes) adds what's
+# new since its last run to per-app totals in five-minute buckets, and
+# `report` sums those. An app is a cgroup: its scope or service, the Docker
+# containers, the session (Hyprland). That way processes that come and go
+# too fast for below to see one by one, like builds, still count.
+#
+# Each update also notes whether the charger's in, and so does `mark`, which
+# the shell runs the moment it's plugged in or out (shell/Battery.qml). The
+# battery can report discharging with the charger in, so UPower's charge
+# history can't say when it was unplugged.
+#
+# Files, in $XDG_CACHE_HOME/islands/usage:
+#   cpu.tsv     "<bucket start>\t<app>\t<CPU seconds>", oldest first; each
+#               update ends with "<newest sample>\t_last\t0", and "_total"
+#               is the whole machine
+#   power.tsv   "<time>\t<1 on battery, 0 not>\t<level %>"
+#   scopes.tsv  "<run-p scope>\t<command>", see name_scope
+
+dir=${XDG_CACHE_HOME:-$HOME/.cache}/islands/usage
+store=/var/log/below/store
+# The recorder's own build, so the store's format always matches
+below=/run/current-system/sw/bin/below
+bucket=300
+# below's own retention
+keep=$((3 * 24 * 3600))
+now=$(date +%s)
+
+mkdir -p "$dir"
+touch "$dir/cpu.tsv" "$dir/power.tsv" "$dir/scopes.tsv"
+
+lock() {
+  exec 9>"$dir/lock"
+  flock "$@" 9
+}
+
+# This moment's power line, read before waiting on the lock, so a plug
+# queued behind an update keeps its own time and state
+power() {
+  local on level
+  on=$(busctl --system get-property org.freedesktop.UPower /org/freedesktop/UPower org.freedesktop.UPower OnBattery) || return 0
+  level=$(busctl --system get-property org.freedesktop.UPower /org/freedesktop/UPower/devices/DisplayDevice org.freedesktop.UPower.Device Percentage) || return 0
+  # "b true", "d 95.000000"
+  printf '%s\t%d\t%.0f\n' "$now" "$([[ $on == "b true" ]] && echo 1 || echo 0)" "${level#d }"
+}
+
+# The newest sample counted so far (0 for none)
+counted() {
+  gawk -F'\t' '$2 == "_last" && $1 > m { m = $1 } END { print m + 0 }' "$dir/cpu.tsv"
+}
+
+# Scopes systemd-run makes (run-p<pid>-i<n>.scope: Ghostty, apps the
+# launcher starts) say nothing of what's in them, so each is named once for
+# its process, from one of below's samples of it: the scope's own PID's
+# command, or failing that the commonest ("other" if there's nothing to
+# name it by)
+name_scope() {
+  local unit=$1 t=$2 pid comm
+  pid=${unit#run-p}
+  pid=${pid%%-*}
+  comm=$({ "$below" dump process \
+    -b "$(date -d "@$t" '+%Y-%m-%d %H:%M:%S')" \
+    -e "$(date -d "@$((t + 4))" '+%Y-%m-%d %H:%M:%S')" \
+    -f pid comm cgroup -O csv 2>/dev/null || true; } |
+    gawk -F, -v unit="$unit" -v pid="$pid" '
+      substr($3, length($3) - length(unit)) == "/" unit {
+        if ($1 == pid)
+          own = $2
+        n[$2]++
+      }
+      END {
+        if (own == "")
+          for (c in n)
+            if (n[c] > n[own])
+              own = c
+        print own == "" ? "other" : own
+      }')
+  printf '%s\t%s\n' "$unit" "$comm" >>"$dir/scopes.tsv"
+}
+
+# Past below's retention, an hour's worth at a time
+prune() {
+  local f first
+  for f in cpu power; do
+    read -r first _ <"$dir/$f.tsv" || continue
+    if ((first < now - keep - 3600)); then
+      gawk -F'\t' -v since=$((now - keep)) '$1 >= since' "$dir/$f.tsv" >"$dir/$f.tsv.new"
+      mv "$dir/$f.tsv.new" "$dir/$f.tsv"
+    fi
+  done
+  if (($(wc -l <"$dir/scopes.tsv") > 1000)); then
+    tail -n 500 "$dir/scopes.tsv" >"$dir/scopes.tsv.new"
+    mv "$dir/scopes.tsv.new" "$dir/scopes.tsv"
+  fi
+}
+
+# The samples since the last update (or the last day, the first time),
+# added to cpu.tsv in one rename, so an update cut short counts nothing
+# twice. Call with the lock held.
+update() {
+  local last unit t
+  power >>"$dir/power.tsv"
+  last=$(counted)
+  ((last >= now - 24 * 3600)) || last=$((now - 24 * 3600))
+
+  # Scopes not named yet keep their unit name in new.tsv and are listed in
+  # unnamed.tsv
+  { "$below" dump cgroup \
+    -b "$(date -d "@$((last + 1))" '+%Y-%m-%d %H:%M:%S')" \
+    -e "$(date -d "@$now" '+%Y-%m-%d %H:%M:%S')" \
+    -f timestamp full_path cpu.usage_pct -O csv 2>"$dir/below.err" || true; } |
+    gawk -F, -v last="$last" -v bucket="$bucket" -v scopes="$dir/scopes.tsv" \
+      -v unnamed="$dir/unnamed.tsv" '
+      function key(p, m, n) {
+        if (p == "")
+          return "_total"
+        if (p == "/init.scope")
+          return "systemd"
+        if (match(p, /^\/system\.slice\/([^\/]+)$/, m)) {
+          n = m[1]
+          if (n ~ /^docker-.*\.scope$/ || n == "docker.service" || n == "containerd.service")
+            return "docker"
+          sub(/\.(service|scope|slice)$/, "", n)
+          sub(/^system-/, "", n)
+          gsub(/\\x2d/, "-", n)
+          return n
+        }
+        if (p ~ /^\/user\.slice\/user-[0-9]+\.slice\/session-[^\/]+\.scope$/)
+          return "Hyprland"
+        if (p ~ /^\/user\.slice\/user-[0-9]+\.slice\/user@[0-9]+\.service\/init\.scope$/)
+          return "systemd"
+        if (match(p, /^\/user\.slice\/user-[0-9]+\.slice\/user@[0-9]+\.service\/[^\/]+\.slice\/([^\/]+)$/, m)) {
+          n = m[1]
+          if (n ~ /^run-p[0-9]+-i[0-9]+\.scope$/) {
+            if (n in scope)
+              return scope[n]
+            if (!(n in seen))
+              seen[n] = t
+            return n
+          }
+          sub(/\.(service|scope|slice)$/, "", n)
+          if (sub(/^app-/, "", n)) {
+            # app-<id>@<instance>.service, app-<id>-<pid>.scope, and
+            # the scopes of Ghostty tabs and windows
+            sub(/@.*$/, "", n)
+            sub(/-[0-9]+$/, "", n)
+            sub(/-surface-transient$/, "", n)
+            gsub(/\\x2d/, "-", n)
+          }
+          return n
+        }
+        return ""
+      }
+      BEGIN {
+        while ((getline line < scopes) > 0) {
+          split(line, f, "\t")
+          scope[f[1]] = f[2]
+        }
+        prev = last
+      }
+      NR == 1 { next }
+      {
+        t = $1 + 0
+        if (t <= last)
+          next
+        # Each sample is the CPU since the one before, usually 5 s; after a
+        # sleep, call it 5 s, as what it averages over is unclear
+        if (t != prev) {
+          step = t - prev <= 30 ? t - prev : 5
+          prev = t
+        }
+        v = $3
+        sub(/%$/, "", v)
+        if (v + 0 <= 0)
+          next
+        k = key($2)
+        if (k != "")
+          cpu[int(t / bucket) * bucket, k] += v / 100 * step
+      }
+      END {
+        for (bk in cpu)
+          if (cpu[bk] >= 0.001) {
+            split(bk, f, SUBSEP)
+            printf "%d\t%s\t%.3f\n", f[1], f[2], cpu[bk]
+          }
+        if (prev > last)
+          printf "%d\t_last\t0\n", prev
+        printf "" > unnamed
+        for (n in seen)
+          printf "%s\t%d\n", n, seen[n] > unnamed
+      }' >"$dir/new.tsv"
+  # Asleep the whole time is "no samples"; anything else is worth a look
+  if [[ -s $dir/below.err ]] && ! grep -q "No samples found" "$dir/below.err"; then
+    cat "$dir/below.err" >&2
+  fi
+
+  while IFS=$'\t' read -r unit t; do
+    name_scope "$unit" "$t"
+  done <"$dir/unnamed.tsv"
+  {
+    cat "$dir/cpu.tsv"
+    gawk -F'\t' -v OFS='\t' '
+      ARGIND == 1 { scope[$1] = $2; next }
+      $2 in scope { $2 = scope[$2] }
+      $2 ~ /^run-p/ { $2 = "other" }
+      { print }' "$dir/scopes.tsv" "$dir/new.tsv" | sort -n -k1,1 -s
+  } >"$dir/cpu.tsv.new"
+  mv "$dir/cpu.tsv.new" "$dir/cpu.tsv"
+  prune
+}
+
+# {"battery": the stretch on battery going on, or the last one of five
+#  minutes or more (a charger's blip isn't one), or null, "today": since
+#  midnight}, each {"from", "to", "total" CPU seconds, and "apps": [[app,
+#  CPU seconds], ...], the most first}; the battery's also "ongoing",
+#  "levelFrom" and "levelTo"
+report() {
+  # Only the minutes since the timer's last run are caught up here; a longer
+  # catch-up (the first run's day) is left to the timer, at low priority,
+  # and the page shows what's counted meanwhile. Reading needs no lock:
+  # cpu.tsv only ever changes by a rename.
+  if lock -n; then
+    if ((now - $(counted) <= 15 * 60)); then
+      update
+    else
+      systemctl --user start --no-block islands-usage.service || true
+    fi
+  fi
+  gawk -F'\t' -v now="$now" -v midnight="$(date -d 'today 00:00' +%s)" -v bucket="$bucket" '
+    # Names are only looked up, so what JSON would need escaped goes
+    function esc(s) {
+      gsub(/[[:cntrl:]\\"]/, "", s)
+      return s
+    }
+    # Back from the newest sample to the last stretch on battery that is
+    # going on or lasted five minutes
+    function stretch(i, j) {
+      done = 1
+      for (i = np; i >= 1; i = first - 1) {
+        for (; i >= 1 && pon[i] != 1; i--)
+          ;
+        if (i < 1)
+          return
+        for (first = i; first > 1 && pon[first - 1] == 1; first--)
+          ;
+        ongoing = i == np
+        from = pt[first]
+        to = ongoing ? now : pt[i + 1]
+        if (ongoing || to - from >= 300) {
+          found = 1
+          levelFrom = plevel[first]
+          levelTo = ongoing ? plevel[i] : plevel[i + 1]
+          return
+        }
+      }
+    }
+    # The 40 biggest: names that are one app (the shell merges them) all
+    # make it
+    function window(name, sums, total, extra, k, n, out) {
+      out = ""
+      n = 0
+      PROCINFO["sorted_in"] = "@val_num_desc"
+      for (k in sums) {
+        if (n++ == 40)
+          break
+        out = out (out == "" ? "" : ",") sprintf("[\"%s\",%.1f]", esc(k), sums[k])
+      }
+      delete PROCINFO["sorted_in"]
+      return sprintf("\"%s\":{%s\"total\":%.1f,\"apps\":[%s]}", name, extra, total, out)
+    }
+    ARGIND == 1 {
+      pt[++np] = $1
+      pon[np] = $2
+      plevel[np] = $3
+      next
+    }
+    !done {
+      stretch()
+    }
+    $2 == "_last" {
+      next
+    }
+    {
+      b = $1 + 0
+      if ($2 == "_total") {
+        if (b >= midnight)
+          todayTotal += $3
+        if (found && b + bucket > from && b < to)
+          batteryTotal += $3
+        next
+      }
+      if (b >= midnight)
+        today[$2] += $3
+      if (found && b + bucket > from && b < to)
+        battery[$2] += $3
+    }
+    END {
+      if (!done)
+        stretch()
+      if (found)
+        out = window("battery", battery, batteryTotal, sprintf("\"from\":%d,\"to\":%d,\"ongoing\":%s,\"levelFrom\":%d,\"levelTo\":%d,", from, to, ongoing ? "true" : "false", levelFrom, levelTo))
+      else
+        out = "\"battery\":null"
+      print "{" out "," window("today", today, todayTotal, sprintf("\"from\":%d,\"to\":%d,", midnight, now)) "}"
+    }' "$dir/power.tsv" "$dir/cpu.tsv"
+}
+
+case ${1:-} in
+  update)
+    [[ -d $store && -x $below ]] || exit 0
+    lock
+    update
+    ;;
+  mark)
+    [[ -d $store ]] || exit 0
+    line=$(power)
+    [[ -n $line ]] || exit 0
+    lock
+    printf '%s\n' "$line" >>"$dir/power.tsv"
+    ;;
+  report)
+    if [[ -d $store && -x $below ]]; then
+      report
+    else
+      echo '{"battery":null,"today":null}'
+    fi
+    ;;
+  *)
+    echo "usage: islands-usage update|mark|report" >&2
+    exit 2
+    ;;
+esac
