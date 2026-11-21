@@ -11,7 +11,7 @@
   systemd.user.services.yubikey-touch-detector = {
     Unit.Description = "YubiKey touch detector";
     Service = {
-      ExecStart = "${pkgs.yubikey-touch-detector}/bin/yubikey-touch-detector --libnotify";
+      ExecStart = "${pkgs.yubikey-touch-detector}/bin/yubikey-touch-detector --notify";
       Restart = "on-failure";
     };
     Install.WantedBy = [ "default.target" ];
