@@ -124,12 +124,6 @@
       nixosConfigurations =
         let
           hosts = {
-            tiberius = {
-              hardwareModules = [
-                nixos-hardware.nixosModules.dell-precision-3490-intel
-                nixos-hardware.nixosModules.common-gpu-intel
-              ];
-            };
             framework = {
               hardwareModules = [
                 nixos-hardware.nixosModules.framework-amd-ai-300-series
@@ -184,7 +178,6 @@
             };
         in
         {
-          "${user.username}@tiberius" = mkHome "tiberius";
           "${user.username}@framework" = mkHome "framework";
         };
     };

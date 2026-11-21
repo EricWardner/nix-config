@@ -78,7 +78,6 @@ see them:
 ```sh
 git add modules/hm/wms/hypr/lua
 nh home switch . -c ewardner@framework
-# Use ewardner@tiberius on the Dell.
 ```
 
 Log out and back in for the first migration. The running compositor was launched

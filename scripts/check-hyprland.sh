@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render and verify both hosts without activating Home Manager or a compositor.
+# Render and verify each host without activating Home Manager or a compositor.
 set -euo pipefail
 
 repo_root=$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)
@@ -9,7 +9,7 @@ hyprland_bin=${HYPRLAND_BIN:-Hyprland}
 
 profiles=("$@")
 if ((${#profiles[@]} == 0)); then
-  profiles=(ewardner@framework ewardner@tiberius)
+  profiles=(ewardner@framework)
 fi
 
 for profile in "${profiles[@]}"; do
