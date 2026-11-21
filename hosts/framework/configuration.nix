@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ ... }:
 {
   imports = [
     ./hardware-configuration.nix
@@ -23,13 +23,12 @@
   # nixos-hardware turns this on; the reader is unused, and when its USB
   # controller died on resume fprintd hung sudo and stalled shutdown
   services.fprintd.enable = false;
-  fonts.packages = [
-    pkgs.nerd-fonts.jetbrains-mono
-    pkgs.font-awesome
-  ];
   hardware = {
     enableRedistributableFirmware = true;
     keyboard.zsa.enable = true;
+    # nixos-hardware turns the 32-bit graphics drivers on for Steam and
+    # Wine, neither of which is here: 886 MiB of Mesa
+    graphics.enable32Bit = false;
   };
 
   boot.extraModprobeConfig = ''

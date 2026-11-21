@@ -44,10 +44,7 @@ in
         "org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
       };
     };
-    hardware.graphics = {
-      enable = true;
-      enable32Bit = true;
-    };
+    hardware.graphics.enable = true;
     environment.sessionVariables = {
       NIXOS_OZONE_WL = "1";
     };

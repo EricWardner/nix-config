@@ -8,10 +8,6 @@
     "org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
     };
-    "org/virt-manager/virt-manager/connections" = {
-      autoconnect = [ "qemu:///system" ];
-      uris = [ "qemu:///system" ];
-    };
   };
   stylix = {
     targets.k9s.enable = true;
@@ -45,7 +41,6 @@
     discord
     unzip
     claude-code
-    pavucontrol
     openssl
     libnotify
     yubioath-flutter
