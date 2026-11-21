@@ -159,8 +159,6 @@ Not in this repository, to restore by hand:
 - `/etc/nix/private-modules.env`, read by the Nix daemon.
 - The keyring: Wi-Fi passwords, the `gh` and `fj` logins, and the
   calendar's address (`secret-tool store service islands-calendar`).
-- The Claude Code hooks in `~/.claude/settings.json` that call
-  `islands-claude-job`, for the bar's job island.
 - Everything in the home directory. Nothing here backs it up.
 
 ## Using it for someone else

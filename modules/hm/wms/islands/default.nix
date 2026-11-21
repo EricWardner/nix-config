@@ -113,6 +113,58 @@ let
     ];
     text = builtins.readFile ./islands-claude-job;
   };
+  # Those hooks, by event. Claude Code keeps its own settings in the same
+  # file (the model, permissions), so they're merged into it on each switch
+  # rather than the file being a link into the store. Hooks already there
+  # that call islands-claude-job are replaced; any others are left alone.
+  claudeHooks = pkgs.writeText "islands-claude-hooks.json" (
+    builtins.toJSON (
+      lib.mapAttrs
+        (_: action: [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "islands-claude-job ${action} 2>/dev/null || true";
+                timeout = 5;
+              }
+            ];
+          }
+        ])
+        {
+          UserPromptSubmit = "start";
+          Stop = "stop";
+          SessionEnd = "end";
+          SubagentStart = "agent-start";
+          SubagentStop = "agent-stop";
+        }
+    )
+  );
+  installClaudeHooks = pkgs.writeShellApplication {
+    name = "islands-install-claude-hooks";
+    runtimeInputs = with pkgs; [
+      jq
+      coreutils
+    ];
+    text = ''
+      settings=$HOME/.claude/settings.json
+      mkdir -p "$(dirname "$settings")"
+      [ -s "$settings" ] || echo "{}" >"$settings"
+      jq --slurpfile ours ${claudeHooks} '
+        .hooks = (reduce ($ours[0] | to_entries[]) as $event (.hooks // {};
+          .[$event.key] = ((.[$event.key] // [])
+            | map(select(any(.hooks[]?; (.command // "") | contains("islands-claude-job")) | not))
+          ) + $event.value))
+      ' "$settings" >"$settings.new"
+      # Only when the hooks differ: not for formatting alone
+      if [ "$(jq -S . "$settings")" = "$(jq -S . "$settings.new")" ]; then
+        rm "$settings.new"
+      else
+        chmod --reference="$settings" "$settings.new"
+        mv "$settings.new" "$settings"
+      fi
+    '';
+  };
   # The control centre's load line opens it. The class must be a valid app
   # ID (with a dot) or ghostty ignores it; the floating rule in
   # hypr/lua/rules.lua matches it.
@@ -207,6 +259,12 @@ in
     # Tells the bar what each terminal is running, for its job island
     # (shell/Jobs.qml)
     programs.zsh.initContent = lib.mkAfter (builtins.readFile ./islands-jobs.zsh);
+
+    # And what each Claude Code session is doing: its hooks, kept in
+    # ~/.claude/settings.json (claudeHooks, above)
+    home.activation.islandsClaudeHooks = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      run ${lib.getExe installClaudeHooks}
+    '';
 
     # blueman-manager (Bluetooth settings…) starts blueman's applet, whose
     # agent would take pairing from islands-agent, with a tray icon
