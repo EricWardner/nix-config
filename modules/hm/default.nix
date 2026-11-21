@@ -96,8 +96,48 @@ in
           "x-scheme-handler/https" = [ "chrome-here.desktop" ];
           "x-scheme-handler/http" = [ "chrome-here.desktop" ];
           "text/html" = [ "chrome-here.desktop" ];
+          # Chrome claims PDFs itself, through google-chrome.desktop, which
+          # skips chrome-here and opens them on some other workspace
+          "application/pdf" = [ "chrome-here.desktop" ];
           "inode/directory" = [ "thunar.desktop" ];
         }
+        # Text and code in VS Code. Only text/plain was claimed (by code),
+        # so .sh went to gvim and .md/.json/.yaml to nothing in particular.
+        // lib.genAttrs [
+          "text/plain"
+          "text/markdown"
+          "text/x-log"
+          "text/x-patch"
+          "text/x-shellscript"
+          "application/x-shellscript"
+          "text/x-python3"
+          "text/x-nix"
+          "text/x-go"
+          "text/rust"
+          "text/javascript"
+          "application/typescript"
+          "text/x-lua"
+          "text/x-qml"
+          "application/json"
+          "application/yaml"
+          "application/toml"
+          "application/xml"
+        ] (_: [ "code.desktop" ])
+        # Archives in File Roller, which is also what thunar-archive-plugin's
+        # Extract Here runs; without an archiver installed it did nothing
+        // lib.genAttrs [
+          "application/zip"
+          "application/x-7z-compressed"
+          "application/vnd.rar"
+          "application/x-tar"
+          "application/x-compressed-tar"
+          "application/x-bzip-compressed-tar"
+          "application/x-xz-compressed-tar"
+          "application/x-zstd-compressed-tar"
+          "application/gzip"
+          "application/x-xz"
+          "application/zstd"
+        ] (_: [ "org.gnome.FileRoller.desktop" ])
         # Images in Loupe: with nothing set they opened in a browser, which
         # claims them. SVGs too, to look at; Inkscape is in Open With.
         // lib.genAttrs [
@@ -128,6 +168,7 @@ in
           "x-scheme-handler/http"
           "x-scheme-handler/https"
           "text/html"
+          "application/pdf"
         ];
       };
     };
@@ -170,6 +211,9 @@ in
 
         # Image viewer (the default for images, above)
         loupe
+        # Archiver (the default for archives, above); thunar-archive-plugin
+        # finds it through its org.gnome.FileRoller.tap
+        file-roller
       ];
       file."Wallpapers" = {
         recursive = true;
