@@ -94,44 +94,65 @@ nix build .#bar-tools   # also: islands-agent, capture-preview, gather-symbol
 
 ## Fresh install
 
-The installer was last used in March 2026 and hasn't been tested against the
-current tree.
+The build, the install and the first boot below were last run in a virtual
+machine on 2026-11-21, installing `framework` to a blank disk.
 
 ### Build the installer
 
-The host to install is baked into the image, read from the environment
-(hence `--impure`). `DRIVE` is the disk to install to, `/dev/nvme0n1` if
-unset.
-
 ```sh
-HOSTNAME=framework nix build --impure .#nixosConfigurations.iso.config.system.build.isoImage
-# The image is under result/iso/. Find the USB stick with lsblk first.
-sudo dd if=result/iso/nixinstaller.iso of=/dev/sdX bs=4M status=progress conv=fdatasync
+nix build .#iso
+# Find the USB stick with lsblk first.
+sudo dd if="$(ls result/iso/*.iso)" of=/dev/sdX bs=4M status=progress conv=fdatasync
 ```
+
+The image carries a copy of this repository, so build it from the commit
+you want installed.
 
 ### Install
 
-Boot the stick, get online, then:
+Boot the stick and get online (`nmtui` for Wi-Fi), then:
 
 ```sh
-sudo run-install
+sudo run-install framework              # the host, as named in flake.nix
+sudo run-install framework /dev/sda     # or onto a disk other than /dev/nvme0n1
 ```
 
-It generates the hardware configuration, partitions and encrypts the disk
-(asking for the passphrase), installs the system and asks for the user's
-password. It also leaves a copy of this repository in `~/nix-config/cfg`,
-which isn't a git checkout.
+It asks before erasing the disk, then:
+
+1. generates the host's `hardware-configuration.nix` for this machine,
+2. partitions and encrypts the disk, asking for the passphrase,
+3. installs the system,
+4. copies this repository to `~/nix-config`,
+5. asks for the user's password.
+
+If the new swapfile's offset isn't the one in the host's
+`configuration.nix`, it says so at the end; hibernation needs the two to
+match.
 
 ### After the first boot
 
-1. Restore the SSH keys. The home configuration has a private input fetched
-   over SSH, so it can't be built without them.
-2. Clone this repository to `~/nix-config`, replacing the installer's copy.
-   The path is assumed by `nh`, the aliases and `nix-keep`.
-3. Build the home: `nh home switch ~/nix-config -c ewardner@<hostname>`.
-4. Set the hibernation offset for the new swapfile. Read it with
-   `sudo btrfs inspect-internal map-swapfile -r /.swapvol/swapfile`, put it
-   in `resume_offset=` in the host's `configuration.nix`, and rebuild.
+The first boot unlocks the disk and logs straight in to a bare Hyprland:
+the home isn't built yet, and the system has no terminal of its own. Switch
+to a console with Ctrl+Alt+F2 and log in there.
+
+1. Get online (`nmtui`) and restore the SSH keys. The home configuration
+   has a private input fetched over SSH, so it can't be built without them.
+2. Build the home: `nh home switch ~/nix-config -c ewardner@<hostname>`,
+   then reboot.
+3. Make `~/nix-config` a checkout again; the installer's copy has no git
+   history:
+
+   ```sh
+   cd ~/nix-config
+   git init -b main
+   git remote add origin git@github.com:EricWardner/nix-config.git
+   git fetch origin
+   git reset origin/main
+   git branch -u origin/main
+   ```
+
+   `git status` then shows what the installer changed: the generated
+   `hardware-configuration.nix`, to commit.
 
 Not in this repository, to restore by hand:
 

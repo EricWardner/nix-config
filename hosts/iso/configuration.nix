@@ -6,24 +6,15 @@
   ...
 }:
 let
-  hostname = builtins.getEnv "HOSTNAME";
-  drive =
-    let
-      d = builtins.getEnv "DRIVE";
-    in
-    if d == "" then "/dev/nvme0n1" else d;
+  # `sudo run-install HOSTNAME [DRIVE]`, from the booted image
   run-install = pkgs.writeShellApplication {
     name = "run-install";
     runtimeInputs = with pkgs; [
       git
       disko
-      nh
+      btrfs-progs
     ];
-    text = (
-      builtins.replaceStrings [ "__USER__" "__HOSTNAME__" "__DRIVE__" ] [ user.username hostname drive ] (
-        builtins.readFile ./install.sh
-      )
-    );
+    text = builtins.replaceStrings [ "__USER__" ] [ user.username ] (builtins.readFile ./install.sh);
   };
 in
 {
@@ -32,16 +23,7 @@ in
     "${modulesPath}/installer/cd-dvd/installation-cd-minimal.nix"
     "${modulesPath}/installer/cd-dvd/channel.nix"
   ];
-  nix = {
-    channel.enable = false;
-    settings = {
-      substituters = [ "https://hyprland.cachix.org" ];
-      trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
-    };
-  };
-  image = {
-    fileName = "nixinstaller.iso";
-  };
+  nix.channel.enable = false;
   isoImage = {
     contents = [
       {
