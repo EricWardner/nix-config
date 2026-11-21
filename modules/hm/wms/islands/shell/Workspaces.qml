@@ -15,13 +15,17 @@ Row {
 	spacing: 8
 
 	// Which special workspace a monitor shows is only in its IPC object,
-	// which Quickshell doesn't refresh when one is toggled
+	// which Quickshell doesn't refresh when one is toggled. Opening one on
+	// another monitor moves it there without a moveworkspacev2, so its
+	// monitor (which bar lists it) needs the workspaces refreshed too.
 	Connections {
 		target: Hyprland
 
 		function onRawEvent(event) {
-			if (event.name === "activespecial")
+			if (event.name === "activespecial") {
 				Hyprland.refreshMonitors();
+				Hyprland.refreshWorkspaces();
+			}
 		}
 	}
 
