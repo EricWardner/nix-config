@@ -1,8 +1,4 @@
-{
-  pkgs,
-  lib,
-  ...
-}:
+{ pkgs, ... }:
 {
   imports = [
     ./hardware-configuration.nix
@@ -20,7 +16,6 @@
   # Get offset with: sudo btrfs inspect-internal map-swapfile -r /.swapvol/swapfile
   boot.kernelParams = [ "resume_offset=533760" ];
 
-  services.tlp.enable = lib.mkForce false;
   modules.powerProfiles.autoSwitch = true;
   # stable virtual keyboard for push-to-talk (see modules/nixos/peripherals)
   modules.peripherals.keyd.enable = true;
