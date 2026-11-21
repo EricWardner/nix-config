@@ -19,7 +19,7 @@ in
   imports = [
     ./wms
     ./git
-    ./gpg
+    ./yubikey
     ./editors
     ./shells
     ./terminals

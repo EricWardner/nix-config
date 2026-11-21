@@ -126,7 +126,6 @@ in
     };
 
     hardware = {
-      gpgSmartcards.enable = true;
       bluetooth = {
         enable = true;
         powerOnBoot = true;
@@ -183,11 +182,6 @@ in
         flake = "/home/${user.username}/nix-config";
       };
 
-      gnupg.agent = {
-        enable = true;
-        enableSSHSupport = true;
-      };
-
       thunar = {
         enable = true;
         plugins = with pkgs; [
@@ -242,6 +236,9 @@ in
       blueman.enable = true;
       pcscd.enable = true;
       gnome.gnome-keyring.enable = true;
+      # The keyring is for passwords only, with its SSH agent off: ssh and git
+      # read the key files in ~/.ssh directly, through no agent.
+      gnome.gcr-ssh-agent.enable = false;
 
       logind.settings.Login = {
         HandleLidSwitch = "suspend-then-hibernate";
