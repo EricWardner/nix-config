@@ -1,6 +1,7 @@
-# islands-usage update|mark|report|now: what used the CPU, by app, for the
-# battery page's lists (shell/BatteryPage.qml): `now` for "right now", the
-# rest for "On battery" and "Today".
+# islands-usage update|mark|report|now|peak: what used the CPU, by app, for
+# the battery page's lists (shell/BatteryPage.qml): `now` for "right now",
+# the rest for "On battery" and "Today" (`peak` finds when an app there was
+# busiest, to look at that moment).
 #
 # below records every cgroup's CPU every 5 s (services.below), but reading
 # it back costs about a second of CPU per hour read, too much to do each
@@ -500,8 +501,29 @@ case ${1:-} in
             printf "%s\t%.1f\n", p, cpu[p]
         }'
     ;;
+  peak)
+    # peak FROM TO APP...: the start of the five minutes between those times
+    # in which the apps (by their names in cpu.tsv) used the most CPU
+    # together; FROM if they used none
+    from=${2:?}
+    to=${3:?}
+    shift 3
+    # shellcheck disable=SC2016 # awk's own $
+    printf '%s\n' "$@" | gawk -F'\t' -v from="$from" -v to="$to" -v bucket="$bucket" '
+      ARGIND == 1 { wanted[$0] = 1; next }
+      ($2 in wanted) && $1 + bucket > from && $1 < to { used[$1] += $3 }
+      END {
+        best = from
+        for (b in used)
+          if (used[b] > most) {
+            most = used[b]
+            best = b
+          }
+        print best + 0 < from + 0 ? from : best
+      }' - "$dir/cpu.tsv"
+    ;;
   *)
-    echo "usage: islands-usage update|mark|report|now" >&2
+    echo "usage: islands-usage update|mark|report|now|peak" >&2
     exit 2
     ;;
 esac

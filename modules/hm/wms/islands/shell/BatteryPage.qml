@@ -164,19 +164,42 @@ Column {
 		};
 	}
 
+	// What to look a program up by, in btop: the script of one a runtime
+	// runs ("node:vite"), or the command less a Nix wrapper's decoration
+	function term(command: string): string {
+		const name = command.startsWith(".") ? command.slice(1).replace(/-(un)?wra?p?p?e?d?$/, "") : command;
+		const script = /^(node|python|bun|deno|ruby|perl):(.+)$/.exec(name);
+		return script ? script[2] : name;
+	}
+
 	// [[command or name, share %], ...] as the three biggest apps of at
-	// least `least` %, [{name, icon, share}], the names that are one app
-	// added together
+	// least `least` %, [{name, icon, share, names}], the names that are one
+	// app added together (and kept, the biggest first, to look it up by)
 	function topApps(shares: var, least: real): var {
 		const byApp = {};
 		for (const [name, share] of shares) {
 			const a = app(name);
 			byApp[a.name] = byApp[a.name] ?? Object.assign(a, {
-				"share": 0
+				"share": 0,
+				"parts": []
 			});
 			byApp[a.name].share += share;
+			byApp[a.name].parts.push([name, share]);
 		}
-		return Object.values(byApp).filter(a => a.share >= least).sort((a, b) => b.share - a.share).slice(0, 3);
+		return Object.values(byApp).filter(a => a.share >= least).sort((a, b) => b.share - a.share).slice(0, 3).map(a => Object.assign(a, {
+					"names": a.parts.sort((x, y) => y[1] - x[1]).map(part => part[0])
+				}));
+	}
+
+	// A row's click: the program in btop, as it runs now; or, from the other
+	// lists, below's recording replayed from when the app was busiest in the
+	// time the list covers
+	function investigate(app: var) {
+		if (view === "now")
+			Desktop.launch(["system-monitor", term(app.names[0])]);
+		else if (period)
+			Desktop.launch(["usage-replay", String(Math.round(period.from)), String(Math.round(period.to))].concat(app.names));
+		Desktop.closePanel();
 	}
 
 	// islands-usage now's "<program>\t<% of one CPU>" lines, as shares of the
@@ -531,11 +554,11 @@ Column {
 
 							x: -8
 							width: parent.width + 16
-							interactive: false
 							image: modelData.icon
 							glyph: modelData.icon === "" ? Glyphs.terminal : ""
 							title: modelData.name
 							trailing: root.percent(modelData.share)
+							onClicked: root.investigate(modelData)
 						}
 					}
 				}
