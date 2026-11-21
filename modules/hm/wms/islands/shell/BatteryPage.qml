@@ -54,7 +54,7 @@ Column {
 		if (script)
 			return {
 				"name": script[2],
-				"icon": script[1] === "node" ? Qt.resolvedUrl("icons/nodejs.svg") : Quickshell.iconPath(script[1], true)
+				"icon": script[1] === "node" ? Qt.resolvedUrl("icons/nodejs.png") : Quickshell.iconPath(script[1], true)
 			};
 		// What ran in the terminals and was gone before below saw it twice:
 		// builds and tests, mostly
@@ -105,12 +105,43 @@ Column {
 				"name": "Process Compose",
 				"icon": Qt.resolvedUrl("icons/process-compose.svg")
 			};
+		// Go: the parts of a build as one, a package's tests by their
+		// binary's name ("handlers.test"), and its tools under their own
+		const gopher = Qt.resolvedUrl("icons/gopher.svg");
+		if (["compile", "link", "asm", "cgo", "vet"].includes(name))
+			return {
+				"name": "Go build",
+				"icon": gopher
+			};
+		if (name.endsWith(".test"))
+			return {
+				"name": "Go tests",
+				"icon": gopher
+			};
+		if (["go", "gopls", "gofmt", "golangci-lint", "staticcheck", "dlv"].includes(name))
+			return {
+				"name": name,
+				"icon": gopher
+			};
+		// Rust, likewise: the compiler and the crates' build scripts
+		// ("build-script-build", cut short) as one
+		const ferris = Qt.resolvedUrl("icons/ferris.svg");
+		if (["rustc", "build-script-bu"].includes(name))
+			return {
+				"name": "Rust build",
+				"icon": ferris
+			};
+		if (["cargo", "rust-analyzer", "rust-analyzer-p", "rustfmt", "rustdoc", "clippy-driver", "cargo-clippy", "rustup"].includes(name))
+			return {
+				"name": name === "rust-analyzer-p" ? "rust-analyzer" : name,
+				"icon": ferris
+			};
 		// Node with no script to name it by (top shows its main thread's
 		// name for the process)
 		if (name === "MainThread" || name === "node")
 			return {
 				"name": "Node.js",
-				"icon": Qt.resolvedUrl("icons/nodejs.svg")
+				"icon": Qt.resolvedUrl("icons/nodejs.png")
 			};
 		if (["docker", "dockerd", "containerd", "containerd-shim"].includes(name))
 			return {
