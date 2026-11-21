@@ -20,6 +20,13 @@ Item {
 	// Where Hyprland may blur behind it: a little past the glass, which (by
 	// its alpha) trims the blur to its own smooth edge
 	readonly property Item blurArea: blurArea
+	// The grown mode's own fill, if it has one, and the last there was:
+	// it fades out over the glass after the mode has gone
+	readonly property var paint: !resting ? current?.fill ?? null : null
+	property var painted: null
+
+	onPaintChanged: if (paint)
+		painted = paint
 
 	function syncCurrent() {
 		for (const mode of modeList)
@@ -115,6 +122,23 @@ Item {
 		}
 		Behavior on border.color {
 			ColorAnimation {
+				duration: 300
+			}
+		}
+	}
+
+	Rectangle {
+		anchors.fill: glass
+		radius: glass.radius
+		color: "transparent"
+		gradient: root.painted
+		border.width: 1
+		border.color: glass.border.color
+		opacity: root.paint ? 1 : 0
+		visible: opacity > 0
+
+		Behavior on opacity {
+			NumberAnimation {
 				duration: 300
 			}
 		}

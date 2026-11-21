@@ -44,7 +44,7 @@ Singleton {
 	readonly property color yubico: "#99ca3c"
 	// The bar's window reaches this far down, transparent and letting clicks
 	// through below the bar, so islands have room to grow
-	readonly property int windowHeight: 560
+	readonly property int windowHeight: 600
 
 	// In logical pixels. Numbers beside icons are a size smaller than the
 	// bar's text so the icon leads.

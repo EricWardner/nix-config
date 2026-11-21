@@ -92,11 +92,14 @@ Singleton {
 	// - next: {glyph, label, time} of the moment worth knowing next. By day
 	//   that's sunset; through the evening each dusk in turn; once the last
 	//   of them has passed, sunrise.
-	// - steps: [{label, time}], this evening's moments (sunset and the dusks
-	//   it has: far enough north, summer nights never get past a twilight),
-	//   or the morning's (the dawns, then sunrise) once those are next
-	// - stops: [{at, colour}], in order from 0 to 1, for a strip of today,
-	//   midnight to midnight, with nowAt along it
+	// - end: when the last of what's coming is: this evening's last dusk
+	//   (far enough north, summer nights never get past a twilight), or the
+	//   sunrise once the dusks are done
+	// - events: [{time, rising, zenith}], every crossing of two days either
+	//   side, in order
+	// - lineFrames, skyFrames: the colours through those days, for shade():
+	//   [time, colour] along a line of the hours, and [time, top, bottom]
+	//   for a sky that fills something
 	readonly property var sky: {
 		const latitude = forecast?.lat;
 		const longitude = forecast?.lon;
@@ -132,54 +135,35 @@ Singleton {
 		const nextSunrise = coming.find(event => event.rising && isSun(event));
 		if (!sunrise || !sunset || !nextSunrise)
 			return null;
-		// What's left of the evening: sunset, or a dusk before the sun's back
-		const dusk = coming.find(event => !event.rising && event.time < nextSunrise.time);
-		const next = dusk ?? nextSunrise;
-		const steps = dusk ? events.filter(event => !event.rising && event.time > sunrise.time && event.time < nextSunrise.time) : events.filter(event => event.rising && event.time > sunset.time && event.time <= nextSunrise.time);
+		// What's left of the evening: sunset, and each dusk before the sun's
+		// back
+		const dusks = coming.filter(event => !event.rising && event.time < nextSunrise.time);
+		const next = dusks[0] ?? nextSunrise;
 
-		// The strip: each stretch's colour where the day starts and ends in
-		// one, each edge's where the sun crosses it, and clear sky from an
-		// hour after sunrise to an hour before sunset
-		const midnight = new Date(now).setHours(0, 0, 0, 0);
-		const length = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime() - midnight;
-		const shade = {
-			"Night": "#10152e",
-			"Astronomical twilight": "#1c2750",
-			"Nautical twilight": "#4a4b8b",
-			"Civil twilight": "#b08083",
-			"Day": "#8fc9f2"
+		// The colours, by how far under the horizon the sun is at each
+		// crossing: the line's there, and the sky's top and bottom. The
+		// line is clear sky from an hour after sunrise to an hour before
+		// sunset; the sky warms for half an hour either side of them, and is
+		// the day's blue an hour beyond that.
+		const palette = {
+			"108": ["#10152e", "#04050d", "#0b1030"],
+			"102": ["#27376f", "#060a1f", "#27376f"],
+			"96": ["#6c5fa6", "#0c1642", "#5b5aa0"],
+			"90.833": ["#f3a15f", "#24306b", "#b9604c"]
 		};
-		const edge = {
-			"108": "#10152e",
-			"102": "#27376f",
-			"96": "#6c5fa6",
-			"90.833": "#f3a15f"
-		};
-		const stageAt = time => begins(events.filter(event => event.time <= time).pop() ?? past[0]);
-		const stops = [
-			{
-				at: 0,
-				colour: shade[stageAt(midnight)]
-			},
-			{
-				at: 1,
-				colour: shade[stageAt(midnight + length)]
-			}
-		];
+		const minute = 60000;
+		const lineFrames = [];
+		const skyFrames = [];
 		for (const event of events) {
-			const at = (event.time - midnight) / length;
-			if (at <= 0 || at >= 1)
-				continue;
-			stops.push({
-				at: at,
-				colour: edge[event.zenith]
-			});
-			const clear = at + (event.rising ? 1 : -1) * 3600000 / length;
-			if (isSun(event) && clear > 0 && clear < 1)
-				stops.push({
-					at: clear,
-					colour: shade["Day"]
-				});
+			const colours = palette[event.zenith];
+			lineFrames.push([event.time, colours[0]]);
+			skyFrames.push([event.time, colours[1], colours[2]]);
+			if (isSun(event)) {
+				const way = event.rising ? 1 : -1;
+				lineFrames.push([event.time + way * 60 * minute, "#8fc9f2"]);
+				skyFrames.push([event.time + way * 30 * minute, "#2f66a8", "#ef9a5f"]);
+				skyFrames.push([event.time + way * 90 * minute, "#4a98dc", "#9fd0f2"]);
+			}
 		}
 		return {
 			stage: begins(past[0]),
@@ -191,13 +175,27 @@ Singleton {
 				label: moment(next),
 				time: next.time
 			},
-			steps: steps.map(event => ({
-						label: moment(event),
-						time: event.time
-					})),
-			stops: stops.sort((a, b) => a.at - b.at),
-			nowAt: (now - midnight) / length
+			end: (dusks[dusks.length - 1] ?? nextSunrise).time,
+			events: events,
+			lineFrames: lineFrames.sort((a, b) => a[0] - b[0]),
+			skyFrames: skyFrames.sort((a, b) => a[0] - b[0])
 		};
+	}
+
+	// The colour at `time` between the two frames either side of it, from
+	// their column `index` (sky's lineFrames and skyFrames)
+	function shade(frames: var, time: real, index: int): color {
+		for (let i = 0; i < frames.length - 1; i++) {
+			const a = frames[i];
+			const b = frames[i + 1];
+			if (time >= a[0] && time <= b[0])
+				return mix(a[index], b[index], b[0] === a[0] ? 0 : (time - a[0]) / (b[0] - a[0]));
+		}
+		return frames.length > 0 ? frames[0][index] : "black";
+	}
+
+	function mix(from: color, to: color, part: real): color {
+		return Qt.rgba(from.r + (to.r - from.r) * part, from.g + (to.g - from.g) * part, from.b + (to.b - from.b) * part, 1);
 	}
 
 	// The stretch that begins as the sun crosses there: coming up, each

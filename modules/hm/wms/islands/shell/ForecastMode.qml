@@ -1,7 +1,9 @@
 import QtQuick
 
 // The weather island grown: now, the next seven hours, the sun's day and the
-// next five days. A click on it, Esc or a click outside closes it.
+// next five days, on the sky of the hour (the day's blue, a sunset, each
+// twilight, the night) in place of the glass. A click on it, Esc or a click
+// outside closes it.
 IslandMode {
 	id: root
 
@@ -24,16 +26,58 @@ IslandMode {
 	readonly property real lowest: Math.min(...Weather.days.map(day => day.low))
 	readonly property real highest: Math.max(...Weather.days.map(day => day.high))
 
+	// The sky now, top and bottom (Weather.sky's); without a place, the
+	// glass is left as it is
+	readonly property var sky: Weather.sky
+	readonly property color skyTop: sky ? Weather.shade(sky.skyFrames, Weather.now, 1) : "transparent"
+	readonly property color skyBottom: sky ? Weather.shade(sky.skyFrames, Weather.now, 2) : "transparent"
+
+	// Whether the sky is light `part` of the way down the panel, which
+	// only the day's is: what's there is inked dark on it, and white on
+	// the rest
+	function light(part: real): bool {
+		if (!sky)
+			return true;
+		const here = Weather.mix(skyTop, skyBottom, part);
+		return 0.2126 * here.r + 0.7152 * here.g + 0.0722 * here.b > 0.47;
+	}
+
+	function ink(part: real): color {
+		return light(part) ? Theme.ink : "white";
+	}
+
+	function dim(part: real): color {
+		return Theme.alpha(ink(part), light(part) ? 0.75 : 0.8);
+	}
+
+	function blue(part: real): color {
+		return light(part) ? Theme.inkBlue : "#bcd0ff";
+	}
+
 	priority: 40
 	cornerRadius: 24
 	islandWidth: 392
 	islandHeight: column.implicitHeight + 32
+	fill: sky ? gradient : null
 
 	focus: current
 	onCurrentChanged: if (current)
 		forceActiveFocus()
 
 	Keys.onEscapePressed: Desktop.closePanel()
+
+	Gradient {
+		id: gradient
+
+		GradientStop {
+			position: 0
+			color: root.skyTop
+		}
+		GradientStop {
+			position: 1
+			color: root.skyBottom
+		}
+	}
 
 	MouseArea {
 		anchors.fill: parent
@@ -56,13 +100,14 @@ IslandMode {
 				glyph: root.now ? Weather.glyph(root.now.code, root.now.day) : "cloud"
 				size: 44
 				strokeWidth: 1.6
-				onInk: true
+				onInk: root.light(0.08)
+				color: root.ink(0.08)
 			}
 
 			BarText {
 				anchors.verticalCenter: parent.verticalCenter
 				text: root.now ? Weather.deg(root.now.temp) : ""
-				color: Theme.ink
+				color: root.ink(0.08)
 				font.family: "SF Pro Display"
 				font.pixelSize: 46
 				font.weight: Font.Light
@@ -78,14 +123,14 @@ IslandMode {
 
 				BarText {
 					text: root.now ? Weather.label(root.now.code, root.now.day) : ""
-					color: Theme.ink
+					color: root.ink(0.08)
 					font.pixelSize: 15
 					font.weight: Font.DemiBold
 				}
 
 				BarText {
 					text: root.now && root.today ? "Feels " + Weather.deg(root.now.feels) + " · H " + Weather.deg(root.today.high) + " L " + Weather.deg(root.today.low) : ""
-					color: Theme.inkDim
+					color: root.dim(0.08)
 					font.pixelSize: 13
 				}
 			}
@@ -94,7 +139,7 @@ IslandMode {
 		BarText {
 			width: parent.width
 			text: Weather.summary
-			color: Theme.ink
+			color: root.ink(0.18)
 			font.pixelSize: 13
 			wrapMode: Text.Wrap
 		}
@@ -115,7 +160,7 @@ IslandMode {
 					Rectangle {
 						anchors.fill: parent
 						radius: 12
-						color: Theme.alpha(Theme.ink, 0.06)
+						color: Theme.alpha(root.ink(0.3), root.light(0.3) ? 0.06 : 0.14)
 						visible: hour.index === 0
 					}
 
@@ -130,7 +175,7 @@ IslandMode {
 						BarText {
 							anchors.horizontalCenter: parent.horizontalCenter
 							text: hour.modelData.label
-							color: Theme.inkDim
+							color: root.dim(0.3)
 							font.pixelSize: 12
 							font.weight: hour.index === 0 ? Font.DemiBold : Font.Normal
 						}
@@ -139,13 +184,14 @@ IslandMode {
 							anchors.horizontalCenter: parent.horizontalCenter
 							glyph: hour.modelData.glyph
 							size: 20
-							onInk: true
+							onInk: root.light(0.3)
+							color: root.ink(0.3)
 						}
 
 						BarText {
 							anchors.horizontalCenter: parent.horizontalCenter
 							text: Weather.deg(hour.modelData.temp)
-							color: Theme.ink
+							color: root.ink(0.3)
 							font.pixelSize: 14
 							font.features: {
 								"tnum": 1
@@ -156,7 +202,7 @@ IslandMode {
 							anchors.horizontalCenter: parent.horizontalCenter
 							height: 13
 							text: hour.modelData.rain >= 20 ? hour.modelData.rain + "%" : ""
-							color: Theme.inkBlue
+							color: root.blue(0.3)
 							font.pixelSize: 11
 							font.weight: Font.DemiBold
 						}
@@ -168,30 +214,62 @@ IslandMode {
 		Rectangle {
 			width: parent.width
 			height: 1
-			color: Theme.inkTrack
+			color: Theme.alpha(root.ink(0.5), root.light(0.5) ? 0.14 : 0.25)
 		}
 
-		// The sun's day (Weather.sky): the moment that's next, and the
-		// stretch it is now; today as a strip of sky from midnight to
-		// midnight with now marked on it; and the moments of this evening
-		// (sunset and its dusks), or of the morning once those are next
+		// The sun's day (Weather.sky): the moment that's next and the stretch
+		// it is now, over a line of the hours in the sky's colours. The line
+		// runs from now (the sun, a sixth of the way along) to a little past
+		// the last of what's coming: the evening's last dusk, or sunrise
+		// once the dusks are done. So it looks only as far ahead as there's
+		// something to see, the moments come towards the sun as their time
+		// does, and the nearer the last one is the further apart they are.
+		// What's passed is squeezed up behind the sun, harder the older it
+		// is, until it's two hours gone.
 		Column {
 			id: sun
 
-			readonly property var sky: Weather.sky
+			readonly property real minute: 60000
+			readonly property real ahead: root.sky ? root.sky.end + 15 * minute - Weather.now : 60 * minute
+			// Eased: as night falls, and as the sun comes up, the last of
+			// what's coming is suddenly half a day off
+			property real span: ahead
+			readonly property real back: 120 * minute
+			readonly property real squeeze: 8 * minute
+			readonly property real lead: Math.round(width * 0.16)
+			readonly property var shown: root.sky ? root.sky.events.filter(event => event.time > Weather.now - back && event.time < Weather.now + span) : []
+			readonly property color inked: root.ink(0.6)
+
+			// How far along the line a time is: evenly ahead of now, and on a
+			// log scale behind it
+			function along(time: real): real {
+				if (time >= Weather.now)
+					return lead + (time - Weather.now) / span * (width - lead);
+				return lead * (1 - Math.log(1 + Math.min(back, Weather.now - time) / squeeze) / Math.log(1 + back / squeeze));
+			}
 
 			width: parent.width
-			spacing: 10
-			visible: sky !== null
+			spacing: 12
+			visible: root.sky !== null
+
+			Behavior on span {
+				enabled: root.current
+
+				NumberAnimation {
+					duration: 700
+					easing.type: Easing.OutCubic
+				}
+			}
 
 			Row {
 				spacing: 10
 
 				WeatherIcon {
 					anchors.verticalCenter: parent.verticalCenter
-					glyph: sun.sky?.next.glyph ?? "sunset"
+					glyph: root.sky?.next.glyph ?? "sunset"
 					size: 22
-					onInk: true
+					onInk: root.light(0.52)
+					color: root.ink(0.52)
 				}
 
 				Column {
@@ -199,15 +277,20 @@ IslandMode {
 					spacing: 2
 
 					BarText {
-						text: sun.sky ? sun.sky.next.label + " " + Weather.clock(sun.sky.next.time) : ""
-						color: Theme.ink
+						text: root.sky ? root.sky.next.label + " " + Weather.clock(root.sky.next.time) : ""
+						color: root.ink(0.52)
 						font.pixelSize: 14
 						font.weight: Font.DemiBold
+						font.features: {
+							"tnum": 1
+						}
 					}
 
 					BarText {
-						text: sun.sky ? "Now: " + sun.sky.stage.toLowerCase() : ""
-						color: Theme.inkDim
+						readonly property int minutes: root.sky ? Math.max(1, Math.round((root.sky.next.time - Weather.now) / sun.minute)) : 0
+
+						text: root.sky ? "Now: " + root.sky.stage.toLowerCase() + " · in " + (minutes >= 60 ? Math.floor(minutes / 60) + " h " + minutes % 60 + " min" : minutes + " min") : ""
+						color: root.dim(0.52)
 						font.pixelSize: 12
 					}
 				}
@@ -215,143 +298,163 @@ IslandMode {
 
 			Item {
 				width: parent.width
-				height: 14
+				height: 54
 
-				Rectangle {
+				// The stretches, each named over its part of the line where
+				// that's wide enough for the name
+				Repeater {
+					model: {
+						if (!root.sky)
+							return [];
+						const edge = Weather.now - sun.back;
+						const before = root.sky.events.filter(event => event.time <= edge).pop();
+						const bounds = [
+							{
+								time: edge,
+								name: before ? Weather.begins(before) : ""
+							}
+						].concat(sun.shown.map(event => ({
+									time: event.time,
+									name: Weather.begins(event)
+								})));
+						const names = [];
+						bounds.forEach((bound, i) => {
+							const from = sun.along(bound.time);
+							const to = i + 1 < bounds.length ? sun.along(bounds[i + 1].time) : sun.width;
+							if (to - from >= 58)
+								names.push({
+									x: from,
+									width: to - from,
+									name: bound.name.split(" ")[0].toLowerCase()
+								});
+						});
+						return names;
+					}
+
+					BarText {
+						required property var modelData
+
+						x: modelData.x
+						width: modelData.width
+						horizontalAlignment: Text.AlignHCenter
+						text: modelData.name
+						color: sun.inked
+						font.pixelSize: 11
+					}
+				}
+
+				Canvas {
 					id: strip
 
-					readonly property var stops: sun.sky?.stops ?? []
-
-					// The stops there are, the last one over again for the
-					// rest: a Gradient's are a fixed number
-					function stop(index: int): var {
-						return stops[Math.min(index, stops.length - 1)] ?? {
-							at: 1,
-							colour: "transparent"
-						};
+					// The line's colours, each where it falls: colours change
+					// evenly with time, which the squeezed part doesn't, so
+					// that part is sampled
+					readonly property var marks: {
+						if (!root.sky)
+							return [];
+						const from = Weather.now - sun.back;
+						const to = Weather.now + sun.span;
+						const times = [1, 0.7, 0.45, 0.28, 0.16, 0.08, 0.03, 0].map(part => Weather.now - sun.back * part).concat(root.sky.lineFrames.map(frame => frame[0]).filter(time => time > from && time < to), [to]);
+						return times.sort((a, b) => a - b).map(time => ({
+									at: Math.min(1, Math.max(0, sun.along(time) / sun.width)),
+									colour: "" + Weather.shade(root.sky.lineFrames, time, 1)
+								}));
 					}
+					readonly property color rim: Theme.alpha(sun.inked, 0.6)
 
-					anchors.verticalCenter: parent.verticalCenter
+					y: 20
 					width: parent.width
-					height: 10
-					radius: 5
-					gradient: Gradient {
-						orientation: Gradient.Horizontal
-
-						GradientStop {
-							position: strip.stop(0).at
-							color: strip.stop(0).colour
-						}
-						GradientStop {
-							position: strip.stop(1).at
-							color: strip.stop(1).colour
-						}
-						GradientStop {
-							position: strip.stop(2).at
-							color: strip.stop(2).colour
-						}
-						GradientStop {
-							position: strip.stop(3).at
-							color: strip.stop(3).colour
-						}
-						GradientStop {
-							position: strip.stop(4).at
-							color: strip.stop(4).colour
-						}
-						GradientStop {
-							position: strip.stop(5).at
-							color: strip.stop(5).colour
-						}
-						GradientStop {
-							position: strip.stop(6).at
-							color: strip.stop(6).colour
-						}
-						GradientStop {
-							position: strip.stop(7).at
-							color: strip.stop(7).colour
-						}
-						GradientStop {
-							position: strip.stop(8).at
-							color: strip.stop(8).colour
-						}
-						GradientStop {
-							position: strip.stop(9).at
-							color: strip.stop(9).colour
-						}
-						GradientStop {
-							position: strip.stop(10).at
-							color: strip.stop(10).colour
-						}
-						GradientStop {
-							position: strip.stop(11).at
-							color: strip.stop(11).colour
-						}
-						GradientStop {
-							position: strip.stop(12).at
-							color: strip.stop(12).colour
-						}
-						GradientStop {
-							position: strip.stop(13).at
-							color: strip.stop(13).colour
-						}
+					height: 12
+					onMarksChanged: requestPaint()
+					onRimChanged: requestPaint()
+					onPaint: {
+						const ctx = getContext("2d");
+						ctx.reset();
+						if (marks.length < 2)
+							return;
+						const colours = ctx.createLinearGradient(0, 0, width, 0);
+						for (const mark of marks)
+							colours.addColorStop(mark.at, mark.colour);
+						ctx.fillStyle = colours;
+						ctx.beginPath();
+						ctx.roundedRect(0, 0, width, height, height / 2, height / 2);
+						ctx.fill();
+						ctx.strokeStyle = "" + rim;
+						ctx.lineWidth = 1;
+						ctx.beginPath();
+						ctx.roundedRect(0.5, 0.5, width - 1, height - 1, height / 2 - 0.5, height / 2 - 0.5);
+						ctx.stroke();
 					}
 				}
 
-				// Now
-				Rectangle {
-					x: Math.round((parent.width - width) * (sun.sky?.nowAt ?? 0))
-					width: 14
-					height: 14
-					radius: 7
-					color: "white"
-					border.width: 2
-					border.color: Theme.ink
-				}
-			}
-
-			// Spread across the width: their names are of very different
-			// lengths ("Sunset", "Astronomical dusk")
-			Row {
-				id: steps
-
-				readonly property real taken: {
-					let width = 0;
-					for (let i = 0; i < moments.count; i++)
-						width += moments.itemAt(i)?.implicitWidth ?? 0;
-					return width;
-				}
-
-				spacing: moments.count > 1 ? Math.max(6, (column.width - taken) / (moments.count - 1)) : 0
-
+				// The moments: a dot each, which shrinks once it's passed and
+				// has faded out by the time it's two hours gone
 				Repeater {
-					id: moments
+					model: sun.shown
 
-					model: sun.sky?.steps ?? []
-
-					Column {
-						id: step
-
+					Rectangle {
 						required property var modelData
-						readonly property bool next: modelData.time === sun.sky?.next.time
+						readonly property bool gone: modelData.time <= Weather.now
 
-						spacing: 2
-						opacity: modelData.time <= Weather.now ? 0.45 : 1
+						x: sun.along(modelData.time) - width / 2
+						y: 26 - height / 2
+						width: gone ? 6 : 10
+						height: width
+						radius: width / 2
+						color: "white"
+						border.width: gone ? 1 : 2
+						border.color: "#10152e"
+						opacity: gone ? 0.75 * (1 - Math.min(1, (Weather.now - modelData.time) / sun.back)) : 1
+					}
+				}
 
-						BarText {
-							text: step.modelData.label
-							color: Theme.inkDim
-							font.pixelSize: 11
-							font.weight: step.next ? Font.DemiBold : Font.Normal
-						}
+				// Now: the sun, or the moon once it's night
+				Rectangle {
+					x: sun.lead - width / 2
+					y: 26 - height / 2
+					width: 22
+					height: 22
+					radius: 11
+					color: root.sky?.stage === "Night" ? "#e9e6ff" : "#ffd27a"
+					border.width: 2
+					border.color: "#10152e"
+				}
 
-						BarText {
-							text: Weather.clock(step.modelData.time)
-							color: Theme.ink
-							font.pixelSize: 13
-							font.weight: step.next ? Font.DemiBold : Font.Normal
-							font.features: {
-								"tnum": 1
+				// The times of those to come: the next one's first, then any
+				// other that's clear of the ones placed
+				Repeater {
+					model: {
+						if (!root.sky)
+							return [];
+						const coming = sun.shown.filter(event => event.time > Weather.now);
+						const next = coming.find(event => event.time === root.sky.next.time);
+						const placed = [];
+						const times = [];
+						for (const event of (next ? [next] : []).concat(coming.filter(event => event !== next))) {
+							const at = sun.along(event.time);
+							if (placed.every(other => Math.abs(other - at) >= 36)) {
+								placed.push(at);
+								times.push({
+									x: at,
+									text: Weather.clock(event.time).replace(/ [AP]M$/, ""),
+									next: event === next
+								});
 							}
+						}
+						return times;
+					}
+
+					BarText {
+						required property var modelData
+
+						x: modelData.x - width / 2
+						y: 40
+						text: modelData.text
+						color: sun.inked
+						font.pixelSize: 11
+						font.weight: modelData.next ? Font.DemiBold : Font.Normal
+						font.features: {
+							"tnum": 1
 						}
 					}
 				}
@@ -361,7 +464,7 @@ IslandMode {
 		Rectangle {
 			width: parent.width
 			height: 1
-			color: Theme.inkTrack
+			color: Theme.alpha(root.ink(0.7), root.light(0.7) ? 0.14 : 0.25)
 			visible: sun.visible
 		}
 
@@ -385,7 +488,7 @@ IslandMode {
 						anchors.verticalCenter: parent.verticalCenter
 						width: 56
 						text: day.index === 0 ? "Today" : Qt.formatDate(new Date(day.modelData.time * 1000), "ddd")
-						color: Theme.ink
+						color: root.ink(0.85)
 						font.pixelSize: 14
 						font.weight: Font.Medium
 					}
@@ -395,14 +498,15 @@ IslandMode {
 						width: 22
 						glyph: Weather.glyph(day.modelData.code, true)
 						size: 20
-						onInk: true
+						onInk: root.light(0.85)
+						color: root.ink(0.85)
 					}
 
 					BarText {
 						anchors.verticalCenter: parent.verticalCenter
 						width: 40
 						text: day.modelData.rain >= 20 ? day.modelData.rain + "%" : ""
-						color: Theme.inkBlue
+						color: root.blue(0.85)
 						font.pixelSize: 11
 						font.weight: Font.DemiBold
 					}
@@ -412,7 +516,7 @@ IslandMode {
 						width: 34
 						horizontalAlignment: Text.AlignRight
 						text: Weather.deg(day.modelData.low)
-						color: Theme.inkDim
+						color: root.dim(0.85)
 						font.pixelSize: 14
 						font.features: {
 							"tnum": 1
@@ -424,7 +528,7 @@ IslandMode {
 						width: column.width - 56 - 22 - 40 - 34 - 34 - 5 * 8
 						height: 4
 						radius: 2
-						color: Theme.inkTrack
+						color: Theme.alpha(root.ink(0.85), root.light(0.85) ? 0.14 : 0.25)
 
 						Rectangle {
 							readonly property real span: Math.max(1, root.highest - root.lowest)
@@ -433,7 +537,7 @@ IslandMode {
 							width: parent.width * (day.modelData.high - day.modelData.low) / span
 							height: parent.height
 							radius: 2
-							color: Theme.alpha(Theme.ink, 0.6)
+							color: Theme.alpha(root.ink(0.85), root.light(0.85) ? 0.6 : 0.85)
 						}
 					}
 
@@ -442,7 +546,7 @@ IslandMode {
 						width: 34
 						horizontalAlignment: Text.AlignRight
 						text: Weather.deg(day.modelData.high)
-						color: Theme.ink
+						color: root.ink(0.85)
 						font.pixelSize: 14
 						font.features: {
 							"tnum": 1
@@ -454,7 +558,7 @@ IslandMode {
 
 		BarText {
 			text: [Weather.place, "updated " + Weather.updated, "Open-Meteo"].filter(part => part).join(" · ")
-			color: Theme.inkDim
+			color: root.dim(0.97)
 			font.pixelSize: 11
 		}
 	}

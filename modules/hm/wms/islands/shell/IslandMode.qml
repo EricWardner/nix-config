@@ -25,6 +25,9 @@ FocusScope {
 	property color rim: Theme.grownRim
 	// The rim at rest (a job that failed: red)
 	property color restRim: Theme.islandRim
+	// A fill of the mode's own over the grown glass (the forecast's
+	// sky): a Gradient, or null for the glass alone
+	property var fill: null
 	// Set by the island
 	property bool current: false
 
