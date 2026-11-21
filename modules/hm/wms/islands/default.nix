@@ -152,12 +152,27 @@ let
       settings=$HOME/.claude/settings.json
       mkdir -p "$(dirname "$settings")"
       [ -s "$settings" ] || echo "{}" >"$settings"
-      jq --slurpfile ours ${claudeHooks} '
+      # Through a link (into a dotfiles checkout, say) to the file itself,
+      # so the link stays one
+      settings=$(realpath "$settings")
+      # A file jq can make nothing of (a slip in a hand edit) is left as it
+      # is, with a warning: failing here would stop the whole switch
+      if ! jq --slurpfile ours ${claudeHooks} '
+        def ours: (.command? // "") | tostring | contains("islands-claude-job");
+        # A group of hooks less ours: gone if ours were all it had
+        def others:
+          if type == "object" and (.hooks | type) == "array" and any(.hooks[]; ours)
+          then .hooks |= map(select(ours | not)) | select(.hooks | length > 0)
+          else . end;
         .hooks = (reduce ($ours[0] | to_entries[]) as $event (.hooks // {};
           .[$event.key] = ((.[$event.key] // [])
-            | map(select(any(.hooks[]?; (.command // "") | contains("islands-claude-job")) | not))
+            | if type == "array" then map(others) else error("not a list") end
           ) + $event.value))
-      ' "$settings" >"$settings.new"
+      ' "$settings" >"$settings.new"; then
+        echo "islands: $settings could not be read; the job island hooks were not installed" >&2
+        rm -f "$settings.new"
+        exit 0
+      fi
       # Only when the hooks differ: not for formatting alone
       if [ "$(jq -S . "$settings")" = "$(jq -S . "$settings.new")" ]; then
         rm "$settings.new"
