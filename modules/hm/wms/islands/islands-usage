@@ -1,5 +1,6 @@
-# islands-usage update|mark|report: what used the CPU, by app, for the
-# battery page's "On battery" and "Today" lists (shell/BatteryPage.qml).
+# islands-usage update|mark|report|now: what used the CPU, by app, for the
+# battery page's lists (shell/BatteryPage.qml): `now` for "right now", the
+# rest for "On battery" and "Today".
 #
 # below records every cgroup's CPU every 5 s (services.below), but reading
 # it back costs about a second of CPU per hour read, too much to do each
@@ -8,6 +9,11 @@
 # `report` sums those. An app is a cgroup: its scope or service, the Docker
 # containers, the session (Hyprland). That way processes that come and go
 # too fast for below to see one by one, like builds, still count.
+#
+# A terminal is the exception: its cgroup is everything run in it, so its
+# CPU is shared out among the programs below saw running there (`program`
+# names them), and only what none of them accounts for stays "terminal".
+# A program run by node or python is named for its script, as "node:vite".
 #
 # Each update also notes whether the charger's in, and so does `mark`, which
 # the shell runs the moment it's plugged in or out (shell/Battery.qml). The
@@ -20,6 +26,7 @@
 #               is the whole machine
 #   power.tsv   "<time>\t<1 on battery, 0 not>\t<level %>"
 #   scopes.tsv  "<run-p scope>\t<command>", see name_scope
+#   version     which layout cpu.tsv is in, see migrate
 
 dir=${XDG_CACHE_HOME:-$HOME/.cache}/islands/usage
 store=/var/log/below/store
@@ -37,6 +44,73 @@ lock() {
   exec 9>"$dir/lock"
   flock "$@" 9
 }
+
+# cpu.tsv from before terminals were shared out by program has them as one
+# "ghostty": emptied, so the next update counts the last day again. Call
+# with the lock held.
+migrate() {
+  if [[ $(cat "$dir/version" 2>/dev/null) != 2 ]]; then
+    : >"$dir/cpu.tsv"
+    echo 2 >"$dir/version"
+  fi
+}
+
+# gawk's program(comm, cmdline): what a process is, by name. That's its
+# command, unless the command only names what runs it (node, which also
+# shows as its main thread's name, python, ...): then it's the script, as
+# "<runtime>:<script>", so "node:vite" for node_modules/.bin/vite and
+# "node:gitnexus" for node_modules/gitnexus/dist/cli/index.js.
+# shellcheck disable=SC2016 # awk's own $
+program='
+  BEGIN {
+    runtimes = "^(MainThread|node|nodejs|bun|deno|python[0-9.]*|ruby|perl)$"
+  }
+  function program(comm, cmdline,    runtime, n, a, i, script, m, part) {
+    if (comm !~ runtimes)
+      return comm
+    runtime = comm ~ /^(MainThread|nodejs)$/ ? "node" : comm ~ /^python/ ? "python" : comm
+    n = split(cmdline, a, " ")
+    script = ""
+    for (i = 2; i <= n; i++) {
+      if (a[i] == "-m" && runtime == "python" && i < n)
+        return runtime ":" a[i + 1]
+      # Code given on the command line is no script
+      if (a[i] ~ /^(-e|-c|-p|--eval|--print)$/)
+        return runtime
+      if (a[i] ~ /^(-r|--require|--import|--loader|--experimental-loader|-W|-X)$/) {
+        i++
+        continue
+      }
+      if (a[i] ~ /^-/)
+        continue
+      # bun and deno take the script after a word
+      if (runtime ~ /^(bun|deno)$/ && a[i] ~ /^(run|x|test|task)$/)
+        continue
+      script = a[i]
+      break
+    }
+    if (match(script, /\/node_modules\/\.bin\/([^\/]+)$/, m))
+      return runtime ":" m[1]
+    if (match(script, /.*\/node_modules\/((@[^\/]+\/)?[^\/]+)\//, m))
+      return runtime ":" m[1]
+    # The file (less the dot and "-wrapped" of a Nix wrapper), or the
+    # nearest folder that says more than "dist/cli/index.js" does
+    n = split(script, a, "/")
+    for (i = n; i >= 1; i--) {
+      part = a[i]
+      if (i == n) {
+        sub(/\.[cm]?[jt]sx?$|\.py$|\.rb$|\.pl$/, "", part)
+        sub(/^\./, "", part)
+        sub(/-wrapped$/, "", part)
+        if (part ~ /^(index|main|cli|app|server|start|run|__main__)$/)
+          continue
+      }
+      if (part != "" && part !~ /^(bin|dist|lib|src|build|out|cli|\.+)$/)
+        return runtime ":" part
+    }
+    return runtime
+  }
+'
 
 # This moment's power line, read before waiting on the lock, so a plug
 # queued behind an update keeps its own time and state
@@ -142,13 +216,14 @@ update() {
               seen[n] = t
             return n
           }
+          # A Ghostty tab or window: shared out among its programs below
+          if (n ~ /^app-ghostty-surface-transient-[0-9]+\.scope$/)
+            return "_terminal"
           sub(/\.(service|scope|slice)$/, "", n)
           if (sub(/^app-/, "", n)) {
-            # app-<id>@<instance>.service, app-<id>-<pid>.scope, and
-            # the scopes of Ghostty tabs and windows
+            # app-<id>@<instance>.service, app-<id>-<pid>.scope
             sub(/@.*$/, "", n)
             sub(/-[0-9]+$/, "", n)
-            sub(/-surface-transient$/, "", n)
             gsub(/\\x2d/, "-", n)
           }
           return n
@@ -193,6 +268,37 @@ update() {
         for (n in seen)
           printf "%s\t%d\n", n, seen[n] > unnamed
       }' >"$dir/new.tsv"
+  # The same samples' processes in the terminals, by program, in the same
+  # buckets (below only has a process's CPU from its second sample on, so
+  # one gone within 5 s has none)
+  # shellcheck disable=SC2016 # awk's own $
+  { "$below" dump process \
+    -b "$(date -d "@$((last + 1))" '+%Y-%m-%d %H:%M:%S')" \
+    -e "$(date -d "@$now" '+%Y-%m-%d %H:%M:%S')" \
+    -s cgroup -F 'app-ghostty-surface-transient-' \
+    -f timestamp comm cpu.usage_pct cmdline -O tsv 2>>"$dir/below.err" || true; } |
+    gawk -F'\t' -v last="$last" -v bucket="$bucket" "$program"'
+      BEGIN { prev = last }
+      NR == 1 { next }
+      {
+        t = $1 + 0
+        if (t <= last)
+          next
+        if (t != prev) {
+          step = t - prev <= 30 ? t - prev : 5
+          prev = t
+        }
+        v = $3
+        sub(/%$/, "", v)
+        if (v + 0 > 0)
+          cpu[int(t / bucket) * bucket, program($2, $4)] += v / 100 * step
+      }
+      END {
+        for (bk in cpu) {
+          split(bk, f, SUBSEP)
+          printf "%d\t%s\t%.3f\n", f[1], f[2], cpu[bk]
+        }
+      }' >"$dir/programs.tsv"
   # Asleep the whole time is "no samples"; anything else is worth a look
   if [[ -s $dir/below.err ]] && ! grep -q "No samples found" "$dir/below.err"; then
     cat "$dir/below.err" >&2
@@ -205,9 +311,28 @@ update() {
     cat "$dir/cpu.tsv"
     gawk -F'\t' -v OFS='\t' '
       ARGIND == 1 { scope[$1] = $2; next }
+      ARGIND == 2 { program[$1, $2] = $3; seen[$1] += $3; next }
+      $2 == "_terminal" { terminal[$1] = $3; next }
       $2 in scope { $2 = scope[$2] }
       $2 ~ /^run-p/ { $2 = "other" }
-      { print }' "$dir/scopes.tsv" "$dir/new.tsv" | sort -n -k1,1 -s
+      { print }
+      END {
+        # Each bucket of the terminals goes to the programs seen in them,
+        # scaled down if samples make them more than the cgroups used; the
+        # rest (commands gone between two samples: builds, mostly) stays
+        # the terminal
+        for (bp in program) {
+          split(bp, f, SUBSEP)
+          if (!(f[1] in terminal))
+            continue
+          share = program[bp] * (seen[f[1]] > terminal[f[1]] ? terminal[f[1]] / seen[f[1]] : 1)
+          if (share >= 0.001)
+            printf "%d\t%s\t%.3f\n", f[1], f[2], share
+        }
+        for (b in terminal)
+          if (terminal[b] - seen[b] >= 0.001)
+            printf "%d\tterminal\t%.3f\n", b, terminal[b] - seen[b]
+      }' "$dir/scopes.tsv" "$dir/programs.tsv" "$dir/new.tsv" | sort -n -k1,1 -s
   } >"$dir/cpu.tsv.new"
   mv "$dir/cpu.tsv.new" "$dir/cpu.tsv"
   prune
@@ -224,6 +349,7 @@ report() {
   # and the page shows what's counted meanwhile. Reading needs no lock:
   # cpu.tsv only ever changes by a rename.
   if lock -n; then
+    migrate
     if ((now - $(counted) <= 15 * 60)); then
       update
     else
@@ -313,6 +439,7 @@ case ${1:-} in
   update)
     [[ -d $store && -x $below ]] || exit 0
     lock
+    migrate
     update
     ;;
   mark)
@@ -329,8 +456,37 @@ case ${1:-} in
       echo '{"battery":null,"today":null}'
     fi
     ;;
+  now)
+    # "<program>\t<% of one CPU>" over the $2 seconds (2 if not given)
+    # that top's second frame covers; its first counts from each process's
+    # start. Its config is pointed at nothing, so a saved toprc can't move
+    # the columns read. What runs under node or python is named from its
+    # command line, read while it's still there.
+    # shellcheck disable=SC2016 # awk's own $
+    LC_ALL=C HOME=/var/empty XDG_CONFIG_HOME=/var/empty top -b -n 2 -d "${2:-2}" -w 512 |
+      gawk "$program"'
+        /^ *PID +USER/ { frame++; next }
+        frame == 2 && NF >= 12 && $9 + 0 > 0 && $1 ~ /^[0-9]+$/ {
+          comm = $12
+          for (i = 13; i <= NF; i++)
+            comm = comm " " $i
+          if (comm == "top")
+            next
+          cmdline = ""
+          if (comm ~ runtimes) {
+            read = "tr \"\\0\" \" \" </proc/" $1 "/cmdline 2>/dev/null"
+            read | getline cmdline
+            close(read)
+          }
+          cpu[program(comm, cmdline)] += $9
+        }
+        END {
+          for (p in cpu)
+            printf "%s\t%.1f\n", p, cpu[p]
+        }'
+    ;;
   *)
-    echo "usage: islands-usage update|mark|report" >&2
+    echo "usage: islands-usage update|mark|report|now" >&2
     exit 2
     ;;
 esac

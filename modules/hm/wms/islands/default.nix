@@ -89,13 +89,15 @@ let
     ];
     text = builtins.readFile ./islands-weather;
   };
-  # What used the CPU on battery and today, by app, from below's recording
-  # (the battery page's lists), and when the charger went in or out. It
-  # reads the store with the system's below, the recorder's own build.
+  # What's using the CPU now (top, with programs named), and what used it
+  # on battery and today, by app, from below's recording (the battery page's
+  # lists), and when the charger went in or out. It reads the store with
+  # the system's below, the recorder's own build.
   islandsUsage = pkgs.writeShellApplication {
     name = "islands-usage";
     runtimeInputs = with pkgs; [
       gawk
+      procps
       coreutils
       util-linux
       systemd

@@ -45,9 +45,24 @@ Column {
 	// characters) as "claude", by its desktop entry where it has one; some
 	// entries are named for neither the command nor the window. Docker's
 	// daemons count as one app. islands-usage's names (cgroups': app IDs,
-	// services, "docker" for the containers) go through here too.
+	// services, "docker" for the containers; and the programs it names in
+	// the terminals) go through here too.
 	function app(command: string): var {
 		const name = command.startsWith(".") ? command.slice(1).replace(/-(un)?wra?p?p?e?d?$/, "") : command;
+		// "node:vite": a script, under what runs it
+		const script = /^(node|python|bun|deno|ruby|perl):(.+)$/.exec(name);
+		if (script)
+			return {
+				"name": script[2],
+				"icon": script[1] === "node" ? Qt.resolvedUrl("icons/nodejs.svg") : Quickshell.iconPath(script[1], true)
+			};
+		// What ran in the terminals and was gone before below saw it twice:
+		// builds and tests, mostly
+		if (name === "terminal")
+			return {
+				"name": "Terminal commands",
+				"icon": Quickshell.iconPath("utilities-terminal", true)
+			};
 		if (name === "nix-daemon")
 			return {
 				"name": "Nix builds",
@@ -58,8 +73,9 @@ Column {
 				"name": "PipeWire",
 				"icon": ""
 			};
-		// Nix's Chromium, as browser automation runs it
-		if (name === "org.chromium.Chromium")
+		// Nix's Chromium, as browser automation runs it, and the headless one
+		// tests start from a terminal (chrome-headless-shell, cut short)
+		if (name === "org.chromium.Chromium" || name === "chrome-headless")
 			return {
 				"name": "Chromium",
 				"icon": Quickshell.iconPath("chromium", true)
@@ -88,6 +104,13 @@ Column {
 			return {
 				"name": "Process Compose",
 				"icon": Qt.resolvedUrl("icons/process-compose.svg")
+			};
+		// Node with no script to name it by (top shows its main thread's
+		// name for the process)
+		if (name === "MainThread" || name === "node")
+			return {
+				"name": "Node.js",
+				"icon": Qt.resolvedUrl("icons/nodejs.svg")
 			};
 		if (["docker", "dockerd", "containerd", "containerd-shim"].includes(name))
 			return {
@@ -125,28 +148,14 @@ Column {
 		return Object.values(byApp).filter(a => a.share >= least).sort((a, b) => b.share - a.share).slice(0, 3);
 	}
 
-	// top's second frame (the first counts from each process's start), its
-	// %CPU (of one CPU) summed by command, as a share of the whole machine.
-	// A top stopped as the page hid or the list turned away still hands
-	// over what it had (its first frame, perhaps), which is dropped.
+	// islands-usage now's "<program>\t<% of one CPU>" lines, as shares of the
+	// whole machine. One stopped as the page hid or the list turned away
+	// hands over nothing, or part of a list, which is dropped.
 	function readTop(text: string) {
 		if (!showing || view !== "now")
 			return;
-		const lines = text.split("\n");
-		let header = 0;
-		lines.forEach((l, i) => {
-			if (/^\s*PID\s+USER/.test(l))
-				header = i;
-		});
-		const sums = {};
-		for (const line of lines.slice(header + 1)) {
-			const fields = line.trim().split(/\s+/);
-			const cpu = Number(fields[8]);
-			const command = fields.slice(11).join(" ");
-			if (fields.length >= 12 && cpu > 0 && command !== "top")
-				sums[command] = (sums[command] ?? 0) + cpu;
-		}
-		apps = topApps(Object.entries(sums).map(([command, cpu]) => [command, cpu / Metrics.cores]), 0.1);
+		const shares = text.split("\n").map(line => line.split("\t")).filter(fields => fields.length === 2).map(([program, cpu]) => [program, Number(cpu) / Metrics.cores]);
+		apps = topApps(shares, 0.1);
 		appsRead = true;
 	}
 
@@ -547,18 +556,13 @@ Column {
 		onTriggered: historyCall.running = true
 	}
 
-	// top over two seconds, every three; over half a second the first time,
-	// so the apps show soon after the page opens. Its config is pointed at
-	// nothing, so a saved toprc can't move the columns read.
+	// What's busy over two seconds (islands-usage now, which is top with
+	// the programs named), every three; over half a second the first time,
+	// so the apps show soon after the page opens
 	Process {
 		id: top
 
-		command: ["top", "-b", "-n", "2", "-d", root.appsRead ? "2" : "0.5", "-w", "512"]
-		environment: ({
-				"LC_ALL": "C",
-				"HOME": "/var/empty",
-				"XDG_CONFIG_HOME": "/var/empty"
-			})
+		command: ["islands-usage", "now", root.appsRead ? "2" : "0.5"]
 		stdout: StdioCollector {
 			onStreamFinished: root.readTop(text)
 		}
