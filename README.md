@@ -131,9 +131,9 @@ match.
 
 ### After the first boot
 
-The first boot unlocks the disk and logs straight in to a bare Hyprland:
-the home isn't built yet, and the system has no terminal of its own. Switch
-to a console with Ctrl+Alt+F2 and log in there.
+The first boot unlocks the disk and logs straight in to a bare Hyprland
+with its stock config: the home isn't built yet. Super+Q opens a terminal
+(kitty, which the system installs for this).
 
 1. Get online (`nmtui`) and restore the SSH keys. The home configuration
    has a private input fetched over SSH, so it can't be built without them.

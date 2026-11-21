@@ -38,6 +38,9 @@ in
         file
         ripgrep
         wireguard-tools
+        # A terminal before the home is built (a fresh install): Hyprland's
+        # stock config, which is what runs then, opens kitty on Super+Q.
+        kitty
       ]
       ++ cfg.extraDefaultPackages;
   };
