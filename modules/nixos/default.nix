@@ -34,8 +34,9 @@ in
       default = null;
       example = "America/New_York";
       description = ''
-        The system time zone. Left null, it follows where the machine is
-        (services.automatic-timezoned).
+        The system time zone. Left null, it follows where the machine is:
+        the weather island sets it to the zone of the place it finds
+        (modules.hyprland.islands.followTimeZone in the home config).
       '';
     };
     modules.hostName = mkOption {
@@ -253,13 +254,21 @@ in
       };
     };
 
-    # The time zone follows the machine unless a host pins one: geoclue
-    # places it (by the Wi-Fi networks in range, else its IP address, so a
-    # VPN can move it) and automatic-timezoned sets the zone to match. The
-    # zone then lives in /etc/localtime, not the config: UTC until it has
-    # first been placed, or `timedatectl set-timezone` to set it by hand.
+    # The time zone follows the machine unless a host pins one. The weather
+    # island already looks up where the machine is (by its IP address, so
+    # a VPN can move it) and sets the zone to match, which this lets the
+    # user's own session do without being asked for a password. The zone
+    # then lives in /etc/localtime, not the config: UTC until the first
+    # lookup, and `timedatectl set-timezone` sets it by hand.
     time.timeZone = cfg.timeZone;
-    services.automatic-timezoned.enable = cfg.timeZone == null;
+    security.polkit.extraConfig = mkIf (cfg.timeZone == null) ''
+      polkit.addRule(function (action, subject) {
+        if (action.id == "org.freedesktop.timedate1.set-timezone"
+            && subject.user == "${user.username}" && subject.local && subject.active) {
+          return polkit.Result.YES;
+        }
+      });
+    '';
     i18n.defaultLocale = "en_US.UTF-8";
     i18n.extraLocaleSettings = {
       LC_ADDRESS = "en_US.UTF-8";

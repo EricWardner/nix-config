@@ -1,18 +1,36 @@
 # islands-weather [--locate]: the forecast for the weather island
 # (shell/Weather.qml) in $XDG_CACHE_HOME/islands/weather.json, from
-# Open-Meteo. --locate first finds this machine by its IP address; otherwise
-# the place found last time is used.
-unit=$(jq -r '.temperatureUnit // "fahrenheit"' "${XDG_CONFIG_HOME:-$HOME/.config}/islands/config.json" 2>/dev/null || echo fahrenheit)
+# Open-Meteo. --locate first finds this machine by its IP address (ipbase,
+# which only counts a lookup made without a key) and, where the config asks
+# (followTimeZone), sets the system to that place's time zone; otherwise the
+# place found last time is used.
+config=${XDG_CONFIG_HOME:-$HOME/.config}/islands/config.json
+unit=$(jq -r '.temperatureUnit // "fahrenheit"' "$config" 2>/dev/null || echo fahrenheit)
+follow=$(jq -r '.followTimeZone // false' "$config" 2>/dev/null || echo false)
 cache=${XDG_CACHE_HOME:-$HOME/.cache}/islands
 place=$cache/place.json
 mkdir -p "$cache"
 
 if [[ ${1:-} == --locate || ! -s $place ]]; then
-  if found=$(curl -fsS --max-time 10 https://ipinfo.io/json); then
-    jq '{city, loc}' <<<"$found" >"$place.new"
+  # An answer with no coordinates (an address it can't place) keeps the
+  # place found last time, as a failed lookup does
+  if curl -fsS --max-time 10 https://api.ipbase.com/v1/json/ |
+    jq -e 'select((.latitude | type) == "number" and (.longitude | type) == "number")
+      | {city, loc: "\(.latitude),\(.longitude)", zone: .time_zone}' >"$place.new"; then
     mv "$place.new" "$place"
-  elif [[ ! -s $place ]]; then
-    exit 1
+    # The zone only as the place is found, so one set by hand since (a VPN
+    # having put the machine somewhere it isn't) stays until the next
+    # lookup. It has to name a zone this system has, and is only set where
+    # that's allowed without asking (modules/nixos: a host with no fixed
+    # zone).
+    zone=$(jq -r '.zone // empty' "$place")
+    if [[ $follow == true && $zone =~ ^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$ && -e /etc/zoneinfo/$zone &&
+      $(timedatectl show --property=Timezone --value) != "$zone" ]]; then
+      timedatectl --no-ask-password set-timezone "$zone" || true
+    fi
+  else
+    rm -f "$place.new"
+    [[ -s $place ]] || exit 1
   fi
 fi
 

@@ -5,9 +5,9 @@ import Quickshell
 import Quickshell.Io
 
 // The forecast where this machine's IP address places it, from
-// islands-weather: located once the shell starts, then fetched every 15
-// minutes into a cache read here, so it shows at once on a restart. Nothing
-// shows once it's three hours old.
+// islands-weather: located as the shell starts and when the network changes,
+// then fetched every 15 minutes into a cache read here, so it shows at once
+// on a restart. Nothing shows once it's three hours old.
 Singleton {
 	id: root
 
@@ -346,10 +346,43 @@ Singleton {
 		}
 	}
 
+	// The network it's on, to look for the machine again when that becomes
+	// a different one, which may be a different place: not the first one
+	// seen (the shell's start finds it anyway), nor the same one back
+	// after a drop. A while after, for the connection (and a VPN on it) to
+	// settle.
+	readonly property string network: (Net.current?.name ?? "") + (Net.wired ? " wired" : "")
+	property string lastNetwork: ""
+	onNetworkChanged: {
+		if (network === "")
+			return;
+		if (lastNetwork !== "" && network !== lastNetwork)
+			moved.restart();
+		lastNetwork = network;
+	}
+
+	Timer {
+		id: moved
+
+		interval: 20 * 1000
+		onTriggered: fetch.relocate()
+	}
+
 	Process {
 		id: fetch
 
+		// Found on this shell's first fetch, then again when relocate()
+		// asks: finding it is a request to a service that sees where from
 		property bool located: false
+		property bool again: false
+
+		function relocate() {
+			located = false;
+			if (running)
+				again = true;
+			else
+				running = true;
+		}
 
 		command: ["islands-weather"].concat(located ? [] : ["--locate"])
 		running: true
@@ -357,6 +390,10 @@ Singleton {
 			onRead: line => console.warn("islands-weather:", line)
 		}
 		onExited: code => {
+			if (again) {
+				again = false;
+				running = true;
+			}
 			if (code !== 0)
 				return;
 			located = true;
@@ -367,14 +404,20 @@ Singleton {
 	// Fetched again once it's 15 minutes old, by the clock: a Timer doesn't
 	// count time asleep, so one 15 minutes long left the forecast hidden for
 	// most of that after waking. Also tries a failed fetch again, as one on
-	// waking fails until the network is back.
+	// waking fails until the network is back. After an hour or more (asleep
+	// in a bag, say) it may be somewhere else on a network of the same
+	// name, a phone's, so that fetch looks for it again.
 	Timer {
 		interval: 60 * 1000
 		repeat: true
 		running: true
 		onTriggered: {
-			if (!fetch.running && (!root.forecast || Date.now() / 1000 - root.forecast.fetched >= 15 * 60))
-				fetch.running = true;
+			const age = root.forecast ? Date.now() / 1000 - root.forecast.fetched : Infinity;
+			if (fetch.running || age < 15 * 60)
+				return;
+			if (age >= 3600)
+				fetch.located = false;
+			fetch.running = true;
 		}
 	}
 }

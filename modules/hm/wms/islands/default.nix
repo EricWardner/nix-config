@@ -86,6 +86,8 @@ let
       curl
       jq
       coreutils
+      # timedatectl, to follow the place's time zone
+      systemd
     ];
     text = builtins.readFile ./islands-weather;
   };
@@ -241,6 +243,17 @@ in
       default = "fahrenheit";
       description = "The weather island's temperatures.";
     };
+    followTimeZone = mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Set the system to the time zone of the place the weather island
+        finds the machine in, each time it looks. That needs a system
+        with no fixed zone (modules.timeZone left null in the NixOS
+        config), which lets this user set one unasked; with a fixed zone
+        it does nothing.
+      '';
+    };
   };
 
   config = mkIf (config.modules.hyprland.enable && cfg.enable) {
@@ -328,6 +341,7 @@ in
       inherit (cfg)
         temperatureSensor
         temperatureUnit
+        followTimeZone
         powerSensor
         fanSensor
         ;
