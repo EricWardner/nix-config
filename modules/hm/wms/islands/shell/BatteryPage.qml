@@ -79,6 +79,11 @@ Column {
 				"name": "Hyprland",
 				"icon": Qt.resolvedUrl("icons/hyprland.svg")
 			};
+		if (name === "below")
+			return {
+				"name": "below",
+				"icon": Qt.resolvedUrl("icons/below.svg")
+			};
 		if (["docker", "dockerd", "containerd", "containerd-shim"].includes(name))
 			return {
 				"name": "Docker",
