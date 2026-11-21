@@ -89,8 +89,9 @@ Singleton {
 
 	// Starts a command in its own transient scope, so it outlives the shell
 	// (a restart would otherwise take a preview window or a settings app
-	// with it)
-	function launch(command: list<string>) {
-		Quickshell.execDetached(["systemd-run", "--user", "--scope", "--collect", "--quiet", "--"].concat(command));
+	// with it). Untyped: as a list<string>, a command read from a model (the
+	// control centre's buttons) arrives empty, and nothing runs.
+	function launch(command) {
+		Quickshell.execDetached(["systemd-run", "--user", "--scope", "--collect", "--quiet", "--"].concat(Array.from(command)));
 	}
 }
