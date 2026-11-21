@@ -1,10 +1,10 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 let
   oath = pkgs.writeShellApplication {
     name = "oath";
 
     runtimeInputs = with pkgs; [
-      fuzzel
+      config.programs.vicinae.package
       wl-clipboard-rs
       libnotify
       yubikey-manager

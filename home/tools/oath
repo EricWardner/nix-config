@@ -10,7 +10,7 @@ if [[ -z "$accounts" ]]; then
     exit 1
 fi
 
-selected=$(echo "$accounts" | fuzzel --dmenu --prompt "Select OTP Account:")
+selected=$(echo "$accounts" | vicinae dmenu -p "OTP account" --no-section --no-footer)
 
 if [[ -z "$selected" ]]; then
     notify-send "Info" "No selection made."

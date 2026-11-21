@@ -3,11 +3,10 @@
 -- that to the glass's own smooth edge. It sits under the faintest glass (10%):
 -- any higher, and a growing island's blur switches on partway through.
 hl.layer_rule({ match = { namespace = "^islands-bar$" }, ignore_alpha = 0.08 })
--- The glass panels of fuzzel (menus) and vicinae (the launcher and its
--- HUD). Global blur xray is off (hyprland.nix), so they frost the windows
--- under them.
+-- The glass panels of vicinae (the launcher, its menus and its HUD). Global
+-- blur xray is off (hyprland.nix), so they frost the windows under them.
 hl.layer_rule({
-	match = { namespace = "^(launcher|vicinae|vicinae-hud)$" },
+	match = { namespace = "^(vicinae|vicinae-hud)$" },
 	blur = true,
 	ignore_alpha = 0.3,
 })
