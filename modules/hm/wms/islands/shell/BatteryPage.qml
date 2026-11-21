@@ -84,6 +84,11 @@ Column {
 				"name": "below",
 				"icon": Qt.resolvedUrl("icons/below.svg")
 			};
+		if (name === "process-compose")
+			return {
+				"name": "Process Compose",
+				"icon": Qt.resolvedUrl("icons/process-compose.svg")
+			};
 		if (["docker", "dockerd", "containerd", "containerd-shim"].includes(name))
 			return {
 				"name": "Docker",
