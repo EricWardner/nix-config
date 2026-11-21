@@ -30,9 +30,13 @@ in
       default = true;
     };
     modules.timeZone = mkOption {
-      type = types.str;
-      default = "America/New_York";
-      description = "The system time zone.";
+      type = types.nullOr types.str;
+      default = null;
+      example = "America/New_York";
+      description = ''
+        The system time zone. Left null, it follows where the machine is
+        (services.automatic-timezoned).
+      '';
     };
     modules.hostName = mkOption {
       type = types.str;
@@ -249,7 +253,13 @@ in
       };
     };
 
+    # The time zone follows the machine unless a host pins one: geoclue
+    # places it (by the Wi-Fi networks in range, else its IP address, so a
+    # VPN can move it) and automatic-timezoned sets the zone to match. The
+    # zone then lives in /etc/localtime, not the config: UTC until it has
+    # first been placed, or `timedatectl set-timezone` to set it by hand.
     time.timeZone = cfg.timeZone;
+    services.automatic-timezoned.enable = cfg.timeZone == null;
     i18n.defaultLocale = "en_US.UTF-8";
     i18n.extraLocaleSettings = {
       LC_ADDRESS = "en_US.UTF-8";
