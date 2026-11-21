@@ -1,7 +1,7 @@
 import QtQuick
 
-// The weather island grown: now, the next seven hours and the next five
-// days. A click on it, Esc or a click outside closes it.
+// The weather island grown: now, the next seven hours, the sun's day and the
+// next five days. A click on it, Esc or a click outside closes it.
 IslandMode {
 	id: root
 
@@ -169,6 +169,173 @@ IslandMode {
 			width: parent.width
 			height: 1
 			color: Theme.inkTrack
+		}
+
+		// The sun's day (Weather.sky): what's next, today as a strip of sky
+		// from midnight to midnight with now marked on it, and the four
+		// steps of this evening, or of the morning once it's night
+		Column {
+			id: sun
+
+			readonly property var sky: Weather.sky
+
+			width: parent.width
+			spacing: 9
+			visible: sky !== null
+
+			Item {
+				width: parent.width
+				height: 20
+
+				Row {
+					anchors.verticalCenter: parent.verticalCenter
+					spacing: 8
+
+					WeatherIcon {
+						anchors.verticalCenter: parent.verticalCenter
+						glyph: sun.sky?.next.glyph ?? "sunset"
+						size: 20
+						onInk: true
+					}
+
+					BarText {
+						anchors.verticalCenter: parent.verticalCenter
+						text: sun.sky ? sun.sky.next.label + " " + Weather.clock(sun.sky.next.time) : ""
+						color: Theme.ink
+						font.pixelSize: 14
+						font.weight: Font.DemiBold
+					}
+				}
+
+				BarText {
+					anchors.right: parent.right
+					anchors.verticalCenter: parent.verticalCenter
+					text: sun.sky?.stage ?? ""
+					color: Theme.inkDim
+					font.pixelSize: 13
+				}
+			}
+
+			Item {
+				width: parent.width
+				height: 14
+
+				Rectangle {
+					id: strip
+
+					readonly property var stops: sun.sky?.stops ?? []
+					readonly property color night: "#10152e"
+
+					anchors.verticalCenter: parent.verticalCenter
+					width: parent.width
+					height: 10
+					radius: 5
+					gradient: Gradient {
+						orientation: Gradient.Horizontal
+
+						GradientStop {
+							position: 0
+							color: strip.night
+						}
+						GradientStop {
+							position: strip.stops[0]?.at ?? 0
+							color: strip.stops[0]?.colour ?? strip.night
+						}
+						GradientStop {
+							position: strip.stops[1]?.at ?? 0
+							color: strip.stops[1]?.colour ?? strip.night
+						}
+						GradientStop {
+							position: strip.stops[2]?.at ?? 0
+							color: strip.stops[2]?.colour ?? strip.night
+						}
+						GradientStop {
+							position: strip.stops[3]?.at ?? 0
+							color: strip.stops[3]?.colour ?? strip.night
+						}
+						GradientStop {
+							position: strip.stops[4]?.at ?? 0
+							color: strip.stops[4]?.colour ?? strip.night
+						}
+						GradientStop {
+							position: strip.stops[5]?.at ?? 1
+							color: strip.stops[5]?.colour ?? strip.night
+						}
+						GradientStop {
+							position: strip.stops[6]?.at ?? 1
+							color: strip.stops[6]?.colour ?? strip.night
+						}
+						GradientStop {
+							position: strip.stops[7]?.at ?? 1
+							color: strip.stops[7]?.colour ?? strip.night
+						}
+						GradientStop {
+							position: strip.stops[8]?.at ?? 1
+							color: strip.stops[8]?.colour ?? strip.night
+						}
+						GradientStop {
+							position: strip.stops[9]?.at ?? 1
+							color: strip.stops[9]?.colour ?? strip.night
+						}
+						GradientStop {
+							position: 1
+							color: strip.night
+						}
+					}
+				}
+
+				// Now
+				Rectangle {
+					x: Math.round((parent.width - width) * (sun.sky?.nowAt ?? 0))
+					width: 14
+					height: 14
+					radius: 7
+					color: "white"
+					border.width: 2
+					border.color: Theme.ink
+				}
+			}
+
+			Row {
+				Repeater {
+					model: sun.sky?.steps ?? []
+
+					Column {
+						id: step
+
+						required property var modelData
+						readonly property bool next: modelData.time === sun.sky.next.time
+
+						width: column.width / 4
+						spacing: 2
+						opacity: modelData.time <= Weather.now ? 0.45 : 1
+
+						BarText {
+							text: step.modelData.label
+							color: Theme.inkDim
+							font.pixelSize: 11
+							font.weight: step.next ? Font.DemiBold : Font.Normal
+						}
+
+						BarText {
+							text: Weather.clock(step.modelData.time)
+							color: Theme.ink
+							font.pixelSize: 13
+							font.weight: step.next ? Font.DemiBold : Font.Normal
+							font.features: {
+								"tnum": 1
+							}
+						}
+					}
+				}
+			}
+		}
+
+		Rectangle {
+			width: parent.width
+			height: 1
+			color: Theme.inkTrack
+			visible: sun.visible
 		}
 
 		Column {

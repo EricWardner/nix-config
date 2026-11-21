@@ -1,8 +1,8 @@
 import QtQuick
 import Quickshell.Hyprland
 
-// The weather before the clock, and the forecast a click grows it into,
-// leftwards and down
+// The weather before the clock, with the time of the sun's next change, and
+// the forecast a click grows it into, leftwards and down
 Island {
 	id: root
 
@@ -32,6 +32,29 @@ Island {
 				font.pixelSize: Theme.numberSize
 				font.features: {
 					"tnum": 1
+				}
+			}
+
+			// The sun's next change (Weather.sky): sunset by day, each
+			// twilight in turn through the evening, sunrise overnight
+			Row {
+				anchors.verticalCenter: parent.verticalCenter
+				leftPadding: 5
+				spacing: 5
+				visible: Weather.sky !== null
+
+				WeatherIcon {
+					anchors.verticalCenter: parent.verticalCenter
+					glyph: Weather.sky?.next.glyph ?? "sunset"
+				}
+
+				BarText {
+					anchors.verticalCenter: parent.verticalCenter
+					text: Weather.sky ? Weather.clock(Weather.sky.next.time).replace(/ [AP]M$/, "") : ""
+					font.pixelSize: Theme.numberSize
+					font.features: {
+						"tnum": 1
+					}
 				}
 			}
 		}

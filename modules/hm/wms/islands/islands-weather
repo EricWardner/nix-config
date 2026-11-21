@@ -28,6 +28,8 @@ curl -fsS --max-time 15 --get https://api.open-meteo.com/v1/forecast \
   jq --slurpfile place "$place" '{
     fetched: now,
     place: $place[0].city,
+    lat: ($place[0].loc | split(",")[0] | tonumber),
+    lon: ($place[0].loc | split(",")[1] | tonumber),
     now: {
       temp: .current.temperature_2m,
       feels: .current.apparent_temperature,
