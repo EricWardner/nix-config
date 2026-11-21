@@ -8,7 +8,10 @@
   ];
   programs = {
     shellcheck.enable = true;
-    shfmt.enable = true;
+    shfmt = {
+      enable = true;
+      indent_size = 2;
+    };
     stylua.enable = true;
     # Currently, goimports is not working in treefmt, awaiting a fix
     # goimports.enable = true;
