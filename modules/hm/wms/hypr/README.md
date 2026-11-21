@@ -33,12 +33,13 @@ gradient remains a fallback: Stylix overrides it, just as it did before.
 - Window rules with identical matches are combined. Group rules use the documented
   `group = "set"` effect instead of the old `group on` spelling.
 - Monitor `transform` is now an integer from 0 to 7, independent of `scale`.
-  `workspace` now creates a default workspace rule; both hosts declare workspace
-  10 on the laptop and workspace 1 on the M32U in their monitor entries.
+  `workspace` now creates a default workspace rule; the host declares workspace
+  10 on the laptop and workspace 1 on the M32U in its monitor entries.
 - The portable display uses the documented `highres` mode. Scale accepts strings
   (including `"auto"`) or positive numbers. Legacy width/height fields still work.
-- Cursor software rendering is preserved with the integer value
-  `cursor.no_hardware_cursors = 1`.
+- Cursors are left to Hyprland's default (`cursor.no_hardware_cursors = 2`:
+  hardware cursors unless tearing needs otherwise). The migration had kept the
+  old config's forced software cursors; that was dropped later.
 - Home Manager imports the session environment, restarts `hyprland-session.target`,
   and restarts the portal before launching Slack, Gather, and Chrome. This ordering
   prevents those apps from probing the portal before it is ready. Startup hooks
@@ -67,7 +68,7 @@ bash scripts/check-hyprland.sh ewardner@framework
 ```
 
 This evaluates the Home Manager files into a temporary directory and runs the
-installed Hyprland's `--verify-config` against them. It checks both hosts by
+installed Hyprland's `--verify-config` against them. It checks every host by
 default, includes untracked Lua files, and never activates a home generation or
 starts a compositor. It requires `nix`, `jq`, `rg`, and a Lua-capable Hyprland.
 `HYPRLAND_BIN=/path/to/Hyprland` selects another verifier.
@@ -99,16 +100,11 @@ it in the running session.
 These are recommendations, not enabled changes. Check availability against the
 installed version; the live wiki describes newer Git builds too.
 
-1. **Try hardware cursors again on the AMD Framework and Intel Dell.** You currently
-   force software cursors. `cursor.no_hardware_cursors = 2` allows hardware cursors
-   except when tearing requires otherwise. Test external-display movement and
-   screen sharing, then keep the current `1` if your original cursor issue recurs.
-   See [cursor options](https://wiki.hypr.land/Configuring/Basics/Variables/#cursor).
-2. **Try the scrolling layout on one workspace.** It could suit an editor,
+1. **Try the scrolling layout on one workspace.** It could suit an editor,
    terminal, and browser workflow on the M32U without changing your other Dwindle
    workspaces. Add `hl.workspace_rule({ workspace = "2", layout = "scrolling" })`
    to a Lua module. See the [scrolling layout](https://wiki.hypr.land/Configuring/Layouts/Scrolling-Layout/).
-3. **Try spring animations for window movement.** Keep your current fade timings
+2. **Try spring animations for window movement.** Keep your current fade timings
    and use a spring curve only for `windows`/`windowsIn` for a different feel.
    On your 0.56.2 build the parameter is spelled `dampening`; the current wiki
    uses `damping`. This example passed the installed compositor's verifier:
@@ -121,10 +117,8 @@ installed version; the live wiki describes newer Git builds too.
    See [animation curves](https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/)
    when upgrading.
 
-4. **Consolidate shared display profiles.** The M32U and portable-display entries
-   are duplicated across both hosts. A shared Nix list with only the laptop scale
-   defined per host would reduce future drift. The unused legacy width/height
-   monitor fields can also be removed once external overrides are ruled out.
+3. **Remove the legacy monitor fields.** The unused width/height monitor fields
+   can go once external overrides are ruled out.
 
 For the newer animated blur effects in the wiki, upgrade and verify support
 first. They are a separate visual/performance experiment; this migration keeps
