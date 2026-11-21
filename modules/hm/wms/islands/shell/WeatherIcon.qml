@@ -25,19 +25,20 @@ Item {
 			"rain": [rainCloud, "M16 14v6M8 14v6M12 16v6", "rain"],
 			"snow": [rainCloud, "M8 15h.01M8 19h.01M12 17h.01M12 21h.01M16 15h.01M16 19h.01", "snow"],
 			"storm": ["M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973", "M13 12l-3 5h4l-3 5", "sun"],
-			// The sun at the horizon, with the way it's going; then under it,
-			// sinking, as the stars come out
+			// The sun at the horizon, with the way it's going; then under it
+			// at civil dusk, and further at nautical dusk, as the stars come
+			// out (astronomical dusk, when night falls, is the moon)
 			"sunrise": ["M2 22h20M8 6l4-4 4 4M12 2v8", "M4.93 10.93l1.41 1.41M2 18h2M20 18h2M19.07 10.93l-1.41 1.41M16 18a4 4 0 0 0-8 0", "sun"],
 			"sunset": ["M2 22h20M16 6l-4 4-4-4M12 10V2", "M4.93 10.93l1.41 1.41M2 18h2M20 18h2M19.07 10.93l-1.41 1.41M16 18a4 4 0 0 0-8 0", "sunset"],
-			"nautical": ["M2 13h20M7 6h.01", "M7.5 13a4.5 4.5 0 0 0 9 0", "nautical"],
-			"astronomical": ["M2 13h20M6 7h.01M12 4h.01M18 8h.01", "M9 17a3.2 3.2 0 0 0 6 0", "astronomical"]
+			"civilDusk": ["M2 13h20M7 6h.01", "M7.5 13a4.5 4.5 0 0 0 9 0", "civilDusk"],
+			"nauticalDusk": ["M2 13h20M6 7h.01M12 4h.01M18 8h.01", "M9 17a3.2 3.2 0 0 0 6 0", "nauticalDusk"]
 		})[glyph] ?? ["M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z", "", ""]
 	readonly property color tint: ({
 			"sun": onInk ? "#b97c00" : Theme.yellow,
 			"moon": onInk ? "#7b4fc2" : Theme.purple,
 			"sunset": onInk ? "#c2571b" : Theme.orange,
-			"nautical": onInk ? Theme.inkBlue : Theme.accent,
-			"astronomical": onInk ? "#7b4fc2" : Theme.purple,
+			"civilDusk": onInk ? Theme.inkBlue : Theme.accent,
+			"nauticalDusk": onInk ? "#7b4fc2" : Theme.purple,
 			"rain": onInk ? Theme.inkBlue : Theme.accent,
 			"snow": onInk ? "#1f8fbf" : Theme.cyan
 		})[strokes[2]] ?? color

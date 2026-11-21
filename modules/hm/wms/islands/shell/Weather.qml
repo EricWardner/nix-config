@@ -15,7 +15,9 @@ Singleton {
 	// code, day, rain}], days: [{time, code, high, low, rain}]}: times in
 	// seconds, codes WMO's, rain the chance in percent
 	property var forecast: null
-	property real now: Date.now()
+	// By the minute, on the minute, as the bar's clock is: a time the pill
+	// shows has passed by when the clock reads the next minute
+	readonly property real now: clock.date.getTime()
 	readonly property bool ready: forecast !== null && now / 1000 - forecast.fetched < 3 * 3600
 	readonly property var current: ready ? forecast.now : null
 	readonly property var hours: ready ? forecast.hours.filter(hour => hour.time * 1000 > now) : []
@@ -78,96 +80,160 @@ Singleton {
 
 	// The sun's day here, worked out from where the forecast is for (no
 	// service has the twilights). Null without a place, or where the sun
-	// doesn't go through all of it that day (far north, in summer).
+	// doesn't rise and set (a polar summer or winter).
 	//
-	// - stage: what it is now ("Day", "Civil twilight", "Night", ...)
-	// - next: {glyph, label, time} of the change worth knowing next. By day
-	//   that's sunset; through the evening each deeper twilight in turn,
-	//   then night; from then until morning, sunrise.
-	// - steps: [{label, time}], the four of this evening (sunset, the two
-	//   deeper twilights, night) or, once it's night, of the morning
-	// - stops: [{at, colour}] for a strip of today, midnight to midnight,
-	//   with sunrise, sunset and nowAt along it (0 to 1)
+	// A twilight is a stretch of time: civil while the sun is up to 6° under
+	// the horizon, nautical to 12°, astronomical to 18°, and night beyond.
+	// The moment one ends is its dusk in the evening (civil dusk is when
+	// civil twilight gives way to nautical) and its dawn in the morning,
+	// when it begins.
+	//
+	// - stage: the stretch it is now ("Day", "Civil twilight", "Night", ...)
+	// - next: {glyph, label, time} of the moment worth knowing next. By day
+	//   that's sunset; through the evening each dusk in turn; once the last
+	//   of them has passed, sunrise.
+	// - steps: [{label, time}], this evening's moments (sunset and the dusks
+	//   it has: far enough north, summer nights never get past a twilight),
+	//   or the morning's (the dawns, then sunrise) once those are next
+	// - stops: [{at, colour}], in order from 0 to 1, for a strip of today,
+	//   midnight to midnight, with nowAt along it
 	readonly property var sky: {
 		const latitude = forecast?.lat;
 		const longitude = forecast?.lon;
 		if (typeof latitude !== "number" || typeof longitude !== "number")
 			return null;
-		const day = 86400000;
-		const crossings = date => {
+		const today = new Date(now);
+		// A day's crossings, by its date and not 24 hours off: the days the
+		// clocks change are 23 and 25 hours long
+		const crossings = offset => {
+			const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset, 12);
 			const list = [];
 			for (const zenith of [108, 102, 96, 90.833]) {
-				for (const rising of [true, false])
-					list.push({
-						time: sunCrossing(date, latitude, longitude, rising, zenith),
-						rising: rising,
-						zenith: zenith
-					});
+				for (const rising of [true, false]) {
+					const time = sunCrossing(date, latitude, longitude, rising, zenith);
+					if (!isNaN(time))
+						list.push({
+							time: time,
+							rising: rising,
+							zenith: zenith
+						});
+				}
 			}
 			return list;
 		};
-		const today = crossings(new Date(now));
-		const events = today.concat(crossings(new Date(now - day)), crossings(new Date(now + day))).sort((a, b) => a.time - b.time);
-		if (events.some(event => isNaN(event.time)))
-			return null;
-		const past = events.filter(event => event.time <= now);
-		const coming = events.filter(event => event.time > now);
-		const last = past[past.length - 1];
+		// Two days either side: a place far from this clock's time zone (a
+		// VPN's) has its sunrises on other dates than ours
+		const events = [-2, -1, 0, 1, 2].reduce((all, offset) => all.concat(crossings(offset)), []).sort((a, b) => a.time - b.time);
 		const isSun = event => event.zenith < 91;
-		const stage = begins(last);
-		// The evening runs from sunrise until night has fallen
-		const evening = stage === "Day" || (!last.rising && stage !== "Night");
-		const next = stage === "Day" ? coming.find(event => !event.rising && isSun(event)) : evening ? coming[0] : coming.find(event => event.rising && isSun(event));
-		const turned = past.slice().reverse().find(event => event.rising === evening);
+		const past = events.filter(event => event.time <= now).reverse();
+		const coming = events.filter(event => event.time > now);
+		const sunrise = past.find(event => event.rising && isSun(event));
+		const sunset = past.find(event => !event.rising && isSun(event));
+		const nextSunrise = coming.find(event => event.rising && isSun(event));
+		if (!sunrise || !sunset || !nextSunrise)
+			return null;
+		// What's left of the evening: sunset, or a dusk before the sun's back
+		const dusk = coming.find(event => !event.rising && event.time < nextSunrise.time);
+		const next = dusk ?? nextSunrise;
+		const steps = dusk ? events.filter(event => !event.rising && event.time > sunrise.time && event.time < nextSunrise.time) : events.filter(event => event.rising && event.time > sunset.time && event.time <= nextSunrise.time);
+
+		// The strip: each stretch's colour where the day starts and ends in
+		// one, each edge's where the sun crosses it, and clear sky from an
+		// hour after sunrise to an hour before sunset
 		const midnight = new Date(now).setHours(0, 0, 0, 0);
-		const at = (zenith, rising, shift) => {
-			const event = today.find(event => event.zenith === zenith && event.rising === rising);
-			return Math.min(1, Math.max(0, (event.time + shift - midnight) / day));
+		const length = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime() - midnight;
+		const shade = {
+			"Night": "#10152e",
+			"Astronomical twilight": "#1c2750",
+			"Nautical twilight": "#4a4b8b",
+			"Civil twilight": "#b08083",
+			"Day": "#8fc9f2"
 		};
-		const hour = 3600000;
+		const edge = {
+			"108": "#10152e",
+			"102": "#27376f",
+			"96": "#6c5fa6",
+			"90.833": "#f3a15f"
+		};
+		const stageAt = time => begins(events.filter(event => event.time <= time).pop() ?? past[0]);
+		const stops = [
+			{
+				at: 0,
+				colour: shade[stageAt(midnight)]
+			},
+			{
+				at: 1,
+				colour: shade[stageAt(midnight + length)]
+			}
+		];
+		for (const event of events) {
+			const at = (event.time - midnight) / length;
+			if (at <= 0 || at >= 1)
+				continue;
+			stops.push({
+				at: at,
+				colour: edge[event.zenith]
+			});
+			const clear = at + (event.rising ? 1 : -1) * 3600000 / length;
+			if (isSun(event) && clear > 0 && clear < 1)
+				stops.push({
+					at: clear,
+					colour: shade["Day"]
+				});
+		}
 		return {
-			stage: stage,
+			stage: begins(past[0]),
 			next: {
 				glyph: isSun(next) ? (next.rising ? "sunrise" : "sunset") : ({
-						96: "nautical",
-						102: "astronomical"
+						"96": "civilDusk",
+						"102": "nauticalDusk"
 					})[next.zenith] ?? "moon",
-				label: isSun(next) ? (next.rising ? "Sunrise" : "Sunset") : begins(next),
+				label: moment(next),
 				time: next.time
 			},
-			steps: events.filter(event => event.rising !== evening && event.time > turned.time).slice(0, 4).map(event => ({
-						label: isSun(event) ? (event.rising ? "Sunrise" : "Sunset") : begins(event).split(" ")[0],
+			steps: steps.map(event => ({
+						label: moment(event),
 						time: event.time
 					})),
-			stops: [[108, true, 0, "#10152e"], [102, true, 0, "#27376f"], [96, true, 0, "#6c5fa6"], [90.833, true, 0, "#f3a15f"], [90.833, true, hour, "#8fc9f2"], [90.833, false, -hour, "#8fc9f2"], [90.833, false, 0, "#f3a15f"], [96, false, 0, "#6c5fa6"], [102, false, 0, "#27376f"], [108, false, 0, "#10152e"]].map(([zenith, rising, shift, colour]) => ({
-						at: at(zenith, rising, shift),
-						colour: colour
-					})),
-			sunrise: at(90.833, true, 0),
-			sunset: at(90.833, false, 0),
-			nowAt: (now - midnight) / day
+			stops: stops.sort((a, b) => a.at - b.at),
+			nowAt: (now - midnight) / length
 		};
 	}
 
-	// What begins as the sun crosses there: coming up, each lighter twilight
-	// and then the day; going down, each deeper one and then the night
+	// The stretch that begins as the sun crosses there: coming up, each
+	// lighter twilight and then the day; going down, each deeper one and
+	// then the night
 	function begins(event: var): string {
 		const names = ["Astronomical twilight", "Nautical twilight", "Civil twilight"];
 		const step = [108, 102, 96, 90.833].indexOf(event.zenith);
 		return event.rising ? (names[step] ?? "Day") : (names[step - 1] ?? "Night");
 	}
 
-	// When (ms) the sun crosses `zenith` degrees from overhead on the local
-	// day of `date`, rising or setting: 90.833 is sunrise and sunset, 96, 102
-	// and 108 the civil, nautical and astronomical twilights' far edges. NaN
-	// if it doesn't that day. The Almanac for Computers' method, within a
-	// minute or two of the published times.
+	// The moment itself: sunrise or sunset, or a twilight's far edge, which
+	// is its dawn coming up and its dusk going down
+	function moment(event: var): string {
+		if (event.zenith < 91)
+			return event.rising ? "Sunrise" : "Sunset";
+		return ({
+				"96": "Civil",
+				"102": "Nautical",
+				"108": "Astronomical"
+			})[event.zenith] + (event.rising ? " dawn" : " dusk");
+	}
+
+	// When (ms) the sun crosses `zenith` degrees from overhead in the
+	// morning (rising) or the evening of `date`: 90.833 is sunrise and
+	// sunset, 96, 102 and 108 the civil, nautical and astronomical
+	// twilights' far edges. NaN if it doesn't. The Almanac for Computers'
+	// method, within a minute or two of the published times.
 	function sunCrossing(date: date, latitude: real, longitude: real, rising: bool, zenith: real): real {
 		const rad = Math.PI / 180;
-		const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-		const day = Math.round((midnight - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000);
+		const start = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+		const day = Math.round((start - Date.UTC(date.getFullYear(), 0, 0)) / 86400000);
 		const lngHour = longitude / 15;
-		const t = day + ((rising ? 6 : 18) - lngHour) / 24;
+		// About when: 6 in the morning or the evening, by the sun, there
+		const about = (rising ? 6 : 18) - lngHour;
+		const t = day + about / 24;
 		const anomaly = 0.9856 * t - 3.289;
 		const l = (anomaly + 1.916 * Math.sin(anomaly * rad) + 0.02 * Math.sin(2 * anomaly * rad) + 282.634 + 360) % 360;
 		let ra = (Math.atan(0.91764 * Math.tan(l * rad)) / rad + 360) % 360;
@@ -179,13 +245,10 @@ Singleton {
 			return NaN;
 		const h = (rising ? 360 - Math.acos(cosH) / rad : Math.acos(cosH) / rad) / 15;
 		const utc = (h + ra - 0.06571 * t - 6.622 - lngHour + 48) % 24;
-		// That hour of the UTC day, moved onto the local one
-		let time = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) + utc * 3600000;
-		while (time < midnight)
-			time += 86400000;
-		while (time >= midnight + 86400000)
-			time -= 86400000;
-		return time;
+		// The method gives an hour of the day, not which day: it's the one
+		// nearest `about`, which a dusk in a short summer night runs past
+		// midnight from (and so into the next local day)
+		return start + (utc + 24 * Math.round((about - utc) / 24)) * 3600000;
 	}
 
 	function clock(time: real): string {
@@ -263,6 +326,12 @@ Singleton {
 			})[code] ?? "";
 	}
 
+	SystemClock {
+		id: clock
+
+		precision: SystemClock.Minutes
+	}
+
 	FileView {
 		id: cache
 
@@ -304,8 +373,7 @@ Singleton {
 		repeat: true
 		running: true
 		onTriggered: {
-			root.now = Date.now();
-			if (!fetch.running && (!root.forecast || root.now / 1000 - root.forecast.fetched >= 15 * 60))
+			if (!fetch.running && (!root.forecast || Date.now() / 1000 - root.forecast.fetched >= 15 * 60))
 				fetch.running = true;
 		}
 	}

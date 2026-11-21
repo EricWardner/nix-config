@@ -171,48 +171,45 @@ IslandMode {
 			color: Theme.inkTrack
 		}
 
-		// The sun's day (Weather.sky): what's next, today as a strip of sky
-		// from midnight to midnight with now marked on it, and the four
-		// steps of this evening, or of the morning once it's night
+		// The sun's day (Weather.sky): the moment that's next, and the
+		// stretch it is now; today as a strip of sky from midnight to
+		// midnight with now marked on it; and the moments of this evening
+		// (sunset and its dusks), or of the morning once those are next
 		Column {
 			id: sun
 
 			readonly property var sky: Weather.sky
 
 			width: parent.width
-			spacing: 9
+			spacing: 10
 			visible: sky !== null
 
-			Item {
-				width: parent.width
-				height: 20
+			Row {
+				spacing: 10
 
-				Row {
+				WeatherIcon {
 					anchors.verticalCenter: parent.verticalCenter
-					spacing: 8
+					glyph: sun.sky?.next.glyph ?? "sunset"
+					size: 22
+					onInk: true
+				}
 
-					WeatherIcon {
-						anchors.verticalCenter: parent.verticalCenter
-						glyph: sun.sky?.next.glyph ?? "sunset"
-						size: 20
-						onInk: true
-					}
+				Column {
+					anchors.verticalCenter: parent.verticalCenter
+					spacing: 2
 
 					BarText {
-						anchors.verticalCenter: parent.verticalCenter
 						text: sun.sky ? sun.sky.next.label + " " + Weather.clock(sun.sky.next.time) : ""
 						color: Theme.ink
 						font.pixelSize: 14
 						font.weight: Font.DemiBold
 					}
-				}
 
-				BarText {
-					anchors.right: parent.right
-					anchors.verticalCenter: parent.verticalCenter
-					text: sun.sky?.stage ?? ""
-					color: Theme.inkDim
-					font.pixelSize: 13
+					BarText {
+						text: sun.sky ? "Now: " + sun.sky.stage.toLowerCase() : ""
+						color: Theme.inkDim
+						font.pixelSize: 12
+					}
 				}
 			}
 
@@ -224,7 +221,15 @@ IslandMode {
 					id: strip
 
 					readonly property var stops: sun.sky?.stops ?? []
-					readonly property color night: "#10152e"
+
+					// The stops there are, the last one over again for the
+					// rest: a Gradient's are a fixed number
+					function stop(index: int): var {
+						return stops[Math.min(index, stops.length - 1)] ?? {
+							at: 1,
+							colour: "transparent"
+						};
+					}
 
 					anchors.verticalCenter: parent.verticalCenter
 					width: parent.width
@@ -234,52 +239,60 @@ IslandMode {
 						orientation: Gradient.Horizontal
 
 						GradientStop {
-							position: 0
-							color: strip.night
+							position: strip.stop(0).at
+							color: strip.stop(0).colour
 						}
 						GradientStop {
-							position: strip.stops[0]?.at ?? 0
-							color: strip.stops[0]?.colour ?? strip.night
+							position: strip.stop(1).at
+							color: strip.stop(1).colour
 						}
 						GradientStop {
-							position: strip.stops[1]?.at ?? 0
-							color: strip.stops[1]?.colour ?? strip.night
+							position: strip.stop(2).at
+							color: strip.stop(2).colour
 						}
 						GradientStop {
-							position: strip.stops[2]?.at ?? 0
-							color: strip.stops[2]?.colour ?? strip.night
+							position: strip.stop(3).at
+							color: strip.stop(3).colour
 						}
 						GradientStop {
-							position: strip.stops[3]?.at ?? 0
-							color: strip.stops[3]?.colour ?? strip.night
+							position: strip.stop(4).at
+							color: strip.stop(4).colour
 						}
 						GradientStop {
-							position: strip.stops[4]?.at ?? 0
-							color: strip.stops[4]?.colour ?? strip.night
+							position: strip.stop(5).at
+							color: strip.stop(5).colour
 						}
 						GradientStop {
-							position: strip.stops[5]?.at ?? 1
-							color: strip.stops[5]?.colour ?? strip.night
+							position: strip.stop(6).at
+							color: strip.stop(6).colour
 						}
 						GradientStop {
-							position: strip.stops[6]?.at ?? 1
-							color: strip.stops[6]?.colour ?? strip.night
+							position: strip.stop(7).at
+							color: strip.stop(7).colour
 						}
 						GradientStop {
-							position: strip.stops[7]?.at ?? 1
-							color: strip.stops[7]?.colour ?? strip.night
+							position: strip.stop(8).at
+							color: strip.stop(8).colour
 						}
 						GradientStop {
-							position: strip.stops[8]?.at ?? 1
-							color: strip.stops[8]?.colour ?? strip.night
+							position: strip.stop(9).at
+							color: strip.stop(9).colour
 						}
 						GradientStop {
-							position: strip.stops[9]?.at ?? 1
-							color: strip.stops[9]?.colour ?? strip.night
+							position: strip.stop(10).at
+							color: strip.stop(10).colour
 						}
 						GradientStop {
-							position: 1
-							color: strip.night
+							position: strip.stop(11).at
+							color: strip.stop(11).colour
+						}
+						GradientStop {
+							position: strip.stop(12).at
+							color: strip.stop(12).colour
+						}
+						GradientStop {
+							position: strip.stop(13).at
+							color: strip.stop(13).colour
 						}
 					}
 				}
@@ -296,17 +309,31 @@ IslandMode {
 				}
 			}
 
+			// Spread across the width: their names are of very different
+			// lengths ("Sunset", "Astronomical dusk")
 			Row {
+				id: steps
+
+				readonly property real taken: {
+					let width = 0;
+					for (let i = 0; i < moments.count; i++)
+						width += moments.itemAt(i)?.implicitWidth ?? 0;
+					return width;
+				}
+
+				spacing: moments.count > 1 ? Math.max(6, (column.width - taken) / (moments.count - 1)) : 0
+
 				Repeater {
+					id: moments
+
 					model: sun.sky?.steps ?? []
 
 					Column {
 						id: step
 
 						required property var modelData
-						readonly property bool next: modelData.time === sun.sky.next.time
+						readonly property bool next: modelData.time === sun.sky?.next.time
 
-						width: column.width / 4
 						spacing: 2
 						opacity: modelData.time <= Weather.now ? 0.45 : 1
 
