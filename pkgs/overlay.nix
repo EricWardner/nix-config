@@ -36,6 +36,16 @@ final: prev: {
           cmakeFlags = old.cmakeFlags ++ [
             (final.lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_NLOHMANN_JSON" "${final.nlohmann_json.src}")
           ];
+          # Its notifications take an icon from the installed themes by name,
+          # and its search for what is installed did not follow links: in a
+          # Nix profile every theme is one, so it found only its own art and
+          # gave everything else (a text, Slack) its own logo.
+          postPatch = old.postPatch + ''
+            substituteInPlace src/daemon/notification.cpp \
+              --replace-fail \
+                "root, std::filesystem::directory_options::skip_permission_denied, ec" \
+                "root, std::filesystem::directory_options::skip_permission_denied | std::filesystem::directory_options::follow_directory_symlink, ec"
+          '';
         }
       )
     else
