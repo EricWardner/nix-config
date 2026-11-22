@@ -62,6 +62,9 @@ hl.window_rule({
 -- dialog
 hl.window_rule({ match = { class = "^(io.github.capture-preview|com.gabm.satty)$" }, float = true, center = true })
 hl.window_rule({ match = { title = "^(Save Screenshot)$" }, float = true, center = true })
+-- Tether (the iPhone's messages) floats in the middle at the size it
+-- keeps for itself: a narrow tile is no place for a conversation
+hl.window_rule({ match = { class = "^(tether-gtk)$" }, float = true, center = true })
 -- Thunar floats. Its main windows ("<folder> - Thunar") open at a set size
 -- in the middle; its dialogs (copy progress, properties) keep their own size.
 hl.window_rule({ match = { class = "^(Thunar)$" }, float = true })
