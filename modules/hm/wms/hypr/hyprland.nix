@@ -48,6 +48,7 @@ let
     keepAwake = "${islands} keepawake toggle";
     controlCentre = "${islands} panel toggle control";
     notificationCentre = "${islands} panel toggle centre";
+    weather = "${islands} panel toggle weather";
     shortcuts = "${islands} panel toggle keys";
     # The bar's centre island shows any volume change for a moment
     # (wms/islands). Raising it unmutes, as swayosd's did; 150% at most.

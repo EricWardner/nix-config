@@ -22,6 +22,7 @@ IslandMode {
 					[["Super", "G"], "Gather", "meeting call office"],
 					[["Super", "A"], "Control centre", "wifi bluetooth sound volume battery settings"],
 					[["Super", "N"], "Notification centre", "calendar history"],
+					[["Super", "W"], "Weather", "forecast sky rain sun temperature"],
 					[["Super", "/"], "These shortcuts", "help keys"]
 				]],
 			["Toggle", [
