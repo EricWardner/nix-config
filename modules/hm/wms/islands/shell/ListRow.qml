@@ -8,6 +8,8 @@ Rectangle {
 	id: root
 
 	property string glyph
+	// An emoji wants to be as big as the images are
+	property int glyphSize: 16
 	property string image
 	property string title
 	property string subtitle
@@ -46,7 +48,7 @@ Rectangle {
 			visible: root.image === ""
 			text: root.glyph
 			color: Theme.ink
-			font.pixelSize: 16
+			font.pixelSize: root.glyphSize
 		}
 
 		Image {

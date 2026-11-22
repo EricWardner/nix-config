@@ -51,6 +51,12 @@ Column {
 		const name = command.startsWith(".") ? command.slice(1).replace(/-(un)?wra?p?p?e?d?$/, "") : command;
 		// "node:vite": a script, under what runs it
 		const script = /^(node|python|bun|deno|ruby|perl):(.+)$/.exec(name);
+		// The browser tests, and the browsers they run, by their runner
+		if ((script ? script[2] : name) === "playwright")
+			return {
+				"name": "Playwright",
+				"icon": Qt.resolvedUrl("icons/playwright.svg")
+			};
 		if (script)
 			return {
 				"name": script[2],
@@ -108,10 +114,25 @@ Column {
 				"name": "below",
 				"icon": Qt.resolvedUrl("icons/below.svg")
 			};
+		// air, which rebuilds and restarts a Go server as its files change, by
+		// the cloud its project goes by
+		if (name === "air")
+			return {
+				"name": "air",
+				"icon": "",
+				"glyph": "☁️"
+			};
 		if (name === "process-compose")
 			return {
 				"name": "Process Compose",
 				"icon": Qt.resolvedUrl("icons/process-compose.svg")
+			};
+		// Git, with the helpers it runs ("git-remote-http"), and the prompt's
+		// status daemon under its own name
+		if (name === "git" || name.startsWith("git-") || name === "gitstatusd")
+			return {
+				"name": name === "gitstatusd" ? name : "Git",
+				"icon": Qt.resolvedUrl("icons/git.svg")
 			};
 		// Go: the parts of a build as one, a package's tests by their
 		// binary's name ("handlers.test"), and its tools under their own
@@ -563,7 +584,8 @@ Column {
 							x: -8
 							width: parent.width + 16
 							image: modelData.icon
-							glyph: modelData.icon === "" ? Glyphs.terminal : ""
+							glyph: modelData.glyph ?? (modelData.icon === "" ? Glyphs.terminal : "")
+							glyphSize: modelData.glyph ? 20 : 16
 							title: modelData.name
 							trailing: root.percent(modelData.share)
 							onClicked: root.investigate(modelData)
