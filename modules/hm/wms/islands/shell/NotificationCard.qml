@@ -26,9 +26,9 @@ Item {
 	readonly property string title: claude ? n?.body ?? "" : n?.summary ?? ""
 	readonly property string body: claude || yubikey ? "" : n?.body ?? ""
 	readonly property var actions: n ? Array.from(n.actions).filter(a => a.identifier !== "default") : []
-	// Its image, else its app's icon (Ghostty sends its icon's name as the
-	// image)
-	readonly property string icon: claude ? Inbox.appIcon(n) : Inbox.iconSource(n?.image ?? "") || Inbox.appIcon(n)
+	// An icon of our own for it, else its image, else its app's icon (Ghostty
+	// sends its icon's name as the image)
+	readonly property string icon: Inbox.ownIcon(n) || Inbox.iconSource(n?.image ?? "") || Inbox.appIcon(n)
 	// The colour picker's notification carries the colour as its image: a
 	// bigger swatch than an app icon
 	readonly property int iconSize: n?.appName === "Screenshot" && n.image !== "" ? 56 : yubikey ? 48 : 40

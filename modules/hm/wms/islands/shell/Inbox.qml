@@ -43,6 +43,13 @@ Singleton {
 		return n.urgency === NotificationUrgency.Critical || isYubiKey(n);
 	}
 
+	// The app a notification is passed on for, where its sender says (KDE's
+	// hint): Tether sends everything a linked iPhone shows under the phone
+	// app's name, "Messages" or "Gmail"
+	function shownAs(n: Notification): string {
+		return String(n?.hints?.["x-kde-display-appname"] ?? "");
+	}
+
 	// The app a notification is from. Claude Code notifies through Ghostty
 	// under its own title, and Ghostty sends no app name.
 	function appName(n: Notification): string {
@@ -52,6 +59,8 @@ Singleton {
 			return "Claude Code";
 		if (isYubiKey(n))
 			return "YubiKey";
+		if (shownAs(n) !== "")
+			return shownAs(n);
 		if (n.appName !== "")
 			return n.appName;
 		return n.desktopEntry === "com.mitchellh.ghostty" ? "Ghostty" : "Notification";
@@ -68,11 +77,21 @@ Singleton {
 		return Quickshell.iconPath(source, true);
 	}
 
-	// The app's icon, never the notification's own image
-	function appIcon(n: Notification): string {
+	// An icon of our own for a notification, over whatever it sends: Claude
+	// Code's (it notifies through Ghostty), and the iPhone's texts, which
+	// Tether sends with an icon theme's chat bubbles (the phone passes no
+	// icons on). "" for any other.
+	function ownIcon(n: Notification): string {
 		if (n?.summary === "Claude Code")
 			return Qt.resolvedUrl("icons/claude.svg");
-		return iconSource(n?.appIcon ?? "") || iconSource(n?.desktopEntry ?? "");
+		if (n?.desktopEntry === "tether-gtk" && shownAs(n) === "Messages")
+			return Qt.resolvedUrl("icons/imessage.svg");
+		return "";
+	}
+
+	// The app's icon, never the notification's own image
+	function appIcon(n: Notification): string {
+		return ownIcon(n) || iconSource(n?.appIcon ?? "") || iconSource(n?.desktopEntry ?? "");
 	}
 
 	// How long the popup shows, in ms; 0 for until it's closed
