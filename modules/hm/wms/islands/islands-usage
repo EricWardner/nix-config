@@ -339,18 +339,9 @@ keys='
 '
 
 # Every process there is now: "<pid>\t<parent>\t<command>\t<command line>"
+# under a heading, in ps's columns, so padded with spaces
 processes() {
-  local d stat rest comm line
-  local -a args parts
-  for d in /proc/[0-9]*; do
-    { read -r stat <"$d/stat" && IFS= read -r comm <"$d/comm" && mapfile -d '' -t args <"$d/cmdline"; } 2>/dev/null || continue
-    # "<pid> (<command>) <state> <parent> ...", and a command can have
-    # anything in it: from after its last ")"
-    rest=${stat##*) }
-    read -r -a parts <<<"$rest"
-    line=${args[*]}
-    printf '%s\t%s\t%s\t%s\n' "${d#/proc/}" "${parts[1]}" "$comm" "${line//[$'\t\n']/ }"
-  done
+  ps -e -o $'%p\t%P\t%c\t%a'
 }
 
 # This moment's power line, read before waiting on the lock, so a plug
@@ -1037,11 +1028,17 @@ case ${1:-} in
     # shellcheck disable=SC2016 # awk's own $
     gawk -F'\t' "$program$jobs"'
       ARGIND == 1 {
-        ppid_of[$1] = $2
-        comm_of[$1] = $3
-        cmd_of[$1] = $4
-        if (!($2 in child_of))
-          child_of[$2] = $1
+        pid = $1 + 0
+        parent = $2 + 0
+        comm = $3
+        sub(/ +$/, "", comm)
+        if (pid > 0) {
+          ppid_of[pid] = parent
+          comm_of[pid] = comm
+          cmd_of[pid] = $4
+          if (!(parent in child_of))
+            child_of[parent] = pid
+        }
         next
       }
       # top, in columns
