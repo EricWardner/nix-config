@@ -1,7 +1,7 @@
 # This repository's own packages, as members of pkgs: the flake applies it
 # with its other overlays, so modules use pkgs.bar-tools and the rest
 # without knowing where their sources live.
-final: _prev: {
+final: prev: {
   # Push-to-talk (pttd) and the status watchers the islands bar reads
   bar-tools = final.callPackage ./bar-tools { };
   # A finished recording's or screenshot's preview window
@@ -11,4 +11,32 @@ final: _prev: {
   # NetworkManager's secret agent, BlueZ's pairing agent and gnome-keyring's
   # prompter, for the islands shell
   islands-agent = final.callPackage ./islands-agent { };
+  # Tether (modules/nixos/tether.nix), ahead of nixpkgs, whose automatic
+  # updates stopped at 0.2.37: later versions need the three libraries added
+  # here (a terminal front end, and the iPhone's camera as a PipeWire
+  # source) and name the JSON library's source differently. It steps aside
+  # once nixpkgs has this version or a later one.
+  tether =
+    if final.lib.versionOlder prev.tether.version "0.3.6" then
+      prev.tether.overrideAttrs (
+        finalAttrs: old: {
+          version = "0.3.6";
+          src = final.fetchFromGitHub {
+            owner = "zackb";
+            repo = "tether";
+            tag = "v${finalAttrs.version}";
+            hash = "sha256-vdAjOi9e4L7M5RfYDuyl5ipbiEK+NU0MR30khCOucLo=";
+          };
+          buildInputs = old.buildInputs ++ [
+            final.ffmpeg
+            final.ncurses
+            final.pipewire
+          ];
+          cmakeFlags = old.cmakeFlags ++ [
+            (final.lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_NLOHMANN_JSON" "${final.nlohmann_json.src}")
+          ];
+        }
+      )
+    else
+      prev.tether;
 }
