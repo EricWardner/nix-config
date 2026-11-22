@@ -31,14 +31,44 @@ IslandMode {
 		Repeater {
 			model: root.sorted
 
-			IconImage {
+			Item {
 				id: icon
 
 				required property SystemTrayItem modelData
+				// Tether's, the linked iPhone: a phone in the bar's own glyphs
+				// for its logo. Tether says how things are by its icon's name,
+				// so the phone is dim while the iPhone is away and has a dot
+				// while there are messages unread.
+				readonly property bool phone: modelData.id === "tether"
+				readonly property string named: String(modelData.icon)
 
-				implicitSize: 16
-				source: modelData.icon
+				implicitWidth: 16
+				implicitHeight: 16
 				anchors.verticalCenter: parent.verticalCenter
+
+				IconImage {
+					anchors.fill: parent
+					visible: !icon.phone
+					implicitSize: 16
+					source: icon.phone ? "" : icon.modelData.icon
+				}
+
+				BarText {
+					anchors.centerIn: parent
+					visible: icon.phone
+					text: Glyphs.iphone
+					opacity: icon.named.includes("tether-offline") ? 0.4 : 1
+				}
+
+				Rectangle {
+					visible: icon.phone && icon.named.includes("tether-unread")
+					x: parent.width - 4
+					y: -2
+					width: 7
+					height: 7
+					radius: 3.5
+					color: Theme.accent
+				}
 
 				MouseArea {
 					anchors.fill: parent

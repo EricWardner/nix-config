@@ -33,6 +33,7 @@ Singleton {
 	readonly property string cupHeatWavesFill: String.fromCodePoint(0x1022AD)
 	readonly property string terminal: String.fromCodePoint(0x100A7C)
 	readonly property string globe: String.fromCodePoint(0x1001AA)
+	readonly property string iphone: String.fromCodePoint(0x1007DC)
 	readonly property string folder: String.fromCodePoint(0x100215)
 	readonly property string chevronRight: String.fromCodePoint(0x100193)
 	readonly property string chevronUpChevronDown: String.fromCodePoint(0x10018F)
