@@ -69,6 +69,84 @@ The packages in `pkgs/` are also flake outputs, for use on their own:
 nix build .#bar-tools   # also: islands-agent, capture-preview, gather-symbol
 ```
 
+## What's using the CPU
+
+The battery page of the islands shell (click the battery in the bar) lists
+the three busiest things on the machine. Its title steps through three
+lists when clicked or scrolled over: "Busiest right now", "on battery" and
+"today".
+
+### The three lists
+
+| List       | Covers                                                                   | The percentage is                    | Comes from                                  |
+| ---------- | ------------------------------------------------------------------------ | ------------------------------------ | ------------------------------------------- |
+| Right now  | The last two seconds, refreshed every three                              | A share of the whole CPU, every core | `top`, read as the page shows               |
+| On battery | The stretch on battery going on, or the last one of five minutes or more | A share of all the CPU used in it    | The recording [below](#the-recording) keeps |
+| Today      | Since midnight                                                           | A share of all the CPU used in it    | The same recording                          |
+
+"Right now" leaves out anything under 0.1%, the other two anything under
+0.5%.
+
+### What counts as one thing
+
+A row is the thing that was asked for, not each process it started.
+
+- **Apps** (a browser, Slack, the shell itself) are one row each, however
+  many processes they have. The system keeps each in a group of its own,
+  and the group is what's counted.
+- **Work run from a terminal** is credited to the **job**: the command that
+  was run, with everything it started. From each process the count goes up
+  through its parents:
+  - it stops at a **host**, which only runs other things: a shell waiting
+    at its prompt, Claude Code, the terminal, tmux, process-compose,
+    systemd. A host has only its own CPU.
+  - it sees through a **wrapper**, which only passes a command on:
+    `timeout`, `env`, `sudo`, `npx`, `npm`, a shell given one command.
+  - the highest process left is the job. So the browsers a test run
+    starts count as `playwright`, a compiler as the `go` or `make` that
+    ran it, and `npm run dev` as `vite`.
+- **Scripts** are named for what they run, not the runtime:
+  `node …/.bin/vite` is "vite", with Node's icon.
+- An app a job started (a test browser opens in a group of its own) is
+  the job's, not an app.
+
+Names that are one thing are added together and shown under one name with
+its icon: Docker's daemons and containers, a Go build's compiler and
+linker, Chrome's two ways of starting. `app()` in
+[BatteryPage.qml](modules/hm/wms/islands/shell/BatteryPage.qml) has those;
+the rules for jobs are the `jobs` block of
+[islands-usage](modules/hm/wms/islands/islands-usage).
+
+### The recording
+
+[below](https://github.com/facebookincubator/below) records every group's
+and every process's CPU every five seconds and keeps three days of it
+(`services.below` in [modules/nixos](modules/nixos/default.nix)). Reading
+it back is slow, so a timer adds what's new to per-app totals every five
+minutes, in five-minute steps, and the page reads those
+(`islands-usage update` and `report`; the totals are in
+`~/.cache/islands/usage`).
+
+Two things in it are estimates:
+
+- below can only measure a process it has seen twice. One that came and
+  went within a few seconds has no figure of its own, though its group's
+  total includes it. What a terminal used beyond the processes measured is
+  shared equally among the short-lived ones seen there, each for its job.
+- **Terminal commands** is what's left when there were none: work too
+  brief to have been seen at all.
+
+It also notes when the charger goes in and out, as the battery itself
+can't be trusted to say: that's where "on battery" begins and ends.
+
+### Looking closer
+
+Clicking a row opens a window on it:
+
+- from "right now", `btop` showing only that program;
+- from the other two, below's recording replayed from the five minutes in
+  which it was busiest (`p` for processes, `c` for groups).
+
 ## Adding a host
 
 1. Create `hosts/<hostname>/` with `configuration.nix` (importing
