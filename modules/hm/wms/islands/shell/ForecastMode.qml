@@ -289,7 +289,7 @@ IslandMode {
 					BarText {
 						readonly property int minutes: root.sky ? Math.max(1, Math.round((root.sky.next.time - Weather.now) / sun.minute)) : 0
 
-						text: root.sky ? "Now: " + root.sky.stage.toLowerCase() + " · in " + (minutes >= 60 ? Math.floor(minutes / 60) + " h " + minutes % 60 + " min" : minutes + " min") : ""
+						text: root.sky ? "in " + (minutes >= 60 ? Math.floor(minutes / 60) + " h " + minutes % 60 + " min" : minutes + " min") : ""
 						color: root.dim(0.52)
 						font.pixelSize: 12
 					}
