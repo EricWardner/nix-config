@@ -29,6 +29,9 @@ Item {
 	// An icon of our own for it, else its image, else its app's icon (Ghostty
 	// sends its icon's name as the image)
 	readonly property string icon: Inbox.ownIcon(n) || Inbox.iconSource(n?.image ?? "") || Inbox.appIcon(n)
+	// A glyph in place of it, for some (a phone, for what a linked iPhone
+	// passes on with no icon of its own)
+	readonly property string glyph: Inbox.ownGlyph(n)
 	// The colour picker's notification carries the colour as its image: a
 	// bigger swatch than an app icon
 	readonly property int iconSize: n?.appName === "Screenshot" && n.image !== "" ? 56 : yubikey ? 48 : 40
@@ -59,7 +62,7 @@ Item {
 	ClippingRectangle {
 		id: iconSlot
 
-		visible: root.icon !== ""
+		visible: root.icon !== "" || root.glyph !== ""
 		x: 16
 		y: 14
 		width: root.iconSize
@@ -71,11 +74,20 @@ Item {
 			anchors.centerIn: parent
 			width: root.symbolic ? Math.round(root.iconSize * 0.7) : root.iconSize
 			height: width
+			visible: root.glyph === ""
 			source: root.icon
 			sourceSize: Qt.size(root.iconSize * 2, root.iconSize * 2)
 			fillMode: Image.PreserveAspectFit
 			smooth: true
 			mipmap: true
+		}
+
+		BarText {
+			anchors.centerIn: parent
+			visible: root.glyph !== ""
+			text: root.glyph
+			color: Theme.ink
+			font.pixelSize: Math.round(root.iconSize * 0.8)
 		}
 	}
 
