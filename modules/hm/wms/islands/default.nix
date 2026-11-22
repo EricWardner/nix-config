@@ -187,19 +187,40 @@ let
   # system-monitor [FILTER]: btop in a window, showing only the processes
   # that match FILTER if there is one. The control centre's load line opens
   # it, and so does a row of the battery page's "right now" list, for that
-  # program. The class must be a valid app ID (with a dot) or ghostty
-  # ignores it; the floating rule in hypr/lua/rules.lua matches it.
+  # job. A job is named for the process at its top, so the filtered list is
+  # a tree, where btop keeps what a match runs: its own config (the theme)
+  # with that turned on. The class must be a valid app ID (with a dot) or
+  # ghostty ignores it; the floating rule in hypr/lua/rules.lua matches it.
   systemMonitor = pkgs.writeShellScriptBin "system-monitor" ''
-    exec ${pkgs.ghostty}/bin/ghostty --class=com.mitchellh.ghostty.btop -e ${pkgs.btop}/bin/btop ''${1:+--filter "$1"}
+    if [ -n "''${1:-}" ]; then
+      tree=''${XDG_RUNTIME_DIR:-/tmp}/islands-btop-tree.conf
+      {
+        cat "''${XDG_CONFIG_HOME:-$HOME/.config}/btop/btop.conf" 2>/dev/null
+        echo
+        echo "proc_tree = True"
+      } >"$tree"
+      exec ${pkgs.ghostty}/bin/ghostty --class=com.mitchellh.ghostty.btop -e ${pkgs.btop}/bin/btop -c "$tree" --filter "$1"
+    fi
+    exec ${pkgs.ghostty}/bin/ghostty --class=com.mitchellh.ghostty.btop -e ${pkgs.btop}/bin/btop
   '';
-  # usage-replay FROM TO APP...: below's recording in a window, replayed
-  # from the five minutes between those times in which the apps were
-  # busiest. A row of the battery page's "On battery" and "Today" lists
-  # opens it, to see what the app was doing then. The system's below, the
-  # recorder's own build.
-  usageReplay = pkgs.writeShellScriptBin "usage-replay" ''
-    exec ${pkgs.ghostty}/bin/ghostty --class=com.mitchellh.ghostty.below --window-width=150 --window-height=42 \
-      -e /run/current-system/sw/bin/below replay -t "$(${lib.getExe islandsUsage} peak "$@")"
+  # usage-look FROM TO TITLE APP...: a row of the battery page's "On
+  # battery" and "Today" lists, looked into in a window: islands-usage's
+  # report of how much the apps used between those times and when, and of
+  # what ran as part of them in their busiest five minutes, as a tree
+  # (`look` there). `b` goes on to below's own recording of those minutes,
+  # replayed (the system's below, the recorder's own build): less is told
+  # to quit with that key's code.
+  usageLook = pkgs.writeShellScriptBin "usage-look" ''
+    exec ${pkgs.ghostty}/bin/ghostty --class=com.mitchellh.ghostty.usage --window-width=120 --window-height=44 -e ${usageReport} "$@"
+  '';
+  usageReport = pkgs.writeShellScript "usage-report" ''
+    from=$1 to=$2
+    ${lib.getExe islandsUsage} look "$@" |
+      LESSKEY_CONTENT=$'#command\nb quit b' ${pkgs.less}/bin/less -R -S -~ "-Psb  the same minutes in below      q  close"
+    if [ $? = 98 ]; then
+      shift 3
+      exec /run/current-system/sw/bin/below replay -t "$(${lib.getExe islandsUsage} peak "$from" "$to" "$@")"
+    fi
   '';
 in
 {
@@ -280,7 +301,7 @@ in
       pkgs.gather-symbol
       cameraSettings
       systemMonitor
-      usageReplay
+      usageLook
       # the brightness keys go through the shell (shell/Osd.qml)
       pkgs.brightnessctl
       # NetworkManager's secret agent, BlueZ's pairing agent and

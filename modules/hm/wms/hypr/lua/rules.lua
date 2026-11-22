@@ -52,7 +52,7 @@ hl.window_rule({
 -- valid app ID (needs a dot), as the bare "btop" once was.
 hl.window_rule({
 	match = {
-		class = "^(org.pulseaudio.pavucontrol|blueman-manager|hu.irl.cameractrls|nm-connection-editor|com.mitchellh.ghostty.btop|com.mitchellh.ghostty.below)$",
+		class = "^(org.pulseaudio.pavucontrol|blueman-manager|hu.irl.cameractrls|nm-connection-editor|com.mitchellh.ghostty.btop|com.mitchellh.ghostty.usage)$",
 	},
 	float = true,
 	move = { "(monitor_w-window_w-10)", 40 },

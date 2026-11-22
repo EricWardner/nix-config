@@ -165,9 +165,29 @@ can't be trusted to say: that's where "on battery" begins and ends.
 
 Clicking a row opens a window on it:
 
-- from "right now", `btop` showing only that program;
-- from the other two, below's recording replayed from the five minutes in
-  which it was busiest (`p` for processes, `c` for groups).
+- from "right now", `btop` as a tree, showing only that job and what it
+  runs;
+- from the other two, a report on that row (`islands-usage look`): how
+  much it used and when, across the time the list covers, and what ran as
+  part of it in its busiest five minutes, as a tree with the CPU measured
+  for each branch. For a "Git" row that is the commit, the hooks it ran,
+  and the linters and tests under them:
+
+  ```
+  In those five minutes (CPU-seconds below measured, processes, …)
+       1047    236  git
+       1047    224  ├─ prek
+        720     31  │  ├─ golangci-lint
+        172     47  │  ├─ go
+        144     87  │  └─ node:vitest
+  Started as
+       1047     3×  git commit -q -F -
+  ```
+
+  "Terminal commands" has no processes of its own, so its report lists
+  the brief ones seen in the terminals then. `b` goes on to below's own
+  recording of those minutes, replayed (`p` for processes, `c` for
+  groups).
 
 ## Adding a host
 

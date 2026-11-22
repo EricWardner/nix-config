@@ -22,7 +22,8 @@ BarText {
 		DesktopEntries.applications.values;
 		return ({
 				"chrome-work.tiberius.com__-Default": "Gather",
-				"com.mitchellh.ghostty.btop": "btop"
+				"com.mitchellh.ghostty.btop": "btop",
+				"com.mitchellh.ghostty.usage": "CPU usage"
 			})[appId] ?? DesktopEntries.heuristicLookup(appId)?.name ?? appId;
 	}
 

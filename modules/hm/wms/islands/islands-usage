@@ -1,4 +1,4 @@
-# islands-usage update|mark|report|now|peak: what used the CPU, by app, for
+# islands-usage update|mark|report|now|peak|look: what used the CPU, by app, for
 # the battery page's lists (shell/BatteryPage.qml): `now` for "right now",
 # the rest for "On battery" and "Today" (`peak` finds when an app there was
 # busiest, to look at that moment).
@@ -141,7 +141,8 @@ program='
 # -c, timeout, env, npx, npm), by its program() name, or its script's for a
 # shell script. A host is its own job. inside(pid) says whether anything on
 # the way up was in a terminal (group_of, by pid, where there is one).
-# child_of, by parent, is one child of each process that has any.
+# child_of, by parent, is one child of each process that has any, and
+# top_of, by pid, the process a job is named for, once job() has been asked.
 # shellcheck disable=SC2016 # awk's own $
 jobs='
   function is_shell(comm) {
@@ -249,18 +250,23 @@ jobs='
       if (terminal_group(group_of[q]))
         inside_of[pid] = 1
     }
+    top_of[pid] = pid
     if (host(comm_of[pid], cmd_of[pid]))
       return job_of[pid] = called(comm_of[pid], cmd_of[pid])
     for (i = n; i > 1; i--)
       if (!wrapper(comm_of[chain[i]], cmd_of[chain[i]]))
         break
+    top_of[pid] = chain[i]
     # Nothing but wrappers, this one the lowest: it is part of what it
     # runs (child_of, by parent, has one of its children), or failing
     # that is named for what it was given to run
     name = ""
     if (wrapper(comm_of[pid], cmd_of[pid]) && i == 1) {
-      if (pid in child_of)
-        return job_of[pid] = job(child_of[pid])
+      if (pid in child_of) {
+        job_of[pid] = job(child_of[pid])
+        top_of[pid] = top_of[child_of[pid]]
+        return job_of[pid]
+      }
       if (!is_shell(comm_of[pid]))
         name = wrapped(comm_of[pid], cmd_of[pid])
     }
@@ -569,6 +575,7 @@ update() {
         delete state_of
         delete group_of
         delete job_of
+        delete top_of
         delete inside_of
         delete child_of
       }
@@ -732,6 +739,273 @@ report() {
     }' "$dir/power.tsv" "$dir/cpu.tsv"
 }
 
+# peak FROM TO APP...: the start of the five minutes between those times in
+# which the apps (by their names in cpu.tsv) used the most CPU together;
+# FROM if they used none
+peak() {
+  local from=$1 to=$2
+  shift 2
+  # shellcheck disable=SC2016 # awk's own $
+  printf '%s\n' "$@" | gawk -F'\t' -v from="$from" -v to="$to" -v bucket="$bucket" '
+    ARGIND == 1 { wanted[$0] = 1; next }
+    ($2 in wanted) && $1 + bucket > from && $1 < to { used[$1] += $3 }
+    END {
+      best = from
+      for (b in used)
+        if (used[b] > most) {
+          most = used[b]
+          best = b
+        }
+      print best + 0 < from + 0 ? from : best
+    }' - "$dir/cpu.tsv"
+}
+
+# look FROM TO TITLE APP...: a row of the lists looked into, as text for a
+# terminal. From cpu.tsv, how much the apps (by their names there) used
+# between those times, and when. Then, from below, the processes that were
+# part of them in their busiest five minutes, as a tree under what started
+# them, with the CPU below measured for each: for a job, the tree is the
+# job (a commit, then the hooks it ran, then their linters). The row
+# "terminal" has no processes of its own, so it lists the ones seen once in
+# the terminals then.
+look() {
+  local from=$1 to=$2 title=$3 at names
+  shift 3
+  at=$(peak "$from" "$to" "$@")
+  at=$((at / bucket * bucket))
+  names=$(printf '%s\034' "$@")
+  # shellcheck disable=SC2016 # awk's own $
+  gawk -F'\t' -v from="$from" -v to="$to" -v at="$at" -v bucket="$bucket" -v title="$title" \
+    -v names="$names" -v scopes="$dir/scopes.tsv" "$program$jobs$keys"'
+    BEGIN {
+      n = split(names, list, "\034")
+      for (i = 1; i <= n; i++)
+        if (list[i] != "")
+          wanted[list[i]] = 1
+      bold = "\033[1m"
+      dim = "\033[2m"
+      off = "\033[0m"
+      split("▁ ▂ ▃ ▄ ▅ ▆ ▇ █", bar, " ")
+      SEP = "\035"
+    }
+    function clock(time,    s) {
+      s = strftime("%l:%M %p", time)
+      sub(/^ +/, "", s)
+      return s
+    }
+    function amount(v) {
+      return v >= 100 ? sprintf("%d", v + 0.5) : sprintf("%.1f", v)
+    }
+    # How much in all, and a mark for each stretch of the time covered
+    function summary(    first, buckets, per, marks, m, b, most, line, v) {
+      printf "%s%s%s  %s%s %s to %s%s\n", bold, title, off, dim, strftime("%a", from), clock(from), clock(to), off
+      printf "%s CPU-seconds", amount(sum)
+      if (all > 0)
+        printf ", %s%% of all the CPU used then", amount(100 * sum / all)
+      print "\n"
+      first = int(from / bucket) * bucket
+      buckets = int((to - first + bucket - 1) / bucket)
+      per = int((buckets + 71) / 72)
+      marks = int((buckets + per - 1) / per)
+      for (b in used)
+        mark[int((b - first) / bucket / per)] += used[b]
+      for (m = 0; m < marks; m++)
+        if (mark[m] > most)
+          most = mark[m]
+      line = ""
+      for (m = 0; m < marks; m++) {
+        v = mark[m] + 0
+        line = line (v <= 0 || most <= 0 ? "·" : bar[1 + int(7.999 * v / most)])
+      }
+      printf "When %s(each mark %d minutes)%s\n  %s\n", dim, per * bucket / 60, off, line
+      if (used[at] > 0)
+        printf "  %*s▲ busiest five minutes, from %s: %s CPU-seconds\n", int((at - first) / bucket / per), "", clock(at), amount(used[at])
+      print ""
+    }
+    # A process by name, less the dot and "-wrapped" of a Nix wrapper
+    # (".claude-unwrapp", cut short)
+    function label(pid,    s) {
+      s = called(comm_of[pid], cmd_of[pid])
+      if (sub(/^\./, "", s))
+        sub(/-(un)?wra?p?p?e?d?$/, "", s)
+      return s
+    }
+    # A sample is all in: its processes that are part of the apps go on the
+    # tree, each by the way down to it from the top of its job or app
+    function tally(    pid, g, name, top, q, parent, path, guard, cmd, brief) {
+      for (pid in comm_of) {
+        g = group_of[pid]
+        job(pid)
+        brief = cpu_of[pid] == "?"
+        if (terminal_group(g) || inside_of[pid]) {
+          name = ("terminal" in wanted) && brief && terminal_group(g) ? "terminal" : job_of[pid]
+          top = top_of[pid]
+        } else {
+          # An app: its top is as far up as its group goes
+          name = key(g)
+          top = pid
+          for (guard = 0; guard < 40 && (ppid_of[top] in comm_of) && group_of[ppid_of[top]] == g; guard++)
+            top = ppid_of[top]
+        }
+        if (!(name in wanted))
+          continue
+        path = ""
+        q = pid
+        for (guard = 0; guard < 40 && q != top; guard++) {
+          # What only passes a command on is left out of the way down
+          if (q == pid || !wrapper(comm_of[q], cmd_of[q]))
+            path = label(q) (path == "" ? "" : SEP path)
+          q = ppid_of[q]
+          if (!(q in comm_of))
+            break
+        }
+        # A wrapper counted with what it runs is not under that top, but
+        # is shown there
+        if (q != top)
+          path = label(pid)
+        path = label(top) (path == "" ? "" : SEP path)
+        if (!brief)
+          cpu[path] += cpu_of[pid]
+        if (++seen[path, pid] == 1)
+          count[path]++
+        cmd = cmd_of[top] == "" ? comm_of[top] : cmd_of[top]
+        if (!brief)
+          run_cpu[cmd] += cpu_of[pid]
+        if (!((cmd, top) in ran)) {
+          ran[cmd, top] = 1
+          runs[cmd]++
+        }
+      }
+      delete ppid_of
+      delete comm_of
+      delete cmd_of
+      delete cpu_of
+      delete group_of
+      delete job_of
+      delete top_of
+      delete inside_of
+      delete child_of
+    }
+    # A node and what is under it, the biggest first; what is too small to
+    # matter is left out, and said to be
+    function show(path, lead, last, root,    kid, order, kept, n, k, name, under, rest_cpu, rest_n) {
+      name = path
+      sub(".*" SEP, "", name)
+      printf("%9s %6d  %s%s%s%s\n", (under_cpu[path] > 0 ? amount(under_cpu[path]) : ""), under_n[path], lead, root ? "" : (last ? "└─ " : "├─ "), name, under_brief[path] > 0 && !("terminal" in wanted) ? sprintf("  %s%d brief%s", dim, under_brief[path], off) : "")
+      if (!(path in kids) || depth_of[path] >= 7)
+        return
+      under = root ? "" : lead (last ? "   " : "│  ")
+      for (kid in kids[path])
+        order[kid] = under_cpu[kid] + under_n[kid] / 1e6
+      PROCINFO["sorted_in"] = "@val_num_desc"
+      n = 0
+      for (kid in order) {
+        if (n >= 12 || (under_cpu[kid] < least && n >= 3)) {
+          rest_cpu += under_cpu[kid]
+          rest_n += under_n[kid]
+        } else
+          kept[++n] = kid
+      }
+      delete PROCINFO["sorted_in"]
+      for (k = 1; k <= n; k++)
+        show(kept[k], under, k == n && rest_n == 0, 0)
+      if (rest_n > 0)
+        printf("%9s %6d  %s└─ %sothers%s\n", (rest_cpu > 0 ? amount(rest_cpu) : ""), rest_n, under, dim, off)
+    }
+    ARGIND == 1 {
+      if ($1 + bucket <= from || $1 >= to || $2 == "_last")
+        next
+      if ($2 == "_total")
+        all += $3
+      else if ($2 in wanted) {
+        used[$1] += $3
+        sum += $3
+      }
+      next
+    }
+    ENDFILE {
+      if (ARGIND == 1)
+        summary()
+    }
+    NF < 8 || $1 !~ /^[0-9]+$/ || $2 !~ /^[0-9]+$/ || $3 !~ /^[0-9]+$/ { next }
+    {
+      if ($1 != sample) {
+        tally()
+        sample = $1
+      }
+      ppid_of[$2] = $3
+      comm_of[$2] = $4
+      group_of[$2] = $7
+      cmd_of[$2] = $8 == "?" ? "" : $8
+      if (!($3 in child_of))
+        child_of[$3] = $2
+      v = $6
+      if (v != "?") {
+        sub(/%$/, "", v)
+        v = v / 100 * 5
+      }
+      cpu_of[$2] = v
+    }
+    END {
+      tally()
+      if (length(count) == 0) {
+        print "below recorded no processes of it in its busiest five minutes."
+        exit
+      }
+      # A process in one sample only was too brief for below to measure
+      for (k in seen)
+        if (seen[k] == 1) {
+          split(k, f, SUBSEP)
+          briefly[f[1]]++
+        }
+      # Each node with all that is under it
+      for (path in count) {
+        measured += cpu[path]
+        p = path
+        while (1) {
+          under_cpu[p] += cpu[path]
+          under_n[p] += count[path]
+          under_brief[p] += briefly[path]
+          depth_of[p] = gsub(SEP, SEP, p) + 1
+          if (!match(p, ".*" SEP))
+            break
+          parent = substr(p, 1, RLENGTH - 1)
+          kids[parent][p] = 1
+          p = parent
+        }
+        roots[p] = 1
+      }
+      least = measured / 200
+      if ("terminal" in wanted)
+        printf "Seen once in the terminals in those five minutes %s(processes too brief to measure, by job)%s\n", dim, off
+      else
+        printf "In those five minutes %s(CPU-seconds below measured, processes, and how many were too brief to measure)%s\n", dim, off
+      for (path in roots)
+        order[path] = under_cpu[path] + under_n[path] / 1e6
+      PROCINFO["sorted_in"] = "@val_num_desc"
+      n = 0
+      for (path in order)
+        first[++n] = path
+      delete PROCINFO["sorted_in"]
+      for (i = 1; i <= n && i <= 8; i++)
+        show(first[i], "", 1, 1)
+      if (!("terminal" in wanted)) {
+        print "\nStarted as"
+        PROCINFO["sorted_in"] = "@val_num_desc"
+        i = 0
+        for (cmd in run_cpu) {
+          if (++i > 6 || (i > 2 && run_cpu[cmd] < least))
+            break
+          shown = cmd
+          sub(/^\/nix\/store\/[0-9a-z]+-/, "", shown)
+          printf("%9s %5s×  %s\n", amount(run_cpu[cmd]), runs[cmd], (length(shown) > 150 ? substr(shown, 1, 149) "…" : shown))
+        }
+        delete PROCINFO["sorted_in"]
+      }
+    }' "$dir/cpu.tsv" <({ "$below" dump process -b "$at" -e "$((at + bucket - 1))" \
+    -f timestamp pid ppid comm state cpu.usage_pct cgroup cmdline -O tsv 2>/dev/null || true; })
+}
+
 case ${1:-} in
   update)
     [[ -d $store && -x $below ]] || exit 0
@@ -789,28 +1063,20 @@ case ${1:-} in
       }' <(processes) <(printf '%s\n' "$frames")
     ;;
   peak)
-    # peak FROM TO APP...: the start of the five minutes between those times
-    # in which the apps (by their names in cpu.tsv) used the most CPU
-    # together; FROM if they used none
     from=${2:?}
     to=${3:?}
     shift 3
-    # shellcheck disable=SC2016 # awk's own $
-    printf '%s\n' "$@" | gawk -F'\t' -v from="$from" -v to="$to" -v bucket="$bucket" '
-      ARGIND == 1 { wanted[$0] = 1; next }
-      ($2 in wanted) && $1 + bucket > from && $1 < to { used[$1] += $3 }
-      END {
-        best = from
-        for (b in used)
-          if (used[b] > most) {
-            most = used[b]
-            best = b
-          }
-        print best + 0 < from + 0 ? from : best
-      }' - "$dir/cpu.tsv"
+    peak "$from" "$to" "$@"
+    ;;
+  look)
+    from=${2:?}
+    to=${3:?}
+    title=${4:?}
+    shift 4
+    look "$from" "$to" "$title" "$@"
     ;;
   *)
-    echo "usage: islands-usage update|mark|report|now|peak" >&2
+    echo "usage: islands-usage update|mark|report|now|peak|look" >&2
     exit 2
     ;;
 esac

@@ -232,14 +232,14 @@ Column {
 				}));
 	}
 
-	// A row's click: the program in btop, as it runs now; or, from the other
-	// lists, below's recording replayed from when the app was busiest in the
-	// time the list covers
+	// A row's click: the job in btop, as it runs now; or, from the other
+	// lists, islands-usage's look into it in a window: when it was busy in
+	// the time the list covers, and what ran as part of it at its busiest
 	function investigate(app: var) {
 		if (view === "now")
 			Desktop.launch(["system-monitor", term(app.names[0])]);
 		else if (period)
-			Desktop.launch(["usage-replay", String(Math.round(period.from)), String(Math.round(period.to))].concat(app.names));
+			Desktop.launch(["usage-look", String(Math.round(period.from)), String(Math.round(period.to)), app.name].concat(app.names));
 		Desktop.closePanel();
 	}
 
