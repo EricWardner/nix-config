@@ -18,6 +18,7 @@ in
   imports = [
     ./packages.nix
     ./power-profiles.nix
+    ./tether.nix
     ./wms
     ./peripherals
     ./users
