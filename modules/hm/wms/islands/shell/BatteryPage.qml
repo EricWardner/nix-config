@@ -576,15 +576,108 @@ Column {
 				height: 3 * 36
 
 				BarText {
-					visible: root.shownApps.length === 0
+					visible: root.shownApps.length === 0 && !bones.waiting
 					topPadding: 4
-					text: root.view === "now" ? (root.appsRead ? "Nothing much" : "…") : root.usage === null ? "…" : root.period === null ? (root.view === "battery" ? "No time on battery recorded yet" : "Nothing recorded") : "Nothing much"
+					text: root.view !== "now" && root.period === null ? (root.view === "battery" ? "No time on battery recorded yet" : "Nothing recorded") : "Nothing much"
 					color: Theme.inkDim
 					font.pixelSize: 12
 				}
 
+				// Until a list is read, its rows in outline (an icon, a name,
+				// a share), each breathing a little after the one above
+				Column {
+					id: bones
+
+					readonly property bool waiting: root.view === "now" ? !root.appsRead : root.usage === null
+
+					width: parent.width
+					visible: opacity > 0
+					opacity: waiting ? 1 : 0
+
+					Behavior on opacity {
+						NumberAnimation {
+							duration: 120
+						}
+					}
+
+					Repeater {
+						model: [104, 138, 82]
+
+						Item {
+							id: bone
+
+							required property int modelData
+							required property int index
+
+							width: parent.width
+							height: 36
+							opacity: 0.4
+
+							SequentialAnimation on opacity {
+								running: bones.visible
+								loops: Animation.Infinite
+
+								PauseAnimation {
+									duration: bone.index * 150
+								}
+
+								NumberAnimation {
+									to: 1
+									duration: 550
+									easing.type: Easing.InOutSine
+								}
+
+								NumberAnimation {
+									to: 0.4
+									duration: 550
+									easing.type: Easing.InOutSine
+								}
+
+								PauseAnimation {
+									duration: (2 - bone.index) * 150
+								}
+							}
+
+							Rectangle {
+								anchors.verticalCenter: parent.verticalCenter
+								width: 22
+								height: 22
+								radius: 6
+								color: Theme.inkTrack
+							}
+
+							Rectangle {
+								x: 32
+								anchors.verticalCenter: parent.verticalCenter
+								width: bone.modelData
+								height: 10
+								radius: 5
+								color: Theme.inkTrack
+							}
+
+							Rectangle {
+								anchors.right: parent.right
+								anchors.rightMargin: 2
+								anchors.verticalCenter: parent.verticalCenter
+								width: 30
+								height: 10
+								radius: 5
+								color: Theme.inkTrack
+							}
+						}
+					}
+				}
+
+				// The rows fade in over the outline as it goes
 				Column {
 					width: parent.width
+					opacity: bones.waiting ? 0 : 1
+
+					Behavior on opacity {
+						NumberAnimation {
+							duration: 200
+						}
+					}
 
 					Repeater {
 						model: root.shownApps
