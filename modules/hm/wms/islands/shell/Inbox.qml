@@ -78,14 +78,20 @@ Singleton {
 	}
 
 	// An icon of our own for a notification, over whatever it sends: Claude
-	// Code's (it notifies through Ghostty), and the iPhone's texts, which
-	// Tether sends with an icon theme's chat bubbles (the phone passes no
-	// icons on). "" for any other.
+	// Code's (it notifies through Ghostty), and those of a linked iPhone's
+	// apps that Tether has no good icon for (the phone passes none on):
+	// its texts, sent with an icon theme's chat bubbles, and Health, sent
+	// with a generic phone, which takes the theme's icon of GNOME's Health
+	// app. "" for any other.
 	function ownIcon(n: Notification): string {
 		if (n?.summary === "Claude Code")
 			return Qt.resolvedUrl("icons/claude.svg");
-		if (n?.desktopEntry === "tether-gtk" && shownAs(n) === "Messages")
+		if (n?.desktopEntry !== "tether-gtk")
+			return "";
+		if (shownAs(n) === "Messages")
 			return Qt.resolvedUrl("icons/imessage.svg");
+		if (shownAs(n) === "Health")
+			return Quickshell.iconPath("dev.Cogitri.Health", true);
 		return "";
 	}
 
