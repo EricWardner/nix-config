@@ -99,9 +99,11 @@ A row is the thing that was asked for, not each process it started.
   through its parents:
   - it stops at a **host**, which only runs other things: a shell waiting
     at its prompt, Claude Code, the terminal, tmux, process-compose,
-    systemd. A host has only its own CPU.
+    systemd. A host has only its own CPU, under its own name whatever
+    started it.
   - it sees through a **wrapper**, which only passes a command on:
-    `timeout`, `env`, `sudo`, `npx`, `npm`, a shell given one command.
+    `timeout`, `env`, `sudo`, `npx`, `npm run`, a shell given one command
+    (`sh -c`). `npm ci` is npm's own work, so it is "npm".
   - the highest process left is the job. So the browsers a test run
     starts count as `playwright`, a compiler as the `go` or `make` that
     ran it, and `npm run dev` as `vite`.
@@ -109,6 +111,23 @@ A row is the thing that was asked for, not each process it started.
   `node …/.bin/vite` is "vite", with Node's icon.
 - An app a job started (a test browser opens in a group of its own) is
   the job's, not an app.
+
+Some examples:
+
+| What happened                                                                     | Counted as                                                                                                                                               |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code runs `npx playwright test`                                            | **Playwright**: the runner, the browsers it starts and their renderers. The `zsh -c` and `npx` in between are wrappers, and Claude Code gets none of it. |
+| Claude Code works on a reply: streams it, draws its screen, reads and edits files | **Claude Code**. All of that happens in its own process.                                                                                                 |
+| Claude Code starts an MCP server or a language server (`gopls`)                   | A row of its own each. Claude Code is a host, so the count stops below it.                                                                               |
+| Claude Code runs `git commit`, and the pre-commit hooks lint and build            | **Git**: the hooks, linters and compilers are all part of that commit.                                                                                   |
+| process-compose runs `air`, which rebuilds on every save                          | **air**: the watcher, the `go build` it runs, the compiler and the server it restarts.                                                                   |
+| process-compose draws its screen and collects logs                                | **Process Compose**, and only that. Each service it runs is a row of its own.                                                                            |
+| A script starts process-compose (`./dev.sh`)                                      | The script's own CPU is "dev". Process Compose and its services are counted as above.                                                                    |
+| You type `go test ./...` at a prompt                                              | **go**: the compiler, the linker and the test binaries. The shell is "zsh", with only what its prompt uses.                                              |
+| `nix build`, from anywhere                                                        | **Nix** for the command (evaluating), **Nix builds** for the building, which the daemon does as a service.                                               |
+| A container, whoever started it                                                   | **Docker**. Containers run under Docker's daemon, not under the job that asked for them.                                                                 |
+| Claude Code runs something quick (`ls`, a `grep`)                                 | Its own name if it was caught running, otherwise **Terminal commands** (see [the recording](#the-recording)).                                            |
+| A loop that waits: `while pgrep x; do sleep 1; done`                              | Next to nothing. Waiting processes are given none of the CPU that could not be measured.                                                                 |
 
 Names that are one thing are added together and shown under one name with
 its icon: Docker's daemons and containers, a Go build's compiler and
@@ -131,9 +150,12 @@ Two things in it are estimates:
 
 - below can only measure a process it has seen twice. One that came and
   went within a few seconds has no figure of its own, though its group's
-  total includes it. What a terminal used beyond the processes measured is
-  shared equally among the short-lived ones seen there, each for its job.
-- **Terminal commands** is what's left when there were none: work too
+  total includes it. What a terminal used beyond the processes measured
+  goes to the jobs that had new processes there, by how busy each looked:
+  what its measured processes used, plus the new ones that were running
+  at that moment. One that was only waiting (a `sleep` in a loop, a
+  `tail`) gets none.
+- **Terminal commands** is what's left when no job looked busy: work too
   brief to have been seen at all.
 
 It also notes when the charger goes in and out, as the battery itself

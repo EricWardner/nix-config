@@ -74,6 +74,18 @@ Column {
 				"name": "Nix builds",
 				"icon": Quickshell.iconPath("nix-snowflake", true)
 			};
+		// The command itself: evaluating, mostly
+		if (name === "nix")
+			return {
+				"name": "Nix",
+				"icon": Quickshell.iconPath("nix-snowflake", true)
+			};
+		// A package manager at work of its own ("npm ci"), not running a script
+		if (["npm", "pnpm", "yarn", "corepack"].includes(name))
+			return {
+				"name": name,
+				"icon": Qt.resolvedUrl("icons/nodejs.png")
+			};
 		if (["pipewire", "pipewire-pulse", "wireplumber"].includes(name))
 			return {
 				"name": "PipeWire",
