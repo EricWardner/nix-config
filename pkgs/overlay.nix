@@ -15,7 +15,8 @@ final: prev: {
   # updates stopped at 0.2.37: later versions need the three libraries added
   # here (a terminal front end, and the iPhone's camera as a PipeWire
   # source) and name the JSON library's source differently. It steps aside
-  # once nixpkgs has this version or a later one.
+  # once nixpkgs has this version or a later one, and says so at every
+  # rebuild from then on, until it is taken out.
   tether =
     if final.lib.versionOlder prev.tether.version "0.3.6" then
       prev.tether.overrideAttrs (
@@ -38,5 +39,5 @@ final: prev: {
         }
       )
     else
-      prev.tether;
+      final.lib.warn "nixpkgs now has Tether ${prev.tether.version}: the 0.3.6 override in pkgs/overlay.nix is no longer used and can be removed" prev.tether;
 }
