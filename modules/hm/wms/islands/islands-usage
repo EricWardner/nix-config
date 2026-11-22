@@ -9,12 +9,21 @@
 # new since its last run to per-app totals in five-minute buckets, and
 # `report` sums those. An app is a cgroup: its scope or service, the Docker
 # containers, the session (Hyprland). That way processes that come and go
-# too fast for below to see one by one, like builds, still count.
+# too fast for below to see one by one still count.
 #
-# A terminal is the exception: its cgroup is everything run in it, so its
-# CPU is shared out among the programs below saw running there (`program`
-# names them), and only what none of them accounts for stays "terminal".
-# A program run by node or python is named for its script, as "node:vite".
+# A terminal is the exception: its cgroup is everything run in it. Its CPU
+# goes to the jobs run there, a job being the thing that was asked for: up
+# from each process through its parents (below records them) to the one
+# started from a prompt, by Claude Code, by process-compose and the like,
+# seeing through what only wraps a command (timeout, npx, a shell's -c). So
+# the browsers a test run starts, and their renderers, count as
+# "node:playwright", and a compiler as the "make" or "go" that ran it; what
+# hosted the job (the shell, Claude Code, the terminal) has only its own
+# CPU. `jobs` below has the rules. An app that a job started in a cgroup of
+# its own (a browser does that) is the job's too. What below never saw
+# long enough to measure (it needs two samples of a process) is shared among
+# the short-lived processes it did see in that terminal, and is "terminal"
+# only if there were none.
 #
 # Each update also notes whether the charger's in, and so does `mark`, which
 # the shell runs the moment it's plugged in or out (shell/Battery.qml). The
@@ -24,7 +33,8 @@
 # Files, in $XDG_CACHE_HOME/islands/usage:
 #   cpu.tsv     "<bucket start>\t<app>\t<CPU seconds>", oldest first; each
 #               update ends with "<newest sample>\t_last\t0", and "_total"
-#               is the whole machine
+#               is the whole machine. An app a job turned out to own has a
+#               negative line taking back what its cgroup was counted as.
 #   power.tsv   "<time>\t<1 on battery, 0 not>\t<level %>"
 #   scopes.tsv  "<run-p scope>\t<command>", see name_scope
 #   version     which layout cpu.tsv is in, see migrate
@@ -46,13 +56,13 @@ lock() {
   flock "$@" 9
 }
 
-# cpu.tsv from before terminals were shared out by program has them as one
-# "ghostty": emptied, so the next update counts the last day again. Call
-# with the lock held.
+# cpu.tsv from before jobs has terminals as one "ghostty", or as each
+# process by its own name: emptied, so the next update counts the last day
+# again. Call with the lock held.
 migrate() {
-  if [[ $(cat "$dir/version" 2>/dev/null) != 2 ]]; then
+  if [[ $(cat "$dir/version" 2>/dev/null) != 3 ]]; then
     : >"$dir/cpu.tsv"
-    echo 2 >"$dir/version"
+    echo 3 >"$dir/version"
   fi
 }
 
@@ -121,6 +131,183 @@ program='
   }
 '
 
+# gawk's job(pid): the job a process is part of, by name, from a table of
+# the processes there are (ppid_of, comm_of and cmd_of, by pid). It goes up
+# from the process, parent by parent, as far as the first host: something
+# that runs other things without being what was asked for (a shell at its
+# prompt, Claude Code, a terminal, tmux, process-compose, systemd). The job
+# is the highest process short of that which isn't a wrapper (a shell's
+# -c, timeout, env, npx, npm), by its program() name, or its script's for a
+# shell script. A host is its own job. inside(pid) says whether anything on
+# the way up was in a terminal (group_of, by pid, where there is one).
+# child_of, by parent, is one child of each process that has any.
+# shellcheck disable=SC2016 # awk's own $
+jobs='
+  function is_shell(comm) {
+    return comm ~ /^-?(zsh|bash|fish|sh|dash|nu)$/
+  }
+  # What a shell is doing: "c" for a command line (-c), "s" for a script,
+  # "i" if it has neither, so is at a prompt
+  function shell_doing(cmdline,    n, a, i) {
+    n = split(cmdline, a, " ")
+    for (i = 2; i <= n; i++) {
+      if (a[i] == "-c")
+        return "c"
+      if (a[i] !~ /^-/)
+        return "s"
+    }
+    return "i"
+  }
+  function host(comm, cmdline) {
+    if (comm ~ /^(\.ghostty-wrappe|ghostty|\.claude-unwrapp|claude|tmux.*|zellij|screen|systemd|\(sd-pam\)|login|sshd.*|greetd|\.Hyprland-wrapp|Hyprland|start-hyprland|process-compose|\.quickshell-wra|quickshell|kthreadd)$/)
+      return 1
+    return is_shell(comm) && shell_doing(cmdline) == "i"
+  }
+  function wrapper(comm, cmdline) {
+    if (is_shell(comm))
+      return shell_doing(cmdline) == "c"
+    if (comm ~ /^(timeout|env|sudo|doas|nice|ionice|time|nohup|setsid|xargs|stdbuf|script|direnv|watchexec|entr|npx|npm|pnpm|yarn|nix|nix-shell)( |$)/)
+      return 1
+    return program(comm, cmdline) ~ /^node:(npm|npx|pnpm|yarn|npm-cli|npx-cli|corepack)$/
+  }
+  function called(comm, cmdline,    n, a, i, script) {
+    if (!is_shell(comm) || shell_doing(cmdline) != "s")
+      return program(comm, cmdline)
+    n = split(cmdline, a, " ")
+    for (i = 2; i <= n; i++)
+      if (a[i] !~ /^-/) {
+        script = a[i]
+        break
+      }
+    sub(/.*\//, "", script)
+    sub(/\.(sh|bash|zsh)$/, "", script)
+    return script == "" ? comm : script
+  }
+  # A wrapper with nothing under it (seen before what it runs had started,
+  # or after it had gone) is named for what it was given to run
+  function wrapped(cmdline,    n, a, i, word) {
+    n = split(cmdline, a, " ")
+    for (i = 2; i <= n; i++) {
+      word = a[i]
+      if (word ~ /^-/ || word ~ /^[0-9.]+[smhd]?$/ || word ~ /^[A-Za-z_][A-Za-z0-9_]*=/)
+        continue
+      sub(/.*\//, "", word)
+      if (word !~ /^(timeout|env|sudo|doas|nice|ionice|time|nohup|setsid|xargs|stdbuf|npx|npm|pnpm|yarn|exec|run|x)$/)
+        return word
+    }
+    return ""
+  }
+  function job(pid,    chain, n, q, parent, i, name) {
+    if (pid in job_of)
+      return job_of[pid]
+    q = pid
+    chain[n = 1] = q
+    inside_of[pid] = terminal_group(group_of[q])
+    while (n < 40) {
+      parent = ppid_of[q]
+      if (!(parent in comm_of) || host(comm_of[parent], cmd_of[parent]))
+        break
+      q = parent
+      chain[++n] = q
+      if (terminal_group(group_of[q]))
+        inside_of[pid] = 1
+    }
+    for (i = n; i > 1; i--)
+      if (!wrapper(comm_of[chain[i]], cmd_of[chain[i]]))
+        break
+    # Nothing but wrappers, this one the lowest: it is part of what it
+    # runs (child_of, by parent, has one of its children), or failing
+    # that is named for what it was given to run
+    name = ""
+    if (wrapper(comm_of[pid], cmd_of[pid]) && i == 1) {
+      if (pid in child_of)
+        return job_of[pid] = job(child_of[pid])
+      if (!is_shell(comm_of[pid]))
+        name = wrapped(cmd_of[pid])
+    }
+    return job_of[pid] = name != "" ? name : called(comm_of[chain[i]], cmd_of[chain[i]])
+  }
+  function inside(pid) {
+    job(pid)
+    return inside_of[pid]
+  }
+  # A Ghostty tab or window
+  function terminal_group(path) {
+    return path ~ /\/app-ghostty-surface-transient-[0-9]+\.scope$/
+  }
+'
+
+# gawk's key(path): the app a cgroup is counted as ("" for one that's
+# inside another counted already), with the names of the run-p scopes
+# (`scopes`, the file) read in. One not named yet keeps its unit name and is
+# noted in unnamed_at, with the time `t`. app_group(path) is true of the
+# session's own apps, each a scope or service.
+# shellcheck disable=SC2016 # awk's own $
+keys='
+  BEGIN {
+    while ((getline line < scopes) > 0) {
+      split(line, f, "\t")
+      scope[f[1]] = f[2]
+    }
+  }
+  function key(p,    m, n) {
+    if (p == "")
+      return "_total"
+    if (p == "/init.scope")
+      return "systemd"
+    if (match(p, /^\/system\.slice\/([^\/]+)$/, m)) {
+      n = m[1]
+      if (n ~ /^docker-.*\.scope$/ || n == "docker.service" || n == "containerd.service")
+        return "docker"
+      sub(/\.(service|scope|slice)$/, "", n)
+      sub(/^system-/, "", n)
+      gsub(/\\x2d/, "-", n)
+      return n
+    }
+    if (p ~ /^\/user\.slice\/user-[0-9]+\.slice\/session-[^\/]+\.scope$/)
+      return "Hyprland"
+    if (p ~ /^\/user\.slice\/user-[0-9]+\.slice\/user@[0-9]+\.service\/init\.scope$/)
+      return "systemd"
+    if (match(p, /^\/user\.slice\/user-[0-9]+\.slice\/user@[0-9]+\.service\/[^\/]+\.slice\/([^\/]+)$/, m)) {
+      n = m[1]
+      if (n ~ /^run-p[0-9]+-i[0-9]+\.scope$/) {
+        if (n in scope)
+          return scope[n]
+        if (!(n in unnamed_at))
+          unnamed_at[n] = t
+        return n
+      }
+      sub(/\.(service|scope|slice)$/, "", n)
+      if (sub(/^app-/, "", n)) {
+        # app-<id>@<instance>.service, app-<id>-<pid>.scope
+        sub(/@.*$/, "", n)
+        sub(/-[0-9]+$/, "", n)
+        gsub(/\\x2d/, "-", n)
+      }
+      return n
+    }
+    return ""
+  }
+  function app_group(p) {
+    return p ~ /^\/user\.slice\/user-[0-9]+\.slice\/user@[0-9]+\.service\/[^\/]+\.slice\/[^\/]+$/
+  }
+'
+
+# Every process there is now: "<pid>\t<parent>\t<command>\t<command line>"
+processes() {
+  local d stat rest comm line
+  local -a args parts
+  for d in /proc/[0-9]*; do
+    { read -r stat <"$d/stat" && IFS= read -r comm <"$d/comm" && mapfile -d '' -t args <"$d/cmdline"; } 2>/dev/null || continue
+    # "<pid> (<command>) <state> <parent> ...", and a command can have
+    # anything in it: from after its last ")"
+    rest=${stat##*) }
+    read -r -a parts <<<"$rest"
+    line=${args[*]}
+    printf '%s\t%s\t%s\t%s\n' "${d#/proc/}" "${parts[1]}" "$comm" "${line//[$'\t\n']/ }"
+  done
+}
+
 # This moment's power line, read before waiting on the lock, so a plug
 # queued behind an update keeps its own time and state
 power() {
@@ -185,66 +372,26 @@ prune() {
 # added to cpu.tsv in one rename, so an update cut short counts nothing
 # twice. Call with the lock held.
 update() {
-  local last unit t
+  local last unit t from to
   power >>"$dir/power.tsv"
   last=$(counted)
   ((last >= now - 24 * 3600)) || last=$((now - 24 * 3600))
+  from=$(date -d "@$((last + 1))" '+%Y-%m-%d %H:%M:%S')
+  to=$(date -d "@$now" '+%Y-%m-%d %H:%M:%S')
 
-  # Scopes not named yet keep their unit name in new.tsv and are listed in
-  # unnamed.tsv
-  { "$below" dump cgroup \
-    -b "$(date -d "@$((last + 1))" '+%Y-%m-%d %H:%M:%S')" \
-    -e "$(date -d "@$now" '+%Y-%m-%d %H:%M:%S')" \
+  # Every cgroup, by app. Scopes not named yet keep their unit name in
+  # new.tsv and are listed in unnamed.tsv. The terminals are left out of
+  # it: they're shared out among their jobs below, from groups.tsv, which
+  # has each sample of every app of the session ("<time>\t<cgroup>\t<CPU
+  # seconds>"), a job's own apps among them.
+  # shellcheck disable=SC2016 # awk's own $
+  { "$below" dump cgroup -b "$from" -e "$to" \
     -f timestamp full_path cpu.usage_pct -O csv 2>"$dir/below.err" || true; } |
     gawk -F, -v last="$last" -v bucket="$bucket" -v scopes="$dir/scopes.tsv" \
-      -v unnamed="$dir/unnamed.tsv" -v lengths="$dir/lengths.tsv" '
-      function key(p, m, n) {
-        if (p == "")
-          return "_total"
-        if (p == "/init.scope")
-          return "systemd"
-        if (match(p, /^\/system\.slice\/([^\/]+)$/, m)) {
-          n = m[1]
-          if (n ~ /^docker-.*\.scope$/ || n == "docker.service" || n == "containerd.service")
-            return "docker"
-          sub(/\.(service|scope|slice)$/, "", n)
-          sub(/^system-/, "", n)
-          gsub(/\\x2d/, "-", n)
-          return n
-        }
-        if (p ~ /^\/user\.slice\/user-[0-9]+\.slice\/session-[^\/]+\.scope$/)
-          return "Hyprland"
-        if (p ~ /^\/user\.slice\/user-[0-9]+\.slice\/user@[0-9]+\.service\/init\.scope$/)
-          return "systemd"
-        if (match(p, /^\/user\.slice\/user-[0-9]+\.slice\/user@[0-9]+\.service\/[^\/]+\.slice\/([^\/]+)$/, m)) {
-          n = m[1]
-          if (n ~ /^run-p[0-9]+-i[0-9]+\.scope$/) {
-            if (n in scope)
-              return scope[n]
-            if (!(n in seen))
-              seen[n] = t
-            return n
-          }
-          # A Ghostty tab or window: shared out among its programs below
-          if (n ~ /^app-ghostty-surface-transient-[0-9]+\.scope$/)
-            return "_terminal"
-          sub(/\.(service|scope|slice)$/, "", n)
-          if (sub(/^app-/, "", n)) {
-            # app-<id>@<instance>.service, app-<id>-<pid>.scope
-            sub(/@.*$/, "", n)
-            sub(/-[0-9]+$/, "", n)
-            gsub(/\\x2d/, "-", n)
-          }
-          return n
-        }
-        return ""
-      }
+      -v unnamed="$dir/unnamed.tsv" -v lengths="$dir/lengths.tsv" -v groups="$dir/groups.tsv" "$jobs$keys"'
       BEGIN {
-        while ((getline line < scopes) > 0) {
-          split(line, f, "\t")
-          scope[f[1]] = f[2]
-        }
         prev = last
+        printf "" > groups
       }
       NR == 1 { next }
       {
@@ -262,9 +409,14 @@ update() {
         sub(/%$/, "", v)
         if (v + 0 <= 0)
           next
+        used = v / 100 * step
+        if (app_group($2))
+          printf "%d\t%s\t%.4f\n", t, $2, used > groups
+        if (terminal_group($2))
+          next
         k = key($2)
         if (k != "")
-          cpu[int(t / bucket) * bucket, k] += v / 100 * step
+          cpu[int(t / bucket) * bucket, k] += used
       }
       END {
         for (bk in cpu)
@@ -275,45 +427,134 @@ update() {
         if (prev > last)
           printf "%d\t_last\t0\n", prev
         printf "" > unnamed
-        for (n in seen)
-          printf "%s\t%d\n", n, seen[n] > unnamed
+        for (n in unnamed_at)
+          printf "%s\t%d\n", n, unnamed_at[n] > unnamed
         printf "" > lengths
         for (t in length_of)
           printf "%d\t%d\n", t, length_of[t] > lengths
       }' >"$dir/new.tsv"
-  # The same samples' processes in the terminals, by program, in the same
-  # buckets (below only has a process's CPU from its second sample on, so
-  # one gone within 5 s has none). Each sample's length is the one worked
-  # out above: these rows only come while a terminal is open, so their own
-  # gaps say nothing.
+
+  # The same samples process by process, to give each terminal's CPU to its
+  # jobs (and that of any app whose processes all came from one: it's
+  # taken back from the app, which the pass above counted it as). below
+  # has a process's CPU only from its second sample on, so one seen once
+  # has none: what a terminal used beyond the processes measured is shared
+  # among those, by the job each was part of. Each sample's length is the
+  # one worked out above.
   # shellcheck disable=SC2016 # awk's own $
-  { "$below" dump process \
-    -b "$(date -d "@$((last + 1))" '+%Y-%m-%d %H:%M:%S')" \
-    -e "$(date -d "@$now" '+%Y-%m-%d %H:%M:%S')" \
-    -s cgroup -F 'app-ghostty-surface-transient-' \
-    -f timestamp comm cpu.usage_pct cmdline -O tsv 2>>"$dir/below.err" || true; } |
-    gawk -F'\t' -v last="$last" -v bucket="$bucket" -v lengths="$dir/lengths.tsv" "$program"'
+  { "$below" dump process -b "$from" -e "$to" \
+    -f timestamp pid ppid comm cpu.usage_pct cgroup cmdline -O tsv 2>>"$dir/below.err" || true; } |
+    gawk -F'\t' -v last="$last" -v bucket="$bucket" -v scopes="$dir/scopes.tsv" \
+      -v lengths="$dir/lengths.tsv" -v groups="$dir/groups.tsv" "$program$jobs$keys"'
       BEGIN {
         while ((getline line < lengths) > 0) {
           split(line, f, "\t")
           length_of[f[1]] = f[2]
         }
+        while ((getline line < groups) > 0) {
+          split(line, f, "\t")
+          group_used[f[1], f[2]] = f[3]
+          unsettled[f[1], f[2]] = 1
+        }
+        at = 0
+      }
+      # A sample is all in: its groups shared out, and its table cleared
+      function settle(    b, pid, g, j, total, scale, rest, best) {
+        if (at == 0)
+          return
+        b = int(at / bucket) * bucket
+        delete procs
+        delete ours
+        delete known
+        delete by_job
+        delete unseen
+        delete unseen_n
+        for (pid in comm_of) {
+          g = group_of[pid]
+          if (!app_group(g))
+            continue
+          j = job(pid)
+          procs[g]++
+          if (inside(pid))
+            ours[g]++
+          if (cpu_of[pid] == "?") {
+            unseen[g][j]++
+            unseen_n[g]++
+          } else if (cpu_of[pid] > 0) {
+            known[g] += cpu_of[pid]
+            by_job[g][j] += cpu_of[pid]
+          }
+        }
+        for (g in procs) {
+          # An app of its own unless every process in it came from a job
+          if (ours[g] != procs[g] || !((at, g) in group_used))
+            continue
+          total = group_used[at, g]
+          delete unsettled[at, g]
+          if (!terminal_group(g))
+            out[b, key(g)] -= total
+          scale = known[g] > total ? total / known[g] : 1
+          rest = total - known[g] * scale
+          best = ""
+          if (g in by_job)
+            for (j in by_job[g]) {
+              out[b, j] += by_job[g][j] * scale
+              if (best == "" || by_job[g][j] > by_job[g][best])
+                best = j
+            }
+          if (rest < 0.0001)
+            continue
+          if (unseen_n[g] > 0) {
+            for (j in unseen[g])
+              out[b, j] += rest * unseen[g][j] / unseen_n[g]
+          } else
+            out[b, terminal_group(g) || best == "" ? "terminal" : best] += rest
+        }
+        delete ppid_of
+        delete comm_of
+        delete cmd_of
+        delete cpu_of
+        delete group_of
+        delete job_of
+        delete inside_of
+        delete child_of
       }
       NR == 1 { next }
       {
         t = $1 + 0
         if (t <= last)
           next
-        v = $3
-        sub(/%$/, "", v)
-        if (v + 0 > 0)
-          cpu[int(t / bucket) * bucket, program($2, $4)] += v / 100 * (t in length_of ? length_of[t] : 5)
+        if (t != at) {
+          settle()
+          at = t
+        }
+        ppid_of[$2] = $3
+        comm_of[$2] = $4
+        group_of[$2] = $6
+        cmd_of[$2] = $7
+        if (!($3 in child_of))
+          child_of[$3] = $2
+        v = $5
+        if (v == "?")
+          cpu_of[$2] = "?"
+        else {
+          sub(/%$/, "", v)
+          cpu_of[$2] = v / 100 * (t in length_of ? length_of[t] : 5)
+        }
       }
       END {
-        for (bk in cpu) {
-          split(bk, f, SUBSEP)
-          printf "%d\t%s\t%.3f\n", f[1], f[2], cpu[bk]
+        settle()
+        # A terminal that used CPU in a sample with no processes recorded
+        for (tg in unsettled) {
+          split(tg, f, SUBSEP)
+          if (terminal_group(f[2]))
+            out[int(f[1] / bucket) * bucket, "terminal"] += group_used[tg]
         }
+        for (bk in out)
+          if (out[bk] >= 0.001 || out[bk] <= -0.001) {
+            split(bk, f, SUBSEP)
+            printf "%d\t%s\t%.3f\n", f[1], f[2], out[bk]
+          }
       }' >"$dir/programs.tsv"
   # Asleep the whole time is "no samples"; anything else is worth a look
   if [[ -s $dir/below.err ]] && ! grep -q "No samples found" "$dir/below.err"; then
@@ -327,28 +568,9 @@ update() {
     cat "$dir/cpu.tsv"
     gawk -F'\t' -v OFS='\t' '
       ARGIND == 1 { scope[$1] = $2; next }
-      ARGIND == 2 { program[$1, $2] = $3; seen[$1] += $3; next }
-      $2 == "_terminal" { terminal[$1] = $3; next }
       $2 in scope { $2 = scope[$2] }
       $2 ~ /^run-p/ { $2 = "other" }
-      { print }
-      END {
-        # Each bucket of the terminals goes to the programs seen in them,
-        # scaled down if samples make them more than the cgroups used; the
-        # rest (commands gone between two samples: builds, mostly) stays
-        # the terminal
-        for (bp in program) {
-          split(bp, f, SUBSEP)
-          if (!(f[1] in terminal))
-            continue
-          share = program[bp] * (seen[f[1]] > terminal[f[1]] ? terminal[f[1]] / seen[f[1]] : 1)
-          if (share >= 0.001)
-            printf "%d\t%s\t%.3f\n", f[1], f[2], share
-        }
-        for (b in terminal)
-          if (terminal[b] - seen[b] >= 0.001)
-            printf "%d\tterminal\t%.3f\n", b, terminal[b] - seen[b]
-      }' "$dir/scopes.tsv" "$dir/programs.tsv" "$dir/new.tsv" | sort -n -k1,1 -s
+      { print }' "$dir/scopes.tsv" "$dir/new.tsv" "$dir/programs.tsv" | sort -n -k1,1 -s
   } >"$dir/cpu.tsv.new"
   mv "$dir/cpu.tsv.new" "$dir/cpu.tsv"
   prune
@@ -407,7 +629,8 @@ report() {
       n = 0
       PROCINFO["sorted_in"] = "@val_num_desc"
       for (k in sums) {
-        if (n++ == 40)
+        # An app that was a job all along, taken back, comes to nothing
+        if (n++ == 40 || sums[k] <= 0)
           break
         out = out (out == "" ? "" : ",") sprintf("[\"%s\",%.1f]", esc(k), sums[k])
       }
@@ -473,33 +696,39 @@ case ${1:-} in
     fi
     ;;
   now)
-    # "<program>\t<% of one CPU>" over the $2 seconds (2 if not given)
-    # that top's second frame covers; its first counts from each process's
+    # "<job>\t<% of one CPU>" over the $2 seconds (2 if not given) that
+    # top's second frame covers; its first counts from each process's
     # start. Its config is pointed at nothing, so a saved toprc can't move
-    # the columns read. What runs under node or python is named from its
-    # command line, read while it's still there.
+    # the columns read. Each process counts towards its job (`jobs`), from
+    # the processes there are as top ends.
+    frames=$(LC_ALL=C HOME=/var/empty XDG_CONFIG_HOME=/var/empty top -b -n 2 -d "${2:-2}" -w 512)
     # shellcheck disable=SC2016 # awk's own $
-    LC_ALL=C HOME=/var/empty XDG_CONFIG_HOME=/var/empty top -b -n 2 -d "${2:-2}" -w 512 |
-      gawk "$program"'
-        /^ *PID +USER/ { frame++; next }
-        frame == 2 && NF >= 12 && $9 + 0 > 0 && $1 ~ /^[0-9]+$/ {
-          comm = $12
-          for (i = 13; i <= NF; i++)
-            comm = comm " " $i
-          if (comm == "top")
-            next
-          cmdline = ""
-          if (comm ~ runtimes) {
-            read = "tr \"\\0\" \" \" </proc/" $1 "/cmdline 2>/dev/null"
-            read | getline cmdline
-            close(read)
-          }
-          cpu[program(comm, cmdline)] += $9
-        }
-        END {
-          for (p in cpu)
-            printf "%s\t%.1f\n", p, cpu[p]
-        }'
+    gawk -F'\t' "$program$jobs"'
+      ARGIND == 1 {
+        ppid_of[$1] = $2
+        comm_of[$1] = $3
+        cmd_of[$1] = $4
+        if (!($2 in child_of))
+          child_of[$2] = $1
+        next
+      }
+      # top, in columns
+      FNR == 1 {
+        FS = " "
+        $0 = $0
+      }
+      /^ *PID +USER/ { frame++; next }
+      frame == 2 && NF >= 12 && $9 + 0 > 0 && $1 ~ /^[0-9]+$/ {
+        comm = $12
+        for (i = 13; i <= NF; i++)
+          comm = comm " " $i
+        if (comm != "top")
+          cpu[$1 in comm_of ? job($1) : comm] += $9
+      }
+      END {
+        for (j in cpu)
+          printf "%s\t%.1f\n", j, cpu[j]
+      }' <(processes) <(printf '%s\n' "$frames")
     ;;
   peak)
     # peak FROM TO APP...: the start of the five minutes between those times

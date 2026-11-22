@@ -73,9 +73,17 @@ Column {
 				"name": "PipeWire",
 				"icon": ""
 			};
-		// Nix's Chromium, as browser automation runs it, and the headless one
-		// tests start from a terminal (chrome-headless-shell, cut short)
-		if (name === "org.chromium.Chromium" || name === "chrome-headless")
+		// The browser tests start from a terminal, with no window
+		// (chrome-headless-shell, cut short)
+		if (name === "chrome-headless")
+			return {
+				"name": "Headless Chrome",
+				"icon": Quickshell.iconPath("chromium", true)
+			};
+		// Nix's Chromium, as browser automation runs it: as an app of its own,
+		// or by its process name, which less its wrapper's decoration would
+		// pass for Google Chrome's "chrome"
+		if (name === "org.chromium.Chromium" || command === ".chrome-wrapped")
 			return {
 				"name": "Chromium",
 				"icon": Quickshell.iconPath("chromium", true)
