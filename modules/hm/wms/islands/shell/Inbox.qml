@@ -90,11 +90,16 @@ Singleton {
 	}
 
 	// A glyph to draw in place of any icon: a phone, for what a linked
-	// iPhone passes on from an app Tether has no icon for and so sends
-	// under its own logo. "" for any other; Tether's own keep the logo.
+	// iPhone passes on from an app Tether has no icon for. It sends those
+	// with its own logo, an icon theme's phone, or nothing; the icon it
+	// sends is the notification's image here (appIcon is its desktop
+	// entry's, always the logo). "" for any other: one with an icon of
+	// ours (a text), an app it knew, and Tether's own notices.
 	function ownGlyph(n: Notification): string {
 		const fromPhone = n?.desktopEntry === "tether-gtk" && !["", "Tether"].includes(shownAs(n));
-		return fromPhone && [n.appIcon, n.image].some(icon => /(^|\/)tether$/.test(icon ?? "")) ? Glyphs.iphone : "";
+		if (!fromPhone || ownIcon(n) !== "")
+			return "";
+		return /^$|(^|\/)(tether|phone|phone-symbolic)$/.test(n.image ?? "") ? Glyphs.iphone : "";
 	}
 
 	// The app's icon, never the notification's own image
