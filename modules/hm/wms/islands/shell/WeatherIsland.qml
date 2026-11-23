@@ -8,7 +8,7 @@ Island {
 	id: root
 
 	required property ShellScreen screen
-	readonly property bool open: Desktop.panel === "weather" && Desktop.panelOn === screen
+	readonly property bool open: Panels.shows("weather", screen)
 	// How far the sun and temperature are on their way to the forecast
 	property real flight: open ? 1 : 0
 
@@ -77,7 +77,7 @@ Island {
 		MouseArea {
 			anchors.fill: parent
 			cursorShape: Qt.PointingHandCursor
-			onClicked: Desktop.togglePanel("weather", root.screen)
+			onClicked: Panels.toggle("weather", root.screen)
 		}
 	}
 

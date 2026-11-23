@@ -271,7 +271,7 @@ Column {
 					MouseArea {
 						anchors.fill: parent
 						onClicked: {
-							Desktop.closePanel();
+							Panels.close();
 							Desktop.launch(modelData.command);
 						}
 					}

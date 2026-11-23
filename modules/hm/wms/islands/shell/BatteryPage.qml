@@ -240,7 +240,7 @@ Column {
 			Desktop.launch(["system-monitor", term(app.names[0])]);
 		else if (period)
 			Desktop.launch(["usage-look", String(Math.round(period.from)), String(Math.round(period.to)), app.name].concat(app.names));
-		Desktop.closePanel();
+		Panels.close();
 	}
 
 	// islands-usage now's "<program>\t<% of one CPU>" lines, as shares of the

@@ -13,20 +13,20 @@ Island {
 
 	required property ShellScreen screen
 
-	readonly property bool focused: Desktop.focusedScreen === screen
+	readonly property bool focused: Compositor.focusedScreen === screen
 	readonly property real heldCentre: sharing.heldCentre
 
 	ClockMode {
 		MouseArea {
 			anchors.fill: parent
 			cursorShape: Qt.PointingHandCursor
-			onClicked: Desktop.togglePanel("centre", root.screen)
+			onClicked: Panels.toggle("centre", root.screen)
 		}
 	}
 
 	// Not over the control centre, whose sliders show the level already
 	OsdMode {
-		active: Osd.showing && root.focused && !(Desktop.panel === "control" && Desktop.panelOn === root.screen)
+		active: Osd.showing && root.focused && !Panels.shows("control", root.screen)
 	}
 
 	RecordMode {
@@ -49,11 +49,11 @@ Island {
 	}
 
 	CentreMode {
-		active: Desktop.panel === "centre" && Desktop.panelOn === root.screen
+		active: Panels.shows("centre", root.screen)
 	}
 
 	KeysMode {
-		active: Desktop.panel === "keys" && Desktop.panelOn === root.screen
+		active: Panels.shows("keys", root.screen)
 	}
 
 	PromptMode {

@@ -9,10 +9,10 @@ import QtQuick
 IslandMode {
 	id: root
 
-	// Desktop.panelPage alone says which page shows, so the bar's icons
+	// Panels.page alone says which page shows, so the bar's icons
 	// (which open their page, or close it if it's showing) see the page
 	// moved to in here
-	readonly property string page: ["wifi", "bluetooth", "sound", "battery"].includes(Desktop.panelPage) ? Desktop.panelPage : "main"
+	readonly property string page: ["wifi", "bluetooth", "sound", "battery"].includes(Panels.page) ? Panels.page : "main"
 	readonly property Item shown: ({
 			"main": main,
 			"wifi": wifi,
@@ -32,9 +32,9 @@ IslandMode {
 
 	Keys.onEscapePressed: {
 		if (page === "main")
-			Desktop.closePanel();
+			Panels.close();
 		else
-			Desktop.panelPage = "";
+			Panels.page = "";
 	}
 
 	ControlMain {
@@ -44,7 +44,7 @@ IslandMode {
 		y: 14
 		width: parent.width - 28
 		visible: root.page === "main"
-		onOpen: name => Desktop.panelPage = name
+		onOpen: name => Panels.page = name
 	}
 
 	WifiPage {
@@ -54,7 +54,7 @@ IslandMode {
 		y: 14
 		width: parent.width - 28
 		visible: root.page === "wifi"
-		onBack: Desktop.panelPage = ""
+		onBack: Panels.page = ""
 	}
 
 	BluetoothPage {
@@ -64,7 +64,7 @@ IslandMode {
 		y: 14
 		width: parent.width - 28
 		visible: root.page === "bluetooth"
-		onBack: Desktop.panelPage = ""
+		onBack: Panels.page = ""
 	}
 
 	SoundPage {
@@ -74,7 +74,7 @@ IslandMode {
 		y: 14
 		width: parent.width - 28
 		visible: root.page === "sound"
-		onBack: Desktop.panelPage = ""
+		onBack: Panels.page = ""
 	}
 
 	BatteryPage {
@@ -85,6 +85,6 @@ IslandMode {
 		width: parent.width - 28
 		visible: root.page === "battery"
 		showing: root.active && root.page === "battery"
-		onBack: Desktop.panelPage = ""
+		onBack: Panels.page = ""
 	}
 }

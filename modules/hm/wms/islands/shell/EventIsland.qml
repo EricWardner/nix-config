@@ -50,7 +50,7 @@ Island {
 				if (root.event?.join)
 					Events.join(root.event);
 				else
-					Desktop.togglePanel("centre", root.screen);
+					Panels.toggle("centre", root.screen);
 			}
 		}
 	}

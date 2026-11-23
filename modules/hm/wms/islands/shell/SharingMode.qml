@@ -131,7 +131,7 @@ IslandMode {
 			label: Inbox.held.length + " held"
 			bold: true
 			clickable: true
-			onClicked: Desktop.togglePanel("held", root.screen)
+			onClicked: Panels.toggle("held", root.screen)
 		}
 
 		Rectangle {

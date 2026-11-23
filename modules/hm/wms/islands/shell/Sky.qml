@@ -15,7 +15,7 @@ PanelWindow {
 	readonly property real cardHeight: Math.max(...[media, captures, apps].filter(card => card.visible).map(card => card.implicitHeight))
 
 	screen: modelData
-	visible: Desktop.workspaceEmpty(modelData)
+	visible: Compositor.workspaceEmpty(modelData)
 	anchors.top: true
 	anchors.bottom: true
 	anchors.left: true

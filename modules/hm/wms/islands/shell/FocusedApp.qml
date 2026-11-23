@@ -8,7 +8,8 @@ import Quickshell.Hyprland
 BarText {
 	id: root
 
-	required property HyprlandMonitor monitor
+	required property ShellScreen screen
+	readonly property HyprlandMonitor monitor: Hyprland.monitorFor(screen)
 
 	// On the monitor's workspace, or its special one while that's open
 	readonly property var shown: Hyprland.toplevels.values.filter(t => t.workspace !== null && (t.workspace === monitor?.activeWorkspace || t.workspace.name === monitor?.lastIpcObject?.specialWorkspace?.name))

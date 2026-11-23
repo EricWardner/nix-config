@@ -11,8 +11,8 @@ import Quickshell.Io
 Singleton {
 	id: root
 
-	readonly property bool onSky: Quickshell.screens.some(s => Desktop.workspaceEmpty(s))
-	readonly property bool onControl: Desktop.panel === "control"
+	readonly property bool onSky: Quickshell.screens.some(s => Compositor.workspaceEmpty(s))
+	readonly property bool onControl: Panels.name === "control"
 
 	property int cpu: 0 // % busy
 	property int memory: 0 // % used

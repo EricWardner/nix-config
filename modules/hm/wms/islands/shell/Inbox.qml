@@ -146,7 +146,7 @@ Singleton {
 			return;
 		}
 		// The open notification centre lists it already
-		if (Desktop.panel === "centre" && !breaksThrough(n))
+		if (Panels.name === "centre" && !breaksThrough(n))
 			return;
 		if (Sharing.active && !breaksThrough(n)) {
 			held = held.concat([n]);

@@ -11,7 +11,7 @@ IslandMode {
 	required property ShellScreen screen
 
 	function open(page: string) {
-		Desktop.openPanel("control", page, screen);
+		Panels.open("control", page, screen);
 	}
 
 	active: true

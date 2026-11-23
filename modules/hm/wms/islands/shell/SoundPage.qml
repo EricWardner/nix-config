@@ -77,7 +77,7 @@ Column {
 		glyph: "⚙"
 		title: "Sound settings…"
 		onClicked: {
-			Desktop.closePanel();
+			Panels.close();
 			Desktop.launch(["pavucontrol"]);
 		}
 	}

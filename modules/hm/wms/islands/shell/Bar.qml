@@ -17,13 +17,15 @@ PanelWindow {
 	id: bar
 
 	required property ShellScreen modelData
-	readonly property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
 	// The notification or control centre (or the held notifications) is open
 	// on this monitor
-	readonly property bool panelOpen: Desktop.panel !== "" && Desktop.panelOn === modelData
+	readonly property bool panelOpen: Panels.name !== "" && Panels.screen === modelData
 	// A question (a Wi-Fi password, a pairing step, polkit's password) is in
 	// this monitor's island
-	readonly property bool asking: Agent.current !== null && Desktop.focusedScreen === modelData
+	readonly property bool asking: Agent.current !== null && Compositor.focusedScreen === modelData
+	// The islands, each named once for the two lists of areas below: where
+	// Hyprland may blur, and where clicks land
+	readonly property list<Item> islands: [centre, weather, dnd, meeting, job, held, tray, status]
 
 	screen: modelData
 	anchors.top: true
@@ -47,77 +49,45 @@ PanelWindow {
 	// whole logical pixels, and its steps showed against anything bright
 	// beside the islands.
 	BackgroundEffect.blurRegion: Region {
-		Region {
-			item: centre.blurArea
-		}
+		regions: blurred.instances
+	}
+
+	Variants {
+		id: blurred
+
+		model: bar.islands
 
 		Region {
-			item: weather.visible ? weather.blurArea : null
-		}
+			required property Item modelData
+			// The area sits inside its island and so doesn't move when the
+			// island does: one in a row moves a frame after its neighbour
+			// went, by when the areas have been read
+			readonly property real islandAt: modelData.x
 
-		Region {
-			item: dnd.visible ? dnd.blurArea : null
-		}
-
-		Region {
-			item: meeting.visible ? meeting.blurArea : null
-		}
-
-		Region {
-			item: job.visible ? job.blurArea : null
-		}
-
-		Region {
-			item: held.visible ? held.blurArea : null
-		}
-
-		Region {
-			item: tray.visible ? tray.blurArea : null
-		}
-
-		Region {
-			item: status.blurArea
+			item: modelData.visible ? modelData.blurArea : null
+			onIslandAtChanged: changed()
 		}
 	}
 
 	HyprlandFocusGrab {
 		windows: [bar]
 		active: bar.panelOpen
-		onCleared: Desktop.closePanel()
+		onCleared: Panels.close()
 	}
 	mask: Region {
 		item: strip
+		regions: clickable.instances
+	}
+
+	Variants {
+		id: clickable
+
+		model: bar.islands
 
 		Region {
-			item: centre
-		}
+			required property Item modelData
 
-		Region {
-			item: tray.visible ? tray : null
-		}
-
-		Region {
-			item: status
-		}
-
-		Region {
-			item: held.visible ? held : null
-		}
-
-		Region {
-			item: dnd.visible ? dnd : null
-		}
-
-		Region {
-			item: meeting.visible ? meeting : null
-		}
-
-		Region {
-			item: job.visible ? job : null
-		}
-
-		Region {
-			item: weather.visible ? weather : null
+			item: modelData.visible ? modelData : null
 		}
 	}
 
@@ -132,7 +102,7 @@ PanelWindow {
 		MouseArea {
 			anchors.fill: parent
 			enabled: bar.panelOpen
-			onClicked: Desktop.closePanel()
+			onClicked: Panels.close()
 		}
 	}
 
@@ -150,11 +120,11 @@ PanelWindow {
 		}
 
 		Workspaces {
-			monitor: bar.monitor
+			screen: bar.modelData
 		}
 
 		FocusedApp {
-			monitor: bar.monitor
+			screen: bar.modelData
 			leftPadding: 18
 			anchors.verticalCenter: parent.verticalCenter
 		}
@@ -168,9 +138,7 @@ PanelWindow {
 		y: Theme.barTop + 2
 	}
 
-	// Beside the clock while it's at rest: the weather before it, Keep Awake
-	// and Do Not Disturb after it, then the next meeting, then a terminal's
-	// job
+	// Beside the clock while it's at rest: the weather before it
 	WeatherIsland {
 		id: weather
 
@@ -180,38 +148,42 @@ PanelWindow {
 		y: centre.y
 	}
 
-	DndIsland {
-		id: dnd
+	// And after it: Keep Awake and Do Not Disturb, then the next meeting,
+	// then a terminal's job, each up against the last of them that's showing
+	Row {
+		id: after
 
-		screen: bar.modelData
-		visible: (KeepAwake.on || Inbox.dnd) && centre.resting
 		x: centre.x + centre.width + 8
 		y: centre.y
-	}
+		spacing: 8
 
-	EventIsland {
-		id: meeting
+		DndIsland {
+			id: dnd
 
-		screen: bar.modelData
-		visible: soon && centre.resting
-		x: (dnd.visible ? dnd.x + dnd.width : centre.x + centre.width) + 8
-		y: centre.y
-	}
+			screen: bar.modelData
+			visible: (KeepAwake.on || Inbox.dnd) && centre.resting
+		}
 
-	JobIsland {
-		id: job
+		EventIsland {
+			id: meeting
 
-		screen: bar.modelData
-		visible: Jobs.shown.length > 0 && (open || centre.resting)
-		x: (meeting.visible ? meeting.x + meeting.width : dnd.visible ? dnd.x + dnd.width : centre.x + centre.width) + 8
-		room: (tray.visible ? tray.x : statusRest.x) - 8 - x
-		y: centre.y
+			screen: bar.modelData
+			visible: soon && centre.resting
+		}
+
+		JobIsland {
+			id: job
+
+			screen: bar.modelData
+			visible: Jobs.shown.length > 0 && (open || centre.resting)
+			room: (tray.visible ? tray.x : statusRest.x) - 8 - (after.x + x)
+		}
 	}
 
 	HeldPanel {
 		id: held
 
-		visible: Desktop.panel === "held" && Desktop.panelOn === bar.modelData
+		visible: Panels.shows("held", bar.modelData)
 		x: Math.max(8, Math.min(bar.width - width - 8, centre.x + centre.heldCentre - width / 2))
 		y: centre.y + centre.height + 8
 	}
@@ -234,7 +206,7 @@ PanelWindow {
 		anchors.right: statusRest.left
 		anchors.rightMargin: 10
 		y: Theme.barTop + 2
-		opacity: Desktop.panel === "control" && Desktop.panelOn === bar.modelData ? 0 : 1
+		opacity: Panels.shows("control", bar.modelData) ? 0 : 1
 
 		Behavior on opacity {
 			NumberAnimation {

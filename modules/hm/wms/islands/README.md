@@ -29,7 +29,7 @@ flowchart TB
     surfaces["Bar, Sky, CaptureOverlay, ShareFrame<br/>one of each per monitor"]
     islands["The islands in the bar<br/>Workspaces, FocusedApp, Centre, Weather,<br/>Job, Event, Dnd, Status, Tray"]
     frame["The island framework<br/>Island, IslandMode, Morph, Flight, BarText"]
-    state["Singletons<br/>Theme, Desktop, Glyphs, Net, Weather, Inbox,<br/>Battery, Media, Events, Jobs, Capture, Sharing, ..."]
+    state["Singletons<br/>Theme, Panels, Compositor, Glyphs, Net, Weather,<br/>Inbox, Battery, Media, Events, Jobs, Capture, ..."]
   end
 
   subgraph helpers["Helper programs"]
@@ -63,13 +63,14 @@ flowchart TB
   `Host.qml` and the scripts). Nothing in `shell/` is generated, which is why
   a checkout runs with `qs -p`.
 - **The singletons** hold all state and talk to the outside: one file per
-  subject, each usable from any island. `Theme` is used by 57 files, `Desktop`
-  (which panel is open, and on which monitor) by 29, `Glyphs` by 26; the rest
+  subject, each usable from any island. `Theme` is used by 57 files, `Glyphs`
+  by 26, `Panels` (which panel is open, and on which screen) by 23; the rest
   by a handful each.
 - **An island** is an `Island` holding one or more `IslandMode`s: the pill at
-  rest, and what it grows into. `Bar.qml` places each island by hand and
-  keeps the bar's input region for it, so islands are not plugins: adding or
-  removing one is an edit to `Bar.qml`.
+  rest, and what it grows into. `Bar.qml` declares each island and names it
+  once more in its `islands` list, from which it works out where clicks land
+  and where Hyprland may blur. Islands are not plugins: adding or removing
+  one is that edit to `Bar.qml`.
 - **Keybinds** live in the Hyprland module and reach the shell only through
   `qs ipc -c islands call <target> ...` (`panel`, `capture`, `notifications`,
   `keepawake`, `brightness`, `prompt`). The commands themselves know nothing
@@ -94,7 +95,7 @@ flowchart LR
 
   frame["Island, IslandMode, Morph,<br/>Flight, BarText"]
   theme["Theme.qml"]
-  desktop["Desktop.qml<br/>which panel is open"]
+  panels["Panels.qml<br/>which panel is open"]
   net["Net.qml"]
   bar["Bar.qml"]
   sky["Sky.qml"]
@@ -110,12 +111,12 @@ flowchart LR
   panel --> icon
   pill --> frame
   panel --> frame
-  pill --> desktop
-  panel --> desktop
+  pill --> panels
+  panel --> panels
   frame --> theme
   bar --> pill
   sky -- "one line of weather" --> weather
-  bind -- "panel toggle weather" --> desktop
+  bind -- "panel toggle weather" --> panels
 ```
 
 - **The data and the icons** (`islands-weather`, `Weather.qml`,
@@ -126,24 +127,24 @@ flowchart LR
   `~/.config/islands/config.json` for the unit.
 - **The pill and the panel** are an `Island` and an `IslandMode`, so they
   come with the framework (`Island`, `IslandMode`, `Morph`, `Flight`,
-  `BarText`, `Theme`: about 400 lines) and with `Desktop`'s idea of the open
-  panel. Neither imports anything of Hyprland's: the pill is told which of
-  Quickshell's screens it is on.
+  `BarText`, `Theme`: about 400 lines) and with `Panels`, which says which
+  panel is open. Neither imports anything of Hyprland's: the pill is told
+  which of Quickshell's screens it is on.
 - **To remove it from this shell**: the `WeatherIsland` in `Bar.qml` and its
-  input region, the weather line in `Sky.qml`, the row in `KeysMode.qml`, the
-  `weather` bind in `../hypr/hyprland.nix`, and `islandsWeather` with its two
-  options in `default.nix`.
+  name in the `islands` list, the weather line in `Sky.qml`, the row in
+  `KeysMode.qml`, the `weather` bind in `../hypr/hyprland.nix`, and
+  `islandsWeather` with its two options in `default.nix`.
 
 ## What is tied to Hyprland
 
 Ten of the shell's files import `Quickshell.Hyprland`, each because it does
 real work with it. The islands know the monitor they are on as Quickshell's
-own `ShellScreen`, which any compositor has, and ask `Desktop` what only
-Hyprland can say about it.
+own `ShellScreen`, which any compositor has, and ask `Compositor` what
+only Hyprland can say about it.
 
 | What                                                           | Where                                                                                                  | To move it                                           |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
-| Which screen has the focus, and whether its workspace is empty | `Desktop` (`focusedScreen`, `workspaceEmpty`), the one place a screen is matched to a Hyprland monitor | Rewritten there                                      |
+| Which screen has the focus, and whether its workspace is empty | `Compositor`, the one place a screen is matched to a Hyprland monitor                                  | Rewritten there                                      |
 | A monitor's position and scale, for captures                   | `CaptureOverlay`, `Capture`, `ShareFrame`                                                              | From the new compositor, or from Quickshell's screen |
 | Workspaces                                                     | `Workspaces`, `WorkspaceButton`                                                                        | Rewritten against the new compositor                 |
 | Windows                                                        | `FocusedApp`, `Capture` (window shots), `Sharing`, `Jobs` (focusing a terminal)                        | Rewritten; some of it may have no equivalent         |

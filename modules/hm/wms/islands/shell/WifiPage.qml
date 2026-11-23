@@ -412,7 +412,7 @@ Column {
 		glyph: "⚙"
 		title: "Network settings…"
 		onClicked: {
-			Desktop.closePanel();
+			Panels.close();
 			Desktop.launch(["nm-connection-editor"]);
 		}
 	}

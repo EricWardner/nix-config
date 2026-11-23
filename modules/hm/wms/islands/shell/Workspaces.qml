@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Hyprland
 
 // This monitor's workspaces in order, then its special ones (chat, browser)
@@ -6,7 +7,8 @@ import Quickshell.Hyprland
 Row {
 	id: root
 
-	required property HyprlandMonitor monitor
+	required property ShellScreen screen
+	readonly property HyprlandMonitor monitor: Hyprland.monitorFor(screen)
 
 	readonly property var mine: Hyprland.workspaces.values.filter(w => w.monitor === root.monitor)
 	readonly property var normal: mine.filter(w => w.id > 0).sort((a, b) => a.id - b.id)

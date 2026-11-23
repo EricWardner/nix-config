@@ -36,7 +36,7 @@ Item {
 		if (visible)
 			forceActiveFocus();
 	}
-	Keys.onEscapePressed: Desktop.closePanel()
+	Keys.onEscapePressed: Panels.close()
 
 	RectangularShadow {
 		anchors.fill: glass

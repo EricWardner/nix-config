@@ -11,7 +11,7 @@ Island {
 	id: root
 
 	required property ShellScreen screen
-	readonly property bool open: Desktop.panel === "jobs" && Desktop.panelOn === screen
+	readonly property bool open: Panels.shows("jobs", screen)
 	readonly property var job: Jobs.shown[0] ?? null
 	readonly property bool running: job?.state === "run"
 	readonly property bool passed: job?.state === "end" && job.code === 0
@@ -27,7 +27,7 @@ Island {
 
 		function onShownChanged() {
 			if (root.open && Jobs.shown.length === 0)
-				Desktop.closePanel();
+				Panels.close();
 		}
 	}
 
@@ -113,7 +113,7 @@ Island {
 				if (!root.job)
 					return;
 				if (more.visible && mouse.button === Qt.LeftButton && mouse.x >= more.mapToItem(area, 0, 0).x - 4)
-					Desktop.togglePanel("jobs", root.screen);
+					Panels.toggle("jobs", root.screen);
 				else if (mouse.button === Qt.LeftButton)
 					Jobs.open(root.job);
 				else

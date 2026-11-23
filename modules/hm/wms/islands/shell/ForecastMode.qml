@@ -69,7 +69,7 @@ IslandMode {
 	onCurrentChanged: if (current)
 		forceActiveFocus()
 
-	Keys.onEscapePressed: Desktop.closePanel()
+	Keys.onEscapePressed: Panels.close()
 
 	Gradient {
 		id: gradient
@@ -86,7 +86,7 @@ IslandMode {
 
 	MouseArea {
 		anchors.fill: parent
-		onClicked: Desktop.closePanel()
+		onClicked: Panels.close()
 	}
 
 	Column {

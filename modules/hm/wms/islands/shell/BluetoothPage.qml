@@ -118,7 +118,7 @@ Column {
 		glyph: "⚙"
 		title: "Bluetooth settings…"
 		onClicked: {
-			Desktop.closePanel();
+			Panels.close();
 			Desktop.launch(["blueman-manager"]);
 		}
 	}

@@ -31,7 +31,7 @@ IslandMode {
 	onCurrentChanged: if (current)
 		forceActiveFocus()
 
-	Keys.onEscapePressed: Desktop.closePanel()
+	Keys.onEscapePressed: Panels.close()
 
 	FontMetrics {
 		id: nameMetrics
@@ -123,7 +123,7 @@ IslandMode {
 					cursorShape: Qt.PointingHandCursor
 					onClicked: mouse => {
 						if (mouse.button === Qt.LeftButton) {
-							Desktop.closePanel();
+							Panels.close();
 							Jobs.open(row.job);
 						} else {
 							Jobs.dismiss(row.job);

@@ -17,6 +17,6 @@ Island {
 	}
 
 	ControlMode {
-		active: Desktop.panel === "control" && Desktop.panelOn === root.screen
+		active: Panels.shows("control", root.screen)
 	}
 }

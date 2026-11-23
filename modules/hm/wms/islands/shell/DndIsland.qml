@@ -50,7 +50,7 @@ Island {
 		MouseArea {
 			anchors.fill: parent
 			cursorShape: Qt.PointingHandCursor
-			onClicked: Desktop.togglePanel("centre", root.screen)
+			onClicked: Panels.toggle("centre", root.screen)
 		}
 	}
 }

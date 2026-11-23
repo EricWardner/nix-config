@@ -98,8 +98,8 @@ Singleton {
 		output = "";
 		title = "";
 		window = null;
-		if (Desktop.panel === "held")
-			Desktop.closePanel();
+		if (Panels.name === "held")
+			Panels.close();
 	}
 
 	Timer {

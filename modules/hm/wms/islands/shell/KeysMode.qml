@@ -102,7 +102,7 @@ IslandMode {
 		search.text = "";
 		search.forceActiveFocus();
 	}
-	Keys.onEscapePressed: Desktop.closePanel()
+	Keys.onEscapePressed: Panels.close()
 
 	Column {
 		id: content
@@ -168,7 +168,7 @@ IslandMode {
 							if (text !== "")
 								text = "";
 							else
-								Desktop.closePanel();
+								Panels.close();
 						}
 					}
 

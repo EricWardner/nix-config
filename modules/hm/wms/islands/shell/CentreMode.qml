@@ -23,7 +23,7 @@ IslandMode {
 	focus: current
 	onCurrentChanged: if (current)
 		forceActiveFocus()
-	Keys.onEscapePressed: Desktop.closePanel()
+	Keys.onEscapePressed: Panels.close()
 
 	SystemClock {
 		id: clock
@@ -94,7 +94,7 @@ IslandMode {
 					width: parent.width
 					height: Math.min(implicitHeight, root.room - 36 - time.height - month.height - 2 * side.spacing)
 					day: calendar.selected
-					onOpened: Desktop.closePanel()
+					onOpened: Panels.close()
 				}
 			}
 
@@ -196,7 +196,7 @@ IslandMode {
 							time: Inbox.age(modelData, clock.date)
 							onActivated: {
 								Inbox.activate(modelData);
-								Desktop.closePanel();
+								Panels.close();
 							}
 						}
 					}
