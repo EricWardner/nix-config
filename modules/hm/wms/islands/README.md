@@ -19,7 +19,8 @@ flowchart TB
     unit["islands.service"]
   end
 
-  subgraph hypr["Hyprland config: ../hypr"]
+  subgraph hypr["Hyprland module: ../hypr"]
+    tie["turns the shell on and<br/>names its session target"]
     binds["keybinds"]
     rules["layer rules for blur"]
   end
@@ -27,9 +28,17 @@ flowchart TB
   subgraph shell["The shell: shell/"]
     root["shell.qml"]
     surfaces["Bar, Sky, CaptureOverlay, ShareFrame<br/>one of each per monitor"]
-    islands["The islands in the bar<br/>Workspaces, FocusedApp, Centre, Weather,<br/>Job, Event, Dnd, Status, Tray"]
+    islands["The islands in the bar<br/>Centre, Weather, Job, Event, Dnd, Status, Tray"]
     frame["The island framework<br/>Island, IslandMode, Morph, Flight, BarText"]
-    state["Singletons<br/>Theme, Panels, Compositor, Glyphs, Net, Weather,<br/>Inbox, Battery, Media, Events, Jobs, Capture, ..."]
+    panels["Panels<br/>which panel is open, on which screen"]
+    state["The other singletons<br/>Theme, Glyphs, Net, Weather, Inbox, Battery,<br/>Media, Events, Desktop, Host, ..."]
+
+    subgraph tied["The ten files that use Hyprland"]
+      seam["Compositor<br/>the focused screen, an empty workspace"]
+      wm["Workspaces, WorkspaceButton,<br/>FocusedApp, Jobs"]
+      capture["Capture, CaptureOverlay,<br/>Sharing, ShareFrame"]
+      grab["Bar<br/>clicks outside a panel"]
+    end
   end
 
   subgraph helpers["Helper programs"]
@@ -39,21 +48,25 @@ flowchart TB
 
   compositor["Hyprland<br/>through Quickshell.Hyprland"]
 
+  tie --> options
+  options -- "sessionTarget" --> unit
   stylix -- "theme.json" --> state
   options -- "config.json" --> state
   unit -- "starts" --> root
-  binds -- "qs ipc -c islands call ..." --> state
+  binds -- "qs ipc -c islands call panel ..." --> panels
+  binds -- "... capture, notifications, brightness" --> state
   rules -. "by layer namespace" .-> surfaces
   root --> surfaces
   surfaces --> islands
   islands --> frame
+  islands -- "is my panel open on my screen?" --> panels
   islands --> state
   frame --> state
+  panels -- "which screen has the focus?" --> seam
+  surfaces -- "is this workspace empty?" --> seam
   state -- "runs" --> scripts
   state -- "runs" --> pkgs
-  compositor -- "monitors, workspaces, windows" --> state
-  compositor --> islands
-  compositor --> surfaces
+  compositor --> tied
 ```
 
 - **Nix** packages the helper scripts, links `shell/` into
