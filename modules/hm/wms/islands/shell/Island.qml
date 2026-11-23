@@ -10,6 +10,10 @@ Item {
 	id: root
 
 	default property alias modes: stage.data
+	// The edge it's pinned by: Qt.AlignRight if it grows leftwards,
+	// Qt.AlignLeft if rightwards. Its modes keep to that edge, so the one
+	// at rest doesn't slide (and, eased by half pixels, jitter) as it morphs.
+	property int align: Qt.AlignHCenter
 	// Over the capture overlay's frozen screen, which Hyprland can't blur
 	// behind, the island frosts it itself; it must fill the island's parent
 	property Item backdrop: null
@@ -153,6 +157,8 @@ Item {
 
 	Item {
 		id: stage
+
+		readonly property int align: root.align
 
 		anchors.fill: parent
 		clip: true

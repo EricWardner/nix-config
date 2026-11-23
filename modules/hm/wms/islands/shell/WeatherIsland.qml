@@ -9,6 +9,8 @@ Island {
 	required property HyprlandMonitor monitor
 	readonly property bool open: Desktop.panel === "weather" && Desktop.panelOn === monitor
 
+	align: Qt.AlignRight
+
 	IslandMode {
 		active: true
 		resting: true

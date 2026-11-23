@@ -19,6 +19,8 @@ Island {
 	// name is cut short; the time and the "+1" stay.
 	property real room: Infinity
 
+	align: Qt.AlignLeft
+
 	// Nothing left to list
 	Connections {
 		target: Jobs

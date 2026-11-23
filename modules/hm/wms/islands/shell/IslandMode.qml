@@ -33,13 +33,24 @@ FocusScope {
 
 	width: islandWidth
 	height: islandHeight
-	anchors.horizontalCenter: parent.horizontalCenter
+	// Kept to the edge the island is pinned by (Island.align), so a mode
+	// stays put while the glass morphs around it. By anchors: a centred
+	// one snaps to whole pixels as the centre island does, which a
+	// computed x didn't, and the notification jittered as it shrank.
+	anchors.horizontalCenter: parent?.align === Qt.AlignHCenter ? parent.horizontalCenter : undefined
+	anchors.left: parent?.align === Qt.AlignLeft ? parent.left : undefined
+	anchors.right: parent?.align === Qt.AlignRight ? parent.right : undefined
 	opacity: current ? 1 : 0
 	visible: opacity > 0
 
+	// Timed by where the fade is going: timed by `current`, the duration
+	// was still the old one when the fade began, so modes faded out over
+	// 220ms and in over 120ms, the wrong way round
 	Behavior on opacity {
+		id: fade
+
 		NumberAnimation {
-			duration: root.current ? 220 : 120
+			duration: fade.targetValue > 0 ? 220 : 120
 		}
 	}
 }
