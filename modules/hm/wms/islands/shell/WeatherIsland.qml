@@ -1,5 +1,5 @@
 import QtQuick
-import Quickshell.Hyprland
+import Quickshell
 
 // The weather before the clock, with the time of the sun's next change, and
 // the forecast a click grows it into, leftwards and down. The pill's sun and
@@ -7,8 +7,8 @@ import Quickshell.Hyprland
 Island {
 	id: root
 
-	required property HyprlandMonitor monitor
-	readonly property bool open: Desktop.panel === "weather" && Desktop.panelOn === monitor
+	required property ShellScreen screen
+	readonly property bool open: Desktop.panel === "weather" && Desktop.panelOn === screen
 	// How far the sun and temperature are on their way to the forecast
 	property real flight: open ? 1 : 0
 
@@ -77,7 +77,7 @@ Island {
 		MouseArea {
 			anchors.fill: parent
 			cursorShape: Qt.PointingHandCursor
-			onClicked: Desktop.togglePanel("weather", root.monitor)
+			onClicked: Desktop.togglePanel("weather", root.screen)
 		}
 	}
 

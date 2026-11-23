@@ -1,5 +1,5 @@
 import QtQuick
-import Quickshell.Hyprland
+import Quickshell
 
 // The status island at rest: recording, the camera, the microphone,
 // Bluetooth while it's on, the network, the volume, the control centre's
@@ -8,10 +8,10 @@ import Quickshell.Hyprland
 IslandMode {
 	id: root
 
-	required property HyprlandMonitor monitor
+	required property ShellScreen screen
 
 	function open(page: string) {
-		Desktop.openPanel("control", page, monitor);
+		Desktop.openPanel("control", page, screen);
 	}
 
 	active: true

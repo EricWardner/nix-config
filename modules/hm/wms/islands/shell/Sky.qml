@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Effects
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Wayland
 
 // Sky: a workspace with no windows is a dashboard, over the wallpaper and
@@ -12,12 +11,11 @@ PanelWindow {
 	id: root
 
 	required property ShellScreen modelData
-	readonly property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
 	// The cards share the tallest one's height, as a row
 	readonly property real cardHeight: Math.max(...[media, captures, apps].filter(card => card.visible).map(card => card.implicitHeight))
 
 	screen: modelData
-	visible: Desktop.workspaceEmpty(monitor)
+	visible: Desktop.workspaceEmpty(modelData)
 	anchors.top: true
 	anchors.bottom: true
 	anchors.left: true

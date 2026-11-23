@@ -20,10 +20,10 @@ PanelWindow {
 	readonly property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
 	// The notification or control centre (or the held notifications) is open
 	// on this monitor
-	readonly property bool panelOpen: Desktop.panel !== "" && Desktop.panelOn === monitor
+	readonly property bool panelOpen: Desktop.panel !== "" && Desktop.panelOn === modelData
 	// A question (a Wi-Fi password, a pairing step, polkit's password) is in
 	// this monitor's island
-	readonly property bool asking: Agent.current !== null && Hyprland.focusedMonitor === monitor
+	readonly property bool asking: Agent.current !== null && Desktop.focusedScreen === modelData
 
 	screen: modelData
 	anchors.top: true
@@ -163,7 +163,7 @@ PanelWindow {
 	CentreIsland {
 		id: centre
 
-		monitor: bar.monitor
+		screen: bar.modelData
 		anchors.horizontalCenter: parent.horizontalCenter
 		y: Theme.barTop + 2
 	}
@@ -174,7 +174,7 @@ PanelWindow {
 	WeatherIsland {
 		id: weather
 
-		monitor: bar.monitor
+		screen: bar.modelData
 		visible: Weather.ready && (open || centre.resting)
 		x: centre.x - width - 8
 		y: centre.y
@@ -183,7 +183,7 @@ PanelWindow {
 	DndIsland {
 		id: dnd
 
-		monitor: bar.monitor
+		screen: bar.modelData
 		visible: (KeepAwake.on || Inbox.dnd) && centre.resting
 		x: centre.x + centre.width + 8
 		y: centre.y
@@ -192,7 +192,7 @@ PanelWindow {
 	EventIsland {
 		id: meeting
 
-		monitor: bar.monitor
+		screen: bar.modelData
 		visible: soon && centre.resting
 		x: (dnd.visible ? dnd.x + dnd.width : centre.x + centre.width) + 8
 		y: centre.y
@@ -201,7 +201,7 @@ PanelWindow {
 	JobIsland {
 		id: job
 
-		monitor: bar.monitor
+		screen: bar.modelData
 		visible: Jobs.shown.length > 0 && (open || centre.resting)
 		x: (meeting.visible ? meeting.x + meeting.width : dnd.visible ? dnd.x + dnd.width : centre.x + centre.width) + 8
 		room: (tray.visible ? tray.x : statusRest.x) - 8 - x
@@ -211,7 +211,7 @@ PanelWindow {
 	HeldPanel {
 		id: held
 
-		visible: Desktop.panel === "held" && Desktop.panelOn === bar.monitor
+		visible: Desktop.panel === "held" && Desktop.panelOn === bar.modelData
 		x: Math.max(8, Math.min(bar.width - width - 8, centre.x + centre.heldCentre - width / 2))
 		y: centre.y + centre.height + 8
 	}
@@ -234,7 +234,7 @@ PanelWindow {
 		anchors.right: statusRest.left
 		anchors.rightMargin: 10
 		y: Theme.barTop + 2
-		opacity: Desktop.panel === "control" && Desktop.panelOn === bar.monitor ? 0 : 1
+		opacity: Desktop.panel === "control" && Desktop.panelOn === bar.modelData ? 0 : 1
 
 		Behavior on opacity {
 			NumberAnimation {
@@ -247,7 +247,7 @@ PanelWindow {
 	StatusIsland {
 		id: status
 
-		monitor: bar.monitor
+		screen: bar.modelData
 		anchors.right: parent.right
 		anchors.rightMargin: 10
 		y: Theme.barTop + 2

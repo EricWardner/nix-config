@@ -2,7 +2,6 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
 
 // CPU, memory, temperature and screen brightness. The CPU and memory are
@@ -12,7 +11,7 @@ import Quickshell.Io
 Singleton {
 	id: root
 
-	readonly property bool onSky: Quickshell.screens.some(s => Desktop.workspaceEmpty(Hyprland.monitorFor(s)))
+	readonly property bool onSky: Quickshell.screens.some(s => Desktop.workspaceEmpty(s))
 	readonly property bool onControl: Desktop.panel === "control"
 
 	property int cpu: 0 // % busy

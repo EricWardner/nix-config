@@ -1,5 +1,5 @@
 import QtQuick
-import Quickshell.Hyprland
+import Quickshell
 
 // The island in the middle of the bar: the clock at rest (a click opens
 // the notification centre), a screen recording or share on every monitor
@@ -11,22 +11,22 @@ import Quickshell.Hyprland
 Island {
 	id: root
 
-	required property HyprlandMonitor monitor
+	required property ShellScreen screen
 
-	readonly property bool focused: Hyprland.focusedMonitor === monitor
+	readonly property bool focused: Desktop.focusedScreen === screen
 	readonly property real heldCentre: sharing.heldCentre
 
 	ClockMode {
 		MouseArea {
 			anchors.fill: parent
 			cursorShape: Qt.PointingHandCursor
-			onClicked: Desktop.togglePanel("centre", root.monitor)
+			onClicked: Desktop.togglePanel("centre", root.screen)
 		}
 	}
 
 	// Not over the control centre, whose sliders show the level already
 	OsdMode {
-		active: Osd.showing && root.focused && !(Desktop.panel === "control" && Desktop.panelOn === root.monitor)
+		active: Osd.showing && root.focused && !(Desktop.panel === "control" && Desktop.panelOn === root.screen)
 	}
 
 	RecordMode {
@@ -36,7 +36,7 @@ Island {
 	SharingMode {
 		id: sharing
 
-		monitor: root.monitor
+		screen: root.screen
 		active: Sharing.active
 	}
 
@@ -49,11 +49,11 @@ Island {
 	}
 
 	CentreMode {
-		active: Desktop.panel === "centre" && Desktop.panelOn === root.monitor
+		active: Desktop.panel === "centre" && Desktop.panelOn === root.screen
 	}
 
 	KeysMode {
-		active: Desktop.panel === "keys" && Desktop.panelOn === root.monitor
+		active: Desktop.panel === "keys" && Desktop.panelOn === root.screen
 	}
 
 	PromptMode {

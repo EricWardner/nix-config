@@ -1,5 +1,5 @@
 import QtQuick
-import Quickshell.Hyprland
+import Quickshell
 
 // A command a terminal has been running for over 10 seconds, in an island
 // after the clock: "test:e2e 3:12", and "+1" for each other job. When it
@@ -10,8 +10,8 @@ import Quickshell.Hyprland
 Island {
 	id: root
 
-	required property HyprlandMonitor monitor
-	readonly property bool open: Desktop.panel === "jobs" && Desktop.panelOn === monitor
+	required property ShellScreen screen
+	readonly property bool open: Desktop.panel === "jobs" && Desktop.panelOn === screen
 	readonly property var job: Jobs.shown[0] ?? null
 	readonly property bool running: job?.state === "run"
 	readonly property bool passed: job?.state === "end" && job.code === 0
@@ -113,7 +113,7 @@ Island {
 				if (!root.job)
 					return;
 				if (more.visible && mouse.button === Qt.LeftButton && mouse.x >= more.mapToItem(area, 0, 0).x - 4)
-					Desktop.togglePanel("jobs", root.monitor);
+					Desktop.togglePanel("jobs", root.screen);
 				else if (mouse.button === Qt.LeftButton)
 					Jobs.open(root.job);
 				else

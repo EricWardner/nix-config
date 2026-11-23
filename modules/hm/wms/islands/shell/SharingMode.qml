@@ -1,5 +1,5 @@
 import QtQuick
-import Quickshell.Hyprland
+import Quickshell
 
 // A screen share in the centre island, on every monitor: what's shared and
 // for how long, the mic and camera as the call has them, the notifications
@@ -7,7 +7,7 @@ import Quickshell.Hyprland
 IslandMode {
 	id: root
 
-	required property HyprlandMonitor monitor
+	required property ShellScreen screen
 	property real now: Date.now()
 	// Where the held count sits, for the list to open under it
 	readonly property real heldCentre: row.x + held.x + held.width / 2
@@ -64,7 +64,7 @@ IslandMode {
 						return "Sharing a window";
 					if (Sharing.output === "")
 						return "Sharing your screen";
-					return Sharing.output === root.monitor?.name ? "Sharing this screen" : "Sharing your other screen";
+					return Sharing.output === root.screen?.name ? "Sharing this screen" : "Sharing your other screen";
 				}
 				color: Theme.ink
 				font.pixelSize: 13
@@ -131,7 +131,7 @@ IslandMode {
 			label: Inbox.held.length + " held"
 			bold: true
 			clickable: true
-			onClicked: Desktop.togglePanel("held", root.monitor)
+			onClicked: Desktop.togglePanel("held", root.screen)
 		}
 
 		Rectangle {

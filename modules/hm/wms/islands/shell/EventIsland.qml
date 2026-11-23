@@ -1,5 +1,5 @@
 import QtQuick
-import Quickshell.Hyprland
+import Quickshell
 
 // The next meeting, in an island of its own after the clock, from half an
 // hour before it starts until it ends: "Team sync · in 12m". A click joins
@@ -7,7 +7,7 @@ import Quickshell.Hyprland
 Island {
 	id: root
 
-	required property HyprlandMonitor monitor
+	required property ShellScreen screen
 	readonly property var event: Events.next
 	readonly property bool soon: event !== null && event.start - Events.now <= 30 * 60 * 1000
 
@@ -50,7 +50,7 @@ Island {
 				if (root.event?.join)
 					Events.join(root.event);
 				else
-					Desktop.togglePanel("centre", root.monitor);
+					Desktop.togglePanel("centre", root.screen);
 			}
 		}
 	}

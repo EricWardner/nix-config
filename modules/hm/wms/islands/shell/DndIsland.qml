@@ -1,5 +1,5 @@
 import QtQuick
-import Quickshell.Hyprland
+import Quickshell
 
 // Keep Awake and Do Not Disturb while either is on, in an island of its own
 // beside the clock: a steaming cup for Keep Awake; a slashed bell, and how
@@ -8,7 +8,7 @@ import Quickshell.Hyprland
 Island {
 	id: root
 
-	required property HyprlandMonitor monitor
+	required property ShellScreen screen
 
 	IslandMode {
 		active: true
@@ -50,7 +50,7 @@ Island {
 		MouseArea {
 			anchors.fill: parent
 			cursorShape: Qt.PointingHandCursor
-			onClicked: Desktop.togglePanel("centre", root.monitor)
+			onClicked: Desktop.togglePanel("centre", root.screen)
 		}
 	}
 }
