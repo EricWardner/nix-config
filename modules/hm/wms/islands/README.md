@@ -15,7 +15,7 @@ moving the shell somewhere else.
 flowchart TB
   subgraph nix["Nix: default.nix"]
     stylix["stylix colours and fonts"]
-    options["modules.hyprland.islands options"]
+    options["modules.islands options"]
     unit["islands.service"]
   end
 
@@ -142,17 +142,17 @@ real work with it. The islands know the monitor they are on as Quickshell's
 own `ShellScreen`, which any compositor has, and ask `Compositor` what
 only Hyprland can say about it.
 
-| What                                                           | Where                                                                                                  | To move it                                           |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
-| Which screen has the focus, and whether its workspace is empty | `Compositor`, the one place a screen is matched to a Hyprland monitor                                  | Rewritten there                                      |
-| A monitor's position and scale, for captures                   | `CaptureOverlay`, `Capture`, `ShareFrame`                                                              | From the new compositor, or from Quickshell's screen |
-| Workspaces                                                     | `Workspaces`, `WorkspaceButton`                                                                        | Rewritten against the new compositor                 |
-| Windows                                                        | `FocusedApp`, `Capture` (window shots), `Sharing`, `Jobs` (focusing a terminal)                        | Rewritten; some of it may have no equivalent         |
-| Clicks outside a panel                                         | `HyprlandFocusGrab` in `Bar`                                                                           | Another way to catch them                            |
-| Choosing what to share                                         | `islands-share-pick` as xdg-desktop-portal-hyprland's picker; `Sharing` reads `hyprctl` options        | The new compositor's portal decides                  |
-| Blur behind the islands                                        | Layer rules in `../hypr/lua/rules.lua`, by namespace (`islands-bar`, `islands-sky`, `islands-capture`) | The new compositor's rules, if it blurs layers       |
-| Keybinds                                                       | `../hypr/hyprland.nix`                                                                                 | Bound again; the `qs ipc` commands stay as they are  |
-| The session                                                    | `islands.service` hangs off `hyprland-session.target`; the options sit under `modules.hyprland`        | Renamed                                              |
+| What                                                           | Where                                                                                                    | To move it                                                                      |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Which screen has the focus, and whether its workspace is empty | `Compositor`, the one place a screen is matched to a Hyprland monitor                                    | Rewritten there                                                                 |
+| A monitor's position and scale, for captures                   | `CaptureOverlay`, `Capture`, `ShareFrame`                                                                | From the new compositor, or from Quickshell's screen                            |
+| Workspaces                                                     | `Workspaces`, `WorkspaceButton`                                                                          | Rewritten against the new compositor                                            |
+| Windows                                                        | `FocusedApp`, `Capture` (window shots), `Sharing`, `Jobs` (focusing a terminal)                          | Rewritten; some of it may have no equivalent                                    |
+| Clicks outside a panel                                         | `HyprlandFocusGrab` in `Bar`                                                                             | Another way to catch them                                                       |
+| Choosing what to share                                         | `islands-share-pick` as xdg-desktop-portal-hyprland's picker; `Sharing` reads `hyprctl` options          | The new compositor's portal decides                                             |
+| Blur behind the islands                                        | Layer rules in `../hypr/lua/rules.lua`, by namespace (`islands-bar`, `islands-sky`, `islands-capture`)   | The new compositor's rules, if it blurs layers                                  |
+| Keybinds                                                       | `../hypr/hyprland.nix`                                                                                   | Bound again; the `qs ipc` commands stay as they are                             |
+| The session                                                    | The Hyprland module turns `modules.islands` on and sets its `sessionTarget` to `hyprland-session.target` | The new compositor's module does the same; the default is any graphical session |
 
 Everything else (notifications, the tray, sound, Bluetooth, Wi-Fi, battery,
 media, calendar, weather, prompts) goes through Quickshell's own services,

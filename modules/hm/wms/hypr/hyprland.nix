@@ -154,6 +154,14 @@ in
     };
   };
   config = mkIf cfg.enable {
+    # The islands shell (wms/islands) is this session's bar: on wherever
+    # Hyprland is unless a host says otherwise, and started and stopped
+    # with Hyprland's session
+    modules.islands = {
+      enable = lib.mkDefault true;
+      sessionTarget = "hyprland-session.target";
+    };
+
     # The same Rosé Pine cursor as stylix's XCursor theme (BreezeX-RosePine),
     # as a hyprcursor theme: Hyprland draws it from SVGs at each monitor's
     # scale (1.25, 1.6) instead of scaling bitmaps up blurry. Apps that load

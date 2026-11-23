@@ -6,7 +6,7 @@
 }:
 let
   inherit (lib) mkIf mkEnableOption mkOption;
-  cfg = config.modules.hyprland.islands;
+  cfg = config.modules.islands;
   inherit (config.lib.stylix) colors;
 
   # Each time it opens a camera with pan/tilt/zoom (the Brio's digital
@@ -237,9 +237,17 @@ in
   #
   # (Run a second copy beside the service with ISLANDS_NO_AGENT=1, so it
   # leaves the prompts, polkit's too, to the running one.)
-  options.modules.hyprland.islands = {
-    enable = mkEnableOption "the islands Quickshell shell" // {
-      default = true;
+  options.modules.islands = {
+    # The Hyprland module turns it on (wms/hypr): the shell still needs
+    # Hyprland for its workspaces, windows and captures (see its README)
+    enable = mkEnableOption "the islands Quickshell shell";
+    sessionTarget = mkOption {
+      type = lib.types.str;
+      default = "graphical-session.target";
+      description = ''
+        The systemd user target the shell starts and stops with. Any
+        graphical session unless a compositor's module names its own.
+      '';
     };
     temperatureSensor = mkOption {
       type = lib.types.str;
@@ -288,7 +296,7 @@ in
     };
   };
 
-  config = mkIf (config.modules.hyprland.enable && cfg.enable) {
+  config = mkIf cfg.enable {
     home.packages = [
       # nixpkgs' build is in cache.nixos.org; the upstream flake's isn't,
       # and overriding it would compile it locally on every Qt update
@@ -381,7 +389,8 @@ in
       attentionSound = "${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/dialog-warning.oga";
     };
 
-    # Kept alive by systemd, only under a Hyprland session. Quickshell's
+    # Kept alive by systemd, within the session it belongs to (sessionTarget:
+    # Hyprland's, where that module sets it). Quickshell's
     # crash handler would restart it in place behind a crash report window,
     # where systemd can't see it; off, a crash ends the process and systemd
     # starts a new one. The start-rate limit is off so a burst of crashes
@@ -389,8 +398,8 @@ in
     systemd.user.services.islands = {
       Unit = {
         Description = "islands, the Quickshell desktop shell";
-        After = [ "hyprland-session.target" ];
-        PartOf = [ "hyprland-session.target" ];
+        After = [ cfg.sessionTarget ];
+        PartOf = [ cfg.sessionTarget ];
         StartLimitIntervalSec = 0;
         # A new config, agent or watchers: restart into them on switch. The
         # theme and settings files are read once, at start.
@@ -418,7 +427,7 @@ in
         Restart = "always";
         RestartSec = 1;
       };
-      Install.WantedBy = [ "hyprland-session.target" ];
+      Install.WantedBy = [ cfg.sessionTarget ];
     };
 
     # Adds below's new samples to islands-usage's per-app totals every five

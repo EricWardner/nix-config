@@ -37,7 +37,7 @@ in
       description = ''
         The system time zone. Left null, it follows where the machine is:
         the weather island sets it to the zone of the place it finds
-        (modules.hyprland.islands.followTimeZone in the home config).
+        (modules.islands.followTimeZone in the home config).
       '';
     };
     modules.hostName = mkOption {
