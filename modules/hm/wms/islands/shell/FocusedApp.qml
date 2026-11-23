@@ -20,8 +20,10 @@ BarText {
 			return "Desktop";
 		// Looked up again once the desktop entries are read
 		DesktopEntries.applications.values;
+		// Chrome ends an --app class with its profile, which can change
+		if (appId.startsWith("chrome-work.tiberius.com__"))
+			return "Gather";
 		return ({
-				"chrome-work.tiberius.com__-Default": "Gather",
 				"com.mitchellh.ghostty.btop": "btop",
 				"com.mitchellh.ghostty.usage": "CPU usage"
 			})[appId] ?? DesktopEntries.heuristicLookup(appId)?.name ?? appId;
