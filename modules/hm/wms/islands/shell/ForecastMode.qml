@@ -25,6 +25,11 @@ IslandMode {
 	// The week's range, which each day's bar sits within
 	readonly property real lowest: Math.min(...Weather.days.map(day => day.low))
 	readonly property real highest: Math.max(...Weather.days.map(day => day.high))
+	// The sun and temperature now, which the pill's fly into (WeatherIsland),
+	// and hidden while they're on the way
+	readonly property WeatherIcon nowIcon: nowIconItem
+	readonly property BarText nowTemp: nowTempItem
+	property bool nowAway: false
 
 	// The sky now, top and bottom (Weather.sky's); without a place, the
 	// glass is left as it is
@@ -96,7 +101,10 @@ IslandMode {
 			spacing: 14
 
 			WeatherIcon {
+				id: nowIconItem
+
 				anchors.verticalCenter: parent.verticalCenter
+				opacity: root.nowAway ? 0 : 1
 				glyph: root.now ? Weather.glyph(root.now.code, root.now.day) : "cloud"
 				size: 44
 				strokeWidth: 1.6
@@ -105,7 +113,10 @@ IslandMode {
 			}
 
 			BarText {
+				id: nowTempItem
+
 				anchors.verticalCenter: parent.verticalCenter
+				opacity: root.nowAway ? 0 : 1
 				text: root.now ? Weather.deg(root.now.temp) : ""
 				color: root.ink(0.08)
 				font.family: "SF Pro Display"
