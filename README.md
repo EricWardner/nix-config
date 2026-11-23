@@ -6,8 +6,9 @@ My NixOS and Home Manager configuration: one laptop (`framework`, a Framework
 - Hyprland is configured in Lua: see the
   [configuration notes](modules/hm/wms/hypr/README.md).
 - The islands shell (bar, notifications, control centre, capture overlay,
-  prompts) lives in [modules/hm/wms/islands](modules/hm/wms/islands); the top
-  of its `default.nix` says how to run a development copy.
+  prompts) lives in [modules/hm/wms/islands](modules/hm/wms/islands): its
+  [README](modules/hm/wms/islands/README.md) maps what depends on what, and
+  the top of its `default.nix` says how to run a development copy.
 
 ## Usage
 
