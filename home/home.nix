@@ -81,6 +81,34 @@
       commandLineArgs = [ "--no-default-browser-check" ];
     };
   };
+  # A launcher entry per Chrome profile (the directory names under
+  # ~/.config/google-chrome). Chrome opens a new window in that profile,
+  # or hands the request to the running instance.
+  xdg.desktopEntries =
+    builtins.mapAttrs
+      (_: profile: {
+        name = "Google Chrome (${profile.label})";
+        genericName = "Web Browser";
+        icon = "google-chrome";
+        exec = ''${config.programs.google-chrome.finalPackage}/bin/google-chrome-stable --profile-directory="${profile.dir}" %U'';
+        categories = [
+          "Network"
+          "WebBrowser"
+        ];
+        settings.Keywords = "chrome;browser;profile;${profile.keywords}";
+      })
+      {
+        chrome-work = {
+          label = "Work";
+          dir = "Default";
+          keywords = "work;tiberius";
+        };
+        chrome-personal = {
+          label = "Personal";
+          dir = "Profile 1";
+          keywords = "personal;gmail;home";
+        };
+      };
   home.sessionVariables = {
     EDITOR = "vim";
     SOPS_AGE_SSH_PRIVATE_KEY_FILE = "$HOME/.ssh/id_ed25519_sops";
