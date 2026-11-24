@@ -110,7 +110,9 @@ PanelWindow {
 		x: 14
 		y: Theme.barTop
 		height: Theme.barHeight
-		spacing: 4
+		// The launcher as far from the first workspace as the workspaces are
+		// from each other (their own 7px of padding makes up the rest)
+		spacing: 15
 
 		// The launcher, or the power menu on a right click
 		BarIcon {
@@ -135,7 +137,7 @@ PanelWindow {
 
 		FocusedApp {
 			screen: bar.modelData
-			leftPadding: 18
+			leftPadding: 7
 			anchors.verticalCenter: parent.verticalCenter
 		}
 	}
