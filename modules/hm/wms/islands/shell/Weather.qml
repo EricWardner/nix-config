@@ -388,14 +388,17 @@ Singleton {
 			onRead: line => console.warn("islands-weather:", line)
 		}
 		onExited: code => {
+			if (code === 0)
+				cache.reload();
+			// A relocate() came while this ran, which didn't look: the run
+			// that does starts now, and only its success counts as found
 			if (again) {
 				again = false;
 				running = true;
-			}
-			if (code !== 0)
 				return;
-			located = true;
-			cache.reload();
+			}
+			if (code === 0)
+				located = true;
 		}
 	}
 
