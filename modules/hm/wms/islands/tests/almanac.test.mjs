@@ -19,6 +19,7 @@ const {
   sky,
   begins,
   moment,
+  until,
   between,
   outlook,
   summary,
@@ -208,6 +209,27 @@ test("The next moment: sunset by day, each dusk, then sunrise", () => {
     ).time,
   );
   assert.equal(at(23, 30).end, at(23, 30).next.time);
+});
+
+test("Until: minutes, then hours and minutes, and nothing once it's passed", () => {
+  const time = local(2026, 6, 21, 20, 30);
+  assert.equal(until(time, time - 12 * minute), "in 12m");
+  assert.equal(until(time, time - 59 * minute), "in 59m");
+  assert.equal(until(time, time - 60 * minute), "in 1h");
+  assert.equal(until(time, time - 65 * minute), "in 1h 5m");
+  assert.equal(until(time, time - 582 * minute), "in 9h 42m");
+  assert.equal(until(time, time), "now");
+  assert.equal(until(time, time + 5 * minute), "");
+});
+
+test("Until adds up with the clock: a sunset at 8:30:23 is 8:30's", () => {
+  const sunset = local(2026, 6, 21, 20, 30) + 23000;
+  const at = (hour, min) => until(sunset, local(2026, 6, 21, hour, min));
+  // 6:58 and 1h 32m make 8:30, the time the sunset is listed at
+  assert.equal(at(18, 58), "in 1h 32m");
+  assert.equal(at(20, 29), "in 1m");
+  assert.equal(at(20, 30), "now");
+  assert.equal(at(20, 31), "");
 });
 
 test("The stretches and the moments are named", () => {

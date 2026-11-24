@@ -298,7 +298,9 @@ IslandMode {
 					}
 
 					BarText {
-						readonly property int minutes: root.sky ? Math.max(1, Math.round((root.sky.next.time - Weather.now) / sun.minute)) : 0
+						// Between the minutes the two fall in, as the pill counts it
+						// (Almanac.until): the clock and this make the time above
+						readonly property int minutes: root.sky ? Math.max(1, Math.floor(root.sky.next.time / sun.minute) - Math.floor(Weather.now / sun.minute)) : 0
 
 						text: root.sky ? "in " + (minutes >= 60 ? Math.floor(minutes / 60) + " h " + minutes % 60 + " min" : minutes + " min") : ""
 						color: root.dim(0.52)

@@ -1,8 +1,8 @@
 import QtQuick
 import Quickshell
 
-// The weather before the clock, with the time of the sun's next change, and
-// the forecast a click grows it into, leftwards and down. The pill's sun and
+// The weather before the clock, with how long until the sun's next change,
+// and the forecast a click grows it into, leftwards and down. The pill's sun and
 // temperature fly into the forecast's as it grows, and back as it shrinks.
 Island {
 	id: root
@@ -50,8 +50,9 @@ Island {
 				opacity: root.flight > 0 ? 0 : 1
 			}
 
-			// The sun's next change (Weather.sky): sunset by day, each
-			// twilight in turn through the evening, sunrise overnight
+			// The sun's next change (Weather.sky), and how long until it:
+			// sunset by day, each twilight in turn through the evening,
+			// sunrise overnight
 			Row {
 				anchors.verticalCenter: parent.verticalCenter
 				leftPadding: 5
@@ -65,7 +66,7 @@ Island {
 
 				BarText {
 					anchors.verticalCenter: parent.verticalCenter
-					text: Weather.sky ? Weather.clock(Weather.sky.next.time).replace(/ [AP]M$/, "") : ""
+					text: Weather.skyIn
 					font.pixelSize: Theme.numberSize
 					font.features: {
 						"tnum": 1

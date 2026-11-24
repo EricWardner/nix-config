@@ -49,6 +49,10 @@ Singleton {
 	// skyFrames}). Null without a place, or where the sun doesn't rise and set.
 	readonly property var sky: typeof forecast?.lat === "number" && typeof forecast?.lon === "number" ? Almanac.sky(forecast.lat, forecast.lon, now) : null
 
+	// How long until the sun's next change, for the pill: "in 1h 5m". As a
+	// time of day it sat beside the clock, and was read as the time.
+	readonly property string skyIn: sky ? Almanac.until(sky.next.time, now) : ""
+
 	// The colour at `time` between the two frames either side of it, from
 	// their column `index` (sky's lineFrames and skyFrames)
 	function shade(frames: var, time: real, index: int): color {

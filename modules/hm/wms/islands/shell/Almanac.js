@@ -120,6 +120,22 @@ function sky(latitude, longitude, now) {
   };
 }
 
+// How long until `time` (ms): "in 12m", "in 1h 5m", "in 9h"; "now" in its
+// minute, and "" once that's passed. Counted between the minutes the two
+// fall in, as clocks show them: the clock's time and this add up to the
+// time `time` is given as, where rounding the seconds between them up came
+// to a minute more.
+function until(time, now) {
+  const minutes = Math.floor(time / 60000) - Math.floor(now / 60000);
+  if (minutes < 0) return "";
+  if (minutes === 0) return "now";
+  if (minutes < 60) return "in " + minutes + "m";
+  const rest = minutes % 60;
+  return (
+    "in " + Math.floor(minutes / 60) + "h" + (rest ? " " + rest + "m" : "")
+  );
+}
+
 // The two frames either side of `time` ({from, to}) and how far it is from
 // one to the other (part, 0 to 1); null without frames. Before the first or
 // after the last, it's that one.
