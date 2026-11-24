@@ -85,10 +85,9 @@ in
     boot = {
       loader.systemd-boot = {
         enable = true;
-        # A new generation gets 3 tries: one that never reaches
-        # boot-complete.target (systemd-bless-boot) is skipped for the one
-        # before it, which makes the hidden menu below safe.
-        bootCounting.enable = true;
+        # No boot counting: a resume from hibernate goes through systemd-boot
+        # and uses up a try of the newest generation, and the next switch
+        # then fails on systemd-bless-boot.
         # No editing the kernel command line from the boot menu.
         editor = false;
       };
