@@ -17,15 +17,15 @@ PanelWindow {
 	id: bar
 
 	required property ShellScreen modelData
-	// The notification or control centre (or the held notifications) is open
-	// on this monitor
+	// The notification or control centre (or the power menu, or the held
+	// notifications) is open on this monitor
 	readonly property bool panelOpen: Panels.name !== "" && Panels.screen === modelData
 	// A question (a Wi-Fi password, a pairing step, polkit's password) is in
 	// this monitor's island
 	readonly property bool asking: Agent.current !== null && Compositor.focusedScreen === modelData
 	// The islands, each named once for the two lists of areas below: where
 	// Hyprland may blur, and where clicks land
-	readonly property list<Item> islands: [centre, weather, dnd, meeting, job, held, tray, status]
+	readonly property list<Item> islands: [power, centre, weather, dnd, meeting, job, held, tray, status]
 
 	screen: modelData
 	anchors.top: true
@@ -112,11 +112,21 @@ PanelWindow {
 		height: Theme.barHeight
 		spacing: 4
 
-		// The launcher, or the system menu on a right click
+		// The launcher, or the power menu on a right click
 		BarIcon {
 			glyph: Glyphs.nix
 			glyphSize: 18
-			onClicked: mouse => Desktop.launch(mouse.button === Qt.RightButton ? ["system-menu"] : ["vicinae", "toggle"])
+			onClicked: mouse => {
+				if (mouse.button !== Qt.RightButton) {
+					if (Panels.shows("power", bar.modelData))
+						Panels.close();
+					Desktop.launch(["vicinae", "toggle"]);
+				} else if (!bar.asking) {
+					// Not over a question: the menu would take the keyboard
+					// from its field
+					Panels.toggle("power", bar.modelData);
+				}
+			}
 		}
 
 		Workspaces {
@@ -128,6 +138,15 @@ PanelWindow {
 			leftPadding: 18
 			anchors.verticalCenter: parent.verticalCenter
 		}
+	}
+
+	// Under the launcher
+	PowerMenu {
+		id: power
+
+		visible: Panels.shows("power", bar.modelData)
+		x: 10
+		y: Theme.barTop + Theme.barHeight + 6
 	}
 
 	CentreIsland {

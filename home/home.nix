@@ -59,17 +59,6 @@
     (pkgs.writeShellScriptBin "launch-webapp" ''
       exec ${config.programs.google-chrome.finalPackage}/bin/google-chrome-stable --app="$1" "''${@:2}"
     '')
-    # The launcher, as a menu: sized for its five rows
-    (pkgs.writeShellScriptBin "system-menu" ''
-      choice=$(printf "󰌾  Lock\n󰤄  Sleep\n󰜉  Reboot\n󰐥  Shutdown\n󰗽  Logout" | ${config.programs.vicinae.package}/bin/vicinae dmenu -p System --no-section --no-footer -W 420 -H 262)
-      case "$choice" in
-        *Lock*) loginctl lock-session ;;
-        *Sleep*) systemctl suspend-then-hibernate ;;
-        *Reboot*) systemctl reboot ;;
-        *Shutdown*) systemctl poweroff ;;
-        *Logout*) hyprctl dispatch 'hl.dsp.exit()' ;;
-      esac
-    '')
   ];
 
   programs = {

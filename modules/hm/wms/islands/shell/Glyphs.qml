@@ -57,6 +57,9 @@ Singleton {
 	readonly property string lock: String.fromCodePoint(0xF033E)
 	readonly property string calendar: String.fromCodePoint(0xF00ED)
 	readonly property string power: String.fromCodePoint(0xF0425)
+	readonly property string sleep: String.fromCodePoint(0xF0904)
+	readonly property string restart: String.fromCodePoint(0xF0709)
+	readonly property string logOut: String.fromCodePoint(0xF05FD)
 	readonly property string checkCircle: String.fromCodePoint(0xF05E1)
 	readonly property string xCircle: String.fromCodePoint(0xF015A)
 	// Wi-Fi signal, weakest to strongest

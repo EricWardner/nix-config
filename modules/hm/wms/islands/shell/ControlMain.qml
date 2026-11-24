@@ -6,7 +6,7 @@ import Quickshell.Services.Pipewire
 // and push-to-talk; sliders for the output and the microphone, and for the
 // screen; the power profile; and the CPU, memory and temperature (a click
 // opens btop), the battery (a click opens its page), lock and the power
-// menu. Keep Awake and Do Not Disturb are the notification centre's.
+// page. Keep Awake and Do Not Disturb are the notification centre's.
 Column {
 	id: root
 
@@ -245,7 +245,7 @@ Column {
 					},
 					{
 						"glyph": Glyphs.power,
-						"command": ["system-menu"]
+						"page": "power"
 					}
 				]
 
@@ -271,8 +271,12 @@ Column {
 					MouseArea {
 						anchors.fill: parent
 						onClicked: {
-							Panels.close();
-							Desktop.launch(modelData.command);
+							if (modelData.page) {
+								root.open(modelData.page);
+							} else {
+								Panels.close();
+								Desktop.launch(modelData.command);
+							}
 						}
 					}
 				}

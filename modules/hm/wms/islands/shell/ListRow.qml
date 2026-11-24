@@ -16,6 +16,7 @@ Rectangle {
 	property string trailing
 	property bool chosen: false
 	property bool interactive: true
+	readonly property alias hovered: hover.hovered
 
 	signal clicked
 

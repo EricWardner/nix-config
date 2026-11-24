@@ -12,8 +12,8 @@ Singleton {
 
 	// "centre", the notification centre; "control", the control centre;
 	// "keys", the keyboard shortcuts; "weather", the forecast; "jobs", the
-	// terminals' jobs; "held", the notifications held during a share. ""
-	// while none is open.
+	// terminals' jobs; "held", the notifications held during a share;
+	// "power", the power menu under the launcher. "" while none is open.
 	property string name: ""
 	// The screen it's open on
 	property ShellScreen screen: null
