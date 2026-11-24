@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "Almanac.js" as Almanac
 
 // The work calendar's events, from islands-calendar: fetched every five
 // minutes into a cache read here, so the bar has the day at once on start,
@@ -13,13 +14,15 @@ Singleton {
 	// [{title, start, end, allDay, join, page, location}], times in ms, by
 	// start; `page` is the event in Google Calendar
 	property var events: []
-	property real now: Date.now()
+	// By the minute, on the minute, as the bar's clock is: a countdown here
+	// changes as the clock does, and the two add up to the event's time
+	readonly property real now: clock.date.getTime()
 	readonly property var today: events.filter(e => sameDay(e.start) || (e.allDay && e.start <= now && e.end > now))
 	// Today's timed events not over yet, the one on now first
 	readonly property var later: today.filter(e => !e.allDay && e.end > now)
 	readonly property var next: later[0] ?? null
 	// From a minute before an event to two after it starts, unless closed
-	readonly property var reminder: later.find(e => e.start - now <= 60 * 1000 && now - e.start <= 2 * 60 * 1000 && !dismissed.includes(key(e))) ?? null
+	readonly property var reminder: later.find(e => e.start - now <= 60 * 1000 && now - e.start < 2 * 60 * 1000 && !dismissed.includes(key(e))) ?? null
 	// Reminders closed, by event
 	property var dismissed: []
 	// The days with an event, by dayKey: the calendar's dots
@@ -63,12 +66,7 @@ Singleton {
 
 	// "in 12m", "in 1h 5m", "now"
 	function until(event: var): string {
-		const minutes = Math.ceil((event.start - now) / 60000);
-		if (minutes <= 0)
-			return "now";
-		if (minutes < 60)
-			return "in " + minutes + "m";
-		return "in " + Math.floor(minutes / 60) + "h" + (minutes % 60 ? " " + minutes % 60 + "m" : "");
+		return Almanac.until(event.start, now) || "now";
 	}
 
 	function join(event: var) {
@@ -123,10 +121,9 @@ Singleton {
 		onTriggered: fetch.running = true
 	}
 
-	Timer {
-		interval: 10 * 1000
-		repeat: true
-		running: true
-		onTriggered: root.now = Date.now()
+	SystemClock {
+		id: clock
+
+		precision: SystemClock.Minutes
 	}
 }

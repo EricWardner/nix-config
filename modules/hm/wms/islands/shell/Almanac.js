@@ -120,7 +120,8 @@ function sky(latitude, longitude, now) {
   };
 }
 
-// How long until `time` (ms): "in 12m", "in 1h 5m", "in 9h"; "now" in its
+// How long until `time` (ms), for the sun's pill and the next meeting's
+// (Events.qml): "in 12m", "in 1h 5m", "in 9h"; "now" in its
 // minute, and "" once that's passed. Counted between the minutes the two
 // fall in, as clocks show them: the clock's time and this add up to the
 // time `time` is given as, where rounding the seconds between them up came
