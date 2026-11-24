@@ -134,13 +134,14 @@ flowchart TB
 
 ## Taking the weather widget out
 
-The widget is five files, about 1,300 lines, and comes apart in two halves.
+The widget is six files, about 1,400 lines, and comes apart in two halves.
 
 ```mermaid
 flowchart LR
   subgraph data["Stands nearly alone"]
     script["islands-weather<br/>curl, jq; ipbase and Open-Meteo"]
-    weather["Weather.qml<br/>forecast, outlook, the sun's day"]
+    weather["Weather.qml<br/>the forecast, fetched and read"]
+    almanac["Almanac.js<br/>the sun's day, the rain outlook"]
     icon["WeatherIcon.qml<br/>the glyphs"]
   end
 
@@ -158,6 +159,7 @@ flowchart LR
   bind["Super+W in ../hypr"]
 
   script -- "~/.cache/islands/weather.json" --> weather
+  weather --> almanac
   weather -- "network changed: locate again" --> net
   icon --> theme
   pill --> weather
@@ -177,17 +179,24 @@ flowchart LR
   classDef qml fill:#359757,stroke:#1f6b3a,color:#fff
   classDef glue fill:#6b7280,stroke:#4b5563,color:#fff
   classDef hyprLang fill:#0e8fa8,stroke:#0b6e82,color:#fff
-  class weather,icon,pill,panel,frame,theme,panels,net,bar,sky qml
+  class weather,almanac,icon,pill,panel,frame,theme,panels,net,bar,sky qml
   class script glue
   class bind hyprLang
 ```
 
 - **The data and the icons** (`islands-weather`, `Weather.qml`,
-  `WeatherIcon.qml`) drop into any Quickshell configuration. `Weather.qml`
-  touches the rest of the shell in one place, `Net`, to look for the machine
-  again when the network changes; `WeatherIcon.qml` takes its tints from
-  `Theme`. The script wants `curl`, `jq` and, optionally,
+  `Almanac.js`, `WeatherIcon.qml`) drop into any Quickshell configuration.
+  `Weather.qml` touches the rest of the shell in one place, `Net`, to look
+  for the machine again when the network changes; `WeatherIcon.qml` takes
+  its tints from `Theme`. The script wants `curl`, `jq` and, optionally,
   `~/.config/islands/config.json` for the unit.
+- **The working out is tested.** `Almanac.js` holds the sun's day and the
+  rain outlook as plain functions, with no clock or file of its own, so
+  [`tests/almanac.test.mjs`](tests/almanac.test.mjs) runs it under Node:
+  `node --test tests/*.test.mjs` here, or `nix flake check`. The tests walk
+  every crossing of the sun through whole months in several places and time
+  zones, so a dusk on the wrong day, a step counted twice on the night the
+  clocks change, or a missing sunrise fails one.
 - **The pill and the panel** are an `Island` and an `IslandMode`, so they
   come with the framework (`Island`, `IslandMode`, `Morph`, `Flight`,
   `BarText`, `Theme`: about 400 lines) and with `Panels`, which says which
@@ -195,8 +204,9 @@ flowchart LR
   which of Quickshell's screens it is on.
 - **To remove it from this shell**: the `WeatherIsland` in `Bar.qml` and its
   name in the `islands` list, the weather line in `Sky.qml`, the row in
-  `KeysMode.qml`, the `weather` bind in `../hypr/hyprland.nix`, and
-  `islandsWeather` with its two options in `default.nix`.
+  `KeysMode.qml`, the `weather` bind in `../hypr/hyprland.nix`,
+  `islandsWeather` with its two options in `default.nix`, and the
+  `islands-almanac` check in `flake.nix`.
 
 ## What is tied to Hyprland
 

@@ -87,6 +87,27 @@
         pre-commit-check = pkgs.callPackage ./pre-commit.nix {
           inherit pre-commit-hooks treefmtEval;
         };
+        # The weather's logic in the islands shell, under Node
+        islands-almanac =
+          let
+            islands = ./modules/hm/wms/islands;
+          in
+          pkgs.runCommand "islands-almanac-tests"
+            {
+              nativeBuildInputs = [ pkgs.nodejs ];
+              src = pkgs.lib.fileset.toSource {
+                root = islands;
+                fileset = pkgs.lib.fileset.unions [
+                  (islands + "/shell/Almanac.js")
+                  (islands + "/tests")
+                ];
+              };
+            }
+            ''
+              cd "$src"
+              node --test tests/*.test.mjs
+              touch "$out"
+            '';
       };
       # Our own packages (pkgs/), in pkgs for every module
       overlays.default = import ./pkgs/overlay.nix;
