@@ -16,13 +16,28 @@ Singleton {
 	property string kind: "" // volume or brightness
 	property real level: 0 // 0-1, volume up to 1.5
 	property bool muted: false
-	readonly property bool showing: shown.running
+	readonly property bool showing: shown.running && !hushed
+	// Its moment passes unseen: it changed while the control centre was
+	// open, whose sliders showed it (or the control centre opened over it).
+	// Otherwise what was left of the moment flashed up in the island as
+	// the control centre closed.
+	property bool hushed: false
 
 	function show(newKind: string, newLevel: real, newMuted: bool) {
 		kind = newKind;
 		level = newLevel;
 		muted = newMuted;
+		hushed = Panels.name === "control";
 		shown.restart();
+	}
+
+	Connections {
+		target: Panels
+
+		function onNameChanged() {
+			if (Panels.name === "control")
+				root.hushed = true;
+		}
 	}
 
 	Timer {
@@ -60,7 +75,7 @@ Singleton {
 	// Steps start from the last one while the popup shows: brightnessctl's
 	// change reaches Metrics a moment later, behind a held key's repeats.
 	function stepBrightness(delta: int) {
-		const from = showing && kind === "brightness" ? Math.round(level * 100) : Metrics.backlight;
+		const from = shown.running && kind === "brightness" ? Math.round(level * 100) : Metrics.backlight;
 		const to = Math.max(5, Math.min(100, from + delta));
 		Quickshell.execDetached(["brightnessctl", "-q", "set", to + "%"]);
 		show("brightness", to / 100, false);
