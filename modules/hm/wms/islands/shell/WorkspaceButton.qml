@@ -16,7 +16,7 @@ Item {
 
 	readonly property string name: modelData.name.replace(/^special:/, "")
 	readonly property var windows: modelData.toplevels.values
-	readonly property var icons: windows.map(w => Glyphs.app(w.wayland?.appId ?? w.lastIpcObject?.class ?? "")).filter(icon => icon !== "")
+	readonly property var icons: windows.map(w => Glyphs.app(w.wayland?.appId ?? w.lastIpcObject?.class ?? "")).filter(icon => icon !== null)
 
 	implicitWidth: label.implicitWidth + 14
 	implicitHeight: Theme.barHeight
@@ -27,6 +27,9 @@ Item {
 
 		anchors.centerIn: parent
 		anchors.horizontalCenterOffset: 1
+		// An en between the name and each icon: the icons have no side
+		// bearings
+		spacing: Theme.fontSize / 2
 
 		// Bold, as waybar's workspace buttons were
 		BarText {
@@ -34,12 +37,15 @@ Item {
 			font.weight: Font.Bold
 		}
 
-		// The icons apart, in the regular weight: the icon fonts have no bold,
-		// and Qt would fake one (fontconfig's no-embolden rule for them is
-		// Pango's, which Qt doesn't apply)
-		BarText {
-			visible: root.icons.length > 0
-			text: Glyphs.enSpace + root.icons.join(Glyphs.enSpace)
+		Repeater {
+			model: root.icons
+
+			AppIcon {
+				required property var modelData
+
+				glyph: modelData.glyph ?? ""
+				logo: modelData.logo ?? ""
+			}
 		}
 	}
 

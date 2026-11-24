@@ -377,7 +377,7 @@ default; a host turns things on or off in its `configuration.nix` and
 The packages in `pkgs/` are also flake outputs, for use on their own:
 
 ```sh
-nix build .#bar-tools   # also: islands-agent, capture-preview, gather-symbol
+nix build .#bar-tools   # also: islands-agent, capture-preview
 ```
 
 ## Adding a host

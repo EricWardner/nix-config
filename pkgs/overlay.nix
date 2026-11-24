@@ -6,8 +6,6 @@ final: prev: {
   bar-tools = final.callPackage ./bar-tools { };
   # A finished recording's or screenshot's preview window
   capture-preview = final.callPackage ./capture-preview { };
-  # The Gather logo, a one-glyph font at U+FFF00
-  gather-symbol = final.callPackage ./gather-symbol { };
   # NetworkManager's secret agent, BlueZ's pairing agent and gnome-keyring's
   # prompter, for the islands shell
   islands-agent = final.callPackage ./islands-agent { };

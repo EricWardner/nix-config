@@ -46,18 +46,16 @@ in
       # all dated 1970), so a font change didn't show until fc-cache -f.
       enable = true;
 
-      # The icon fonts: Nerd Font icons in text come from Symbols Nerd Font
-      # (the Gather logo from gather-symbol, which nothing else covers).
+      # The icon fonts: Nerd Font icons in text come from Symbols Nerd Font.
       # - Symbols Nerd Font goes straight after the UI font, ahead of
       #   Cascadia Code NF, whose icons are sized for a terminal cell and came
       #   out far smaller in the bar.
       # - They have only a Regular face, so in bold GTK text (waybar's
       #   workspace labels were) fontconfig fakes bold by thickening their
-      #   outlines, which ran the Gather logo's rings together. Qt fakes its
-      #   own bold and ignores this, so the islands bar sets the icons
-      #   apart in the regular weight. 90-synthetic.conf does that
-      #   to a font no heavier than medium; user rules come before it
-      #   (50-user.conf), so this calls them bold when bold is asked for.
+      #   outlines. Qt fakes its own bold and ignores this, so the islands
+      #   bar sets the icons apart in the regular weight. 90-synthetic.conf
+      #   does that to a font no heavier than medium; user rules come before
+      #   it (50-user.conf), so this calls them bold when bold is asked for.
       configFile.icon-fonts = {
         enable = true;
         priority = 60;
@@ -81,7 +79,6 @@ in
               [
                 "Symbols Nerd Font"
                 "Symbols Nerd Font Mono"
-                "Gather Symbol"
               ]
           }</fontconfig>
         '';

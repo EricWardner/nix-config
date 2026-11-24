@@ -304,9 +304,6 @@ in
       # Push-to-talk (pttd), micctl for keybinds, and the status watchers
       # the bar runs (pkgs/bar-tools)
       pkgs.bar-tools
-      # The Gather logo, a one-glyph font at U+FFF00 for Gather's workspace
-      # icon
-      pkgs.gather-symbol
       cameraSettings
       systemMonitor
       usageLook

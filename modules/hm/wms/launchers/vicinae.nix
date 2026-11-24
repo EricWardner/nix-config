@@ -168,7 +168,7 @@ let
   # The one path in the logo's SVG
   gatherLogo = lib.head (
     lib.splitString "\"" (
-      lib.last (lib.splitString "\nd=\"" (builtins.readFile ../../../../pkgs/gather-symbol/gather.svg))
+      lib.last (lib.splitString "\nd=\"" (builtins.readFile ../islands/shell/logos/gather.svg))
     )
   );
 

@@ -56,9 +56,10 @@ in
           sfPro = {
             # Plain SF Pro, unpacked from Apple's image in seconds. Nerd Font
             # icons come from Symbols Nerd Font by fontconfig fallback (the
-            # HM fontconfig rules in modules/hm), and the Gather logo from
-            # pkgs/gather-symbol (the islands bar), where a Nerd-patched build with the
-            # logo patched in took ~13 minutes on every nixpkgs update.
+            # HM fontconfig rules in modules/hm), and the islands bar draws
+            # the logos that font lacks from SVGs (its shell/logos), where a
+            # Nerd-patched build with the Gather logo patched in took ~13
+            # minutes on every nixpkgs update.
             package = inputs.apple-fonts.packages.${pkgs.stdenv.hostPlatform.system}.sf-pro;
             # SF Pro Text is Apple's optical variant hinted for small UI sizes
             # (vs the variable "SF Pro"/Display family, tuned for large headings).

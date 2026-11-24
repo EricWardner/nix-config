@@ -116,7 +116,6 @@
           bar-tools
           islands-agent
           capture-preview
-          gather-symbol
           ;
         # The installer image: `nix build .#iso` (hosts/iso)
         iso = self.nixosConfigurations.iso.config.system.build.isoImage;

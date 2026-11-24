@@ -5,8 +5,8 @@ import Quickshell
 // The bar's icons. Status icons are SF Symbols, which ship inside SF Pro as
 // private-use characters from U+100000, unnamed in the font; these code
 // points were found by rendering them. SF Symbols has no logos, so the
-// launcher and the workspaces' app icons are Nerd Font glyphs, and Gather's
-// is the one-glyph gather-symbol font at U+FFF00.
+// launcher and the workspaces' app icons are Nerd Font glyphs, and where
+// that font has no logo either (Gather, Signal), an SVG in logos/.
 Singleton {
 	readonly property string sunMin: String.fromCodePoint(0x1001AB)
 	readonly property string sunMax: String.fromCodePoint(0x1001AD)
@@ -62,12 +62,9 @@ Singleton {
 	// Wi-Fi signal, weakest to strongest
 	readonly property var wifiStrength: [0xF091F, 0xF0922, 0xF0925, 0xF0928].map(c => String.fromCodePoint(c))
 
-	// U+2002 EN SPACE between a workspace's number and its app icons, which
-	// have no side bearings
-	readonly property string enSpace: " "
-
-	// A window's icon on its workspace, by class (the first match wins);
-	// nothing for classes not listed
+	// A window's icon on its workspace, by class (the first match wins): a
+	// Nerd Font code point, or the name of an SVG in logos/. Nothing for
+	// classes not listed
 	readonly property var apps: [
 		[/google-chrome/, 0xF268],
 		[/firefox/, 0xE745],
@@ -77,11 +74,19 @@ Singleton {
 		[/spotify/, 0xF04C7],
 		// By class only: a title rule also caught any window with the word
 		// Gather in its title (a terminal, a doc)
-		[/gather|work\.tiberius\.com/, 0xFFF00],
+		[/gather|work\.tiberius\.com/, "gather"],
+		[/^signal$/, "signal"],
 	]
 
-	function app(windowClass: string): string {
-		const match = apps.find(([pattern]) => pattern.test(windowClass));
-		return match ? String.fromCodePoint(match[1]) : "";
+	// What AppIcon draws: { glyph } or { logo }, or null
+	function app(windowClass: string): var {
+		const icon = apps.find(([pattern]) => pattern.test(windowClass))?.[1];
+		if (icon === undefined)
+			return null;
+		return typeof icon === "number" ? {
+			"glyph": String.fromCodePoint(icon)
+		} : {
+			"logo": icon
+		};
 	}
 }
