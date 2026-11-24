@@ -59,27 +59,13 @@ Typing searches it: what doesn't match fades back, so nothing moves.
 
 <img align="right" width="340" src="docs/images/forecast-day.webp" alt="The forecast panel through a whole day: its background follows the sky from night through sunrise, the day's blue, sunset and each twilight">
 
-The weather island shows the temperature and when the sun next changes.
-Clicked, it grows into the forecast, and the panel is the sky of the hour:
-the day's blue, a sunset, each twilight in turn, the night.
+Click the weather and it grows into the forecast, painted as the sky of the
+hour. On the right is one whole day of it: the real panel, with the clock
+driven by hand and a made-up day of weather.
 
-On the right is the real panel taken through a whole day, with its clock
-driven by hand and a made-up day of weather. Nothing else about it is staged.
-
-- **The sky is worked out here, not fetched.** No weather service gives the
-  twilights, so the shell computes sunrise, sunset and the civil, nautical
-  and astronomical dusks and dawns from where the machine is, to within a
-  minute or two.
-- **The colours follow the sun.** Each is keyed to how far under the horizon
-  the sun is, and blended between. The ink flips from dark to white row by
-  row as the sky behind it darkens.
-- **The line looks only as far as there's something to see.** It runs from
-  now to the last thing coming: the evening's last dusk, then, once night
-  has fallen, sunrise. Moments come towards the sun as their time does, and
-  what has passed squeezes up behind it and fades.
-- **It follows the machine.** The place comes from the network the laptop is
-  on, looked up again when that changes, and the forecast from Open-Meteo
-  every fifteen minutes into a cache, so it shows at once on a restart.
+No weather service gives the twilights, so the shell works them out from
+where the laptop is. The sun's line runs only as far as the next thing to
+see.
 
 <br clear="right">
 
@@ -131,6 +117,12 @@ Most of the work went into details like these.
 - **An empty workspace is a dashboard.** The time, what's playing, today's
   captures to drag into a chat, something to start, and the machine's state
   in a line at the foot.
+- **Links open where you are.** Chrome sends a link to whichever of its
+  windows was used last, often on another workspace. Here a link clicked in
+  a terminal or in Slack opens in the browser window on the same workspace,
+  or in a new one there if it has none. From the chat workspace it goes to
+  the browser used last and takes you to it. Command-line tools (`gh`, a
+  login flow) open links the same way.
 - **Monitors come and go.** Each gets its own bar as it's plugged in, and a
   panel left open on one that's unplugged closes itself.
 
