@@ -1,15 +1,43 @@
 # islands
 
+![The bar: weather, the clock, Keep Awake, the next meeting, a finished terminal job, the tray and the system's state, each in its own island](../../../../docs/images/bar.webp)
+
 The desktop shell: a bar of islands that grow into panels, the notification
 server, the control centre, the capture overlay and Sky, the desktop of an
-empty workspace. It is a [Quickshell](https://quickshell.org) configuration
-(`shell/`, about 11,000 lines of QML) with a handful of helper programs
-around it. The top of `default.nix` says how to run a development copy.
+empty workspace. The top of `default.nix` says how to run a development copy.
 
 This page is a map of what depends on what, for taking a piece out or
 moving the shell somewhere else.
 
+## What's built in what
+
+<table>
+  <tr>
+    <td width="33%" align="center"><img src="shell/icons/quickshell.svg" width="56" alt="Quickshell"><br><b>The shell</b><br><sub>QML on <a href="https://quickshell.org">Quickshell</a></sub></td>
+    <td width="33%" align="center"><img src="shell/icons/ferris.svg" width="56" alt="Ferris, Rust's crab"><br><b>Three programs</b><br><sub>Rust, in <code>pkgs/</code></sub></td>
+    <td width="33%" align="center"><img src="shell/icons/hyprland.svg" width="56" alt="Hyprland"><br><b>The compositor</b><br><sub>Hyprland, configured in Lua</sub></td>
+  </tr>
+  <tr>
+    <td valign="top"><code>shell/</code>: 89 files, about 11,300 lines. Every island and panel, the notification server, the tray, the polkit agent, the capture overlay and Sky.</td>
+    <td valign="top">About 3,100 lines. <code>bar-tools</code>: the push-to-talk daemon and the mic and webcam watchers. <code>islands-agent</code>: the Wi-Fi, Bluetooth and keyring prompts. <code>capture-preview</code>: the GTK window a capture opens in.</td>
+    <td valign="top">Ten of the shell's files talk to it, listed <a href="#what-is-tied-to-hyprland">below</a>. Keybinds and blur rules live in <a href="../hypr"><code>../hypr</code></a>.</td>
+  </tr>
+</table>
+
+The rest is glue, next to this file: Bash for the weather, captures, CPU
+usage, the share picker and the Claude Code hooks; Python for the calendar;
+a zsh hook that reports terminal jobs. `default.nix` packages all of it and
+starts the shell as `islands.service`.
+
 ## How it fits together
+
+![How islands fits together: default.nix writes theme.json and config.json and starts the shell, and Hyprland's keybinds reach it over qs ipc. In shell/, the bar, Sky and capture overlay hold the islands, which share the singletons; the singletons run the Bash and Python scripts and the Rust programs, and ten tied files talk to Hyprland](../../../../docs/images/islands-map.svg)
+
+<details>
+<summary><b>The full map</b>: every edge, and what each one asks</summary>
+
+Coloured by language as above: green QML, orange Rust, grey Bash and
+Python, blue Nix, teal Hyprland.
 
 ```mermaid
 flowchart TB
@@ -67,7 +95,22 @@ flowchart TB
   state -- "runs" --> scripts
   state -- "runs" --> pkgs
   compositor --> tied
+
+  classDef qml fill:#359757,stroke:#1f6b3a,color:#fff
+  classDef qmlHypr fill:#359757,stroke:#00b4d8,stroke-width:3px,color:#fff
+  classDef rust fill:#d9531e,stroke:#9a3412,color:#fff
+  classDef glue fill:#6b7280,stroke:#4b5563,color:#fff
+  classDef nixLang fill:#5277c3,stroke:#3b5a99,color:#fff
+  classDef hyprLang fill:#0e8fa8,stroke:#0b6e82,color:#fff
+  class root,surfaces,islands,frame,panels,state qml
+  class seam,wm,capture,grab qmlHypr
+  class pkgs rust
+  class scripts glue
+  class stylix,options,unit nixLang
+  class tie,binds,rules,compositor hyprLang
 ```
+
+</details>
 
 - **Nix** packages the helper scripts, links `shell/` into
   `~/.config/quickshell/islands`, and writes two files the shell reads at
@@ -130,6 +173,13 @@ flowchart LR
   bar --> pill
   sky -- "one line of weather" --> weather
   bind -- "panel toggle weather" --> panels
+
+  classDef qml fill:#359757,stroke:#1f6b3a,color:#fff
+  classDef glue fill:#6b7280,stroke:#4b5563,color:#fff
+  classDef hyprLang fill:#0e8fa8,stroke:#0b6e82,color:#fff
+  class weather,icon,pill,panel,frame,theme,panels,net,bar,sky qml
+  class script glue
+  class bind hyprLang
 ```
 
 - **The data and the icons** (`islands-weather`, `Weather.qml`,
