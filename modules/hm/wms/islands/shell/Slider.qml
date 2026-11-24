@@ -1,7 +1,7 @@
 import QtQuick
 
-// A level from 0 to 1 to drag or click: `moved` says where to, and the
-// owner sets `value` from whatever it controls
+// A level from 0 to 1 to drag, click or scroll: `moved` says where to, and
+// the owner sets `value` from whatever it controls
 Item {
 	id: root
 
@@ -53,5 +53,8 @@ Item {
 			if (pressed)
 				report(mouse.x);
 		}
+		// 5% for a notch of the wheel, up for more; a touchpad's finer
+		// steps move it in proportion
+		onWheel: wheel => root.moved(Math.max(0, Math.min(1, root.shown + wheel.angleDelta.y / 120 * 0.05)))
 	}
 }

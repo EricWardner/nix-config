@@ -1,12 +1,15 @@
 import QtQuick
 import Quickshell.Services.Pipewire
 
-// Which device plays sound and which records it: a click makes one the
-// default
+// How loud the output and the microphone are, and which device each is: a
+// click makes one the default
 Column {
 	id: root
 
 	signal back
+
+	readonly property PwNode sink: Pipewire.defaultAudioSink
+	readonly property PwNode source: Pipewire.defaultAudioSource
 
 	readonly property var devices: Array.from(Pipewire.nodes.values).filter(n => n.audio && !n.isStream)
 	readonly property var outputs: devices.filter(n => n.isSink)
@@ -17,6 +20,10 @@ Column {
 	}
 
 	spacing: 6
+
+	PwObjectTracker {
+		objects: [root.sink, root.source]
+	}
 
 	PageHeader {
 		width: parent.width
@@ -31,6 +38,18 @@ Column {
 		color: Theme.inkDim
 		font.pixelSize: 12
 		font.weight: Font.DemiBold
+	}
+
+	// The chosen output's volume, as on the main page
+	Slider {
+		x: 8
+		width: parent.width - 16
+		value: root.sink?.audio?.volume ?? 0
+		dimmed: root.sink?.audio?.muted ?? false
+		onMoved: value => {
+			if (root.sink?.audio)
+				root.sink.audio.volume = value;
+		}
 	}
 
 	Repeater {
@@ -55,6 +74,18 @@ Column {
 		color: Theme.inkDim
 		font.pixelSize: 12
 		font.weight: Font.DemiBold
+	}
+
+	// And the chosen microphone's level
+	Slider {
+		x: 8
+		width: parent.width - 16
+		value: root.source?.audio?.volume ?? 0
+		dimmed: Desktop.mic === "ptt-muted" || Desktop.mic === "muted"
+		onMoved: value => {
+			if (root.source?.audio)
+				root.source.audio.volume = value;
+		}
 	}
 
 	Repeater {
