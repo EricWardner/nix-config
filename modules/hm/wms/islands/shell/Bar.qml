@@ -115,7 +115,7 @@ PanelWindow {
 		// The launcher, or the system menu on a right click
 		BarIcon {
 			glyph: Glyphs.nix
-			glyphSize: 20
+			glyphSize: 18
 			onClicked: mouse => Desktop.launch(mouse.button === Qt.RightButton ? ["system-menu"] : ["vicinae", "toggle"])
 		}
 
