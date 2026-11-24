@@ -43,78 +43,101 @@ Column {
 		onToggled: Net.adapter.enabled = !Net.adapter.enabled
 	}
 
-	BarText {
+	// The devices paired already
+	Card {
 		visible: Net.bluetoothOn && root.mine.length > 0
-		x: 4
-		text: "My devices"
-		color: Theme.inkDim
-		font.pixelSize: 12
-		font.weight: Font.DemiBold
-	}
-
-	Repeater {
-		model: Net.bluetoothOn ? root.mine : []
-
-		ListRow {
-			required property var modelData
-
-			width: root.width
-			glyph: Glyphs.bluetooth
-			image: root.iconFor(modelData)
-			title: modelData.name
-			subtitle: modelData.state === BluetoothDeviceState.Connecting ? "Connecting…" : modelData.state === BluetoothDeviceState.Disconnecting ? "Disconnecting…" : modelData.connected ? ["Connected", root.battery(modelData)].filter(s => s).join(" · ") : "Not connected"
-			chosen: modelData.connected
-			onClicked: modelData.connected ? modelData.disconnect() : modelData.connect()
-		}
-	}
-
-	Row {
-		visible: Net.bluetoothOn
-		x: 4
-		spacing: 8
-
-		BarText {
-			text: "Nearby"
-			color: Theme.inkDim
-			font.pixelSize: 12
-			font.weight: Font.DemiBold
-		}
-
-		Searching {
-			anchors.verticalCenter: parent.verticalCenter
-			running: Net.adapter?.discovering ?? false
-		}
-	}
-
-	ListView {
-		visible: Net.bluetoothOn
 		width: parent.width
-		height: Math.min(contentHeight, 180)
-		clip: true
-		spacing: 2
-		boundsBehavior: Flickable.StopAtBounds
-		model: root.nearby
 
-		delegate: ListRow {
-			required property var modelData
+		Column {
+			width: parent.width
+			spacing: 6
 
-			width: ListView.view.width
-			glyph: Glyphs.bluetooth
-			image: root.iconFor(modelData)
-			title: modelData.name
-			subtitle: modelData.pairing ? "Pairing…" : ""
-			trailing: modelData.pairing ? "" : "Pair"
-			onClicked: {
-				if (modelData.pairing)
-					modelData.cancelPair();
-				else
-					modelData.pair();
+			BarText {
+				x: 2
+				text: "My devices"
+				color: Theme.inkDim
+				font.pixelSize: 12
+				font.weight: Font.DemiBold
+			}
+
+			Repeater {
+				model: Net.bluetoothOn ? root.mine : []
+
+				ListRow {
+					required property var modelData
+
+					x: -6
+					width: parent.width + 12
+					glyph: Glyphs.bluetooth
+					image: root.iconFor(modelData)
+					title: modelData.name
+					subtitle: modelData.state === BluetoothDeviceState.Connecting ? "Connecting…" : modelData.state === BluetoothDeviceState.Disconnecting ? "Disconnecting…" : modelData.connected ? ["Connected", root.battery(modelData)].filter(s => s).join(" · ") : "Not connected"
+					chosen: modelData.connected
+					onClicked: modelData.connected ? modelData.disconnect() : modelData.connect()
+				}
 			}
 		}
 	}
 
-	ListRow {
+	// What's in reach to pair with
+	Card {
+		visible: Net.bluetoothOn
 		width: parent.width
+
+		Column {
+			width: parent.width
+			spacing: 6
+
+			Row {
+				x: 2
+				spacing: 8
+
+				BarText {
+					text: "Nearby"
+					color: Theme.inkDim
+					font.pixelSize: 12
+					font.weight: Font.DemiBold
+				}
+
+				Searching {
+					anchors.verticalCenter: parent.verticalCenter
+					running: Net.adapter?.discovering ?? false
+				}
+			}
+
+			ListView {
+				x: -6
+				width: parent.width + 12
+				height: Math.min(contentHeight, 180)
+				clip: true
+				spacing: 2
+				boundsBehavior: Flickable.StopAtBounds
+				model: root.nearby
+
+				delegate: ListRow {
+					required property var modelData
+
+					width: ListView.view.width
+					glyph: Glyphs.bluetooth
+					image: root.iconFor(modelData)
+					title: modelData.name
+					subtitle: modelData.pairing ? "Pairing…" : ""
+					trailing: modelData.pairing ? "" : "Pair"
+					onClicked: {
+						if (modelData.pairing)
+							modelData.cancelPair();
+						else
+							modelData.pair();
+					}
+				}
+			}
+		}
+	}
+
+	// Apart from the cards, as it leaves the page, and in line with their rows
+	ListRow {
+		x: 6
+		width: parent.width - 12
 		glyph: "⚙"
 		title: "Bluetooth settings…"
 		onClicked: {

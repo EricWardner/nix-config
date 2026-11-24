@@ -273,142 +273,154 @@ Column {
 		}
 	}
 
-	Row {
-		visible: Net.wifiOn
-		x: 4
-		spacing: 8
-
-		BarText {
-			text: "Other networks"
-			color: Theme.inkDim
-			font.pixelSize: 12
-			font.weight: Font.DemiBold
-		}
-
-		Searching {
-			anchors.verticalCenter: parent.verticalCenter
-			running: Net.wifi?.scannerEnabled ?? false
-		}
-	}
-
-	ListView {
-		id: list
-
+	// The networks in reach
+	Card {
 		visible: Net.wifiOn
 		width: parent.width
-		height: Math.min(contentHeight, 250)
-		clip: true
-		spacing: 2
-		boundsBehavior: Flickable.StopAtBounds
-		model: root.others
 
-		delegate: Column {
-			id: entry
-
-			required property var modelData
-			readonly property bool askingHere: root.asking === modelData
-
-			width: ListView.view.width
+		Column {
+			width: parent.width
 			spacing: 6
 
-			Connections {
-				target: entry.modelData
+			Row {
+				x: 2
+				spacing: 8
 
-				function onConnectionFailed(reason) {
-					if (reason === ConnectionFailReason.NoSecrets && Net.takesPassword(entry.modelData)) {
-						root.asking = entry.modelData;
-						root.error = entry.modelData.known ? "The saved password didn't work." : "";
-					} else {
-						root.error = "Couldn't join " + entry.modelData.name + ".";
-					}
+				BarText {
+					text: "Other networks"
+					color: Theme.inkDim
+					font.pixelSize: 12
+					font.weight: Font.DemiBold
+				}
+
+				Searching {
+					anchors.verticalCenter: parent.verticalCenter
+					running: Net.wifi?.scannerEnabled ?? false
 				}
 			}
 
-			ListRow {
-				width: parent.width
-				glyph: Net.strengthGlyph(entry.modelData)
-				title: entry.modelData.name
-				subtitle: entry.modelData.stateChanging ? "Connecting…" : entry.modelData.known ? "Saved" : ""
-				trailing: Net.secured(entry.modelData) ? Glyphs.lock : ""
-				chosen: entry.askingHere
-				onClicked: root.join(entry.modelData)
-			}
+			ListView {
+				id: list
 
-			// Its password, asked for in place
-			Rectangle {
-				visible: entry.askingHere
-				width: parent.width
-				height: passwordColumn.implicitHeight + 20
-				radius: 12
-				color: Theme.alpha(Theme.ink, 0.06)
+				x: -6
+				width: parent.width + 12
+				height: Math.min(contentHeight, 250)
+				clip: true
+				spacing: 2
+				boundsBehavior: Flickable.StopAtBounds
+				model: root.others
 
-				function join() {
-					if (password.text.length < 8)
-						return;
-					root.error = "";
-					entry.modelData.connectWithPsk(password.text);
-					password.text = "";
-					root.asking = null;
-				}
+				delegate: Column {
+					id: entry
 
-				onVisibleChanged: if (visible)
-					password.focusField()
+					required property var modelData
+					readonly property bool askingHere: root.asking === modelData
 
-				Column {
-					id: passwordColumn
+					width: ListView.view.width
+					spacing: 6
 
-					x: 10
-					y: 10
-					width: parent.width - 20
-					spacing: 8
+					Connections {
+						target: entry.modelData
 
-					BarText {
-						text: root.error || "Password for " + entry.modelData.name
-						color: Theme.inkDim
-						font.pixelSize: 12
+						function onConnectionFailed(reason) {
+							if (reason === ConnectionFailReason.NoSecrets && Net.takesPassword(entry.modelData)) {
+								root.asking = entry.modelData;
+								root.error = entry.modelData.known ? "The saved password didn't work." : "";
+							} else {
+								root.error = "Couldn't join " + entry.modelData.name + ".";
+							}
+						}
 					}
 
-					Field {
-						id: password
-
+					ListRow {
 						width: parent.width
-						password: true
-						placeholder: "Password"
-						onAccepted: parent.parent.join()
-						Keys.onEscapePressed: root.asking = null
+						glyph: Net.strengthGlyph(entry.modelData)
+						title: entry.modelData.name
+						subtitle: entry.modelData.stateChanging ? "Connecting…" : entry.modelData.known ? "Saved" : ""
+						trailing: Net.secured(entry.modelData) ? Glyphs.lock : ""
+						chosen: entry.askingHere
+						onClicked: root.join(entry.modelData)
 					}
 
-					Row {
-						anchors.right: parent.right
-						spacing: 6
+					// Its password, asked for in place
+					Rectangle {
+						visible: entry.askingHere
+						width: parent.width
+						height: passwordColumn.implicitHeight + 20
+						radius: 12
+						color: Theme.alpha(Theme.ink, 0.06)
 
-						PillButton {
-							text: "Cancel"
-							onClicked: root.asking = null
+						function join() {
+							if (password.text.length < 8)
+								return;
+							root.error = "";
+							entry.modelData.connectWithPsk(password.text);
+							password.text = "";
+							root.asking = null;
 						}
 
-						PillButton {
-							primary: true
-							text: "Join"
-							enabled: password.text.length >= 8
-							onClicked: passwordColumn.parent.join()
+						onVisibleChanged: if (visible)
+							password.focusField()
+
+						Column {
+							id: passwordColumn
+
+							x: 10
+							y: 10
+							width: parent.width - 20
+							spacing: 8
+
+							BarText {
+								text: root.error || "Password for " + entry.modelData.name
+								color: Theme.inkDim
+								font.pixelSize: 12
+							}
+
+							Field {
+								id: password
+
+								width: parent.width
+								password: true
+								placeholder: "Password"
+								onAccepted: parent.parent.join()
+								Keys.onEscapePressed: root.asking = null
+							}
+
+							Row {
+								anchors.right: parent.right
+								spacing: 6
+
+								PillButton {
+									text: "Cancel"
+									onClicked: root.asking = null
+								}
+
+								PillButton {
+									primary: true
+									text: "Join"
+									enabled: password.text.length >= 8
+									onClicked: passwordColumn.parent.join()
+								}
+							}
 						}
 					}
 				}
+			}
+
+			BarText {
+				visible: root.error !== "" && root.asking === null
+				x: 2
+				text: root.error
+				color: Theme.inkDim
+				font.pixelSize: 12
 			}
 		}
 	}
 
-	BarText {
-		visible: root.error !== "" && root.asking === null
-		x: 4
-		text: root.error
-		color: Theme.inkDim
-		font.pixelSize: 12
-	}
-
+	// Apart from the cards, as it leaves the page, and in line with their rows
 	ListRow {
-		width: parent.width
+		x: 6
+		width: parent.width - 12
 		glyph: "⚙"
 		title: "Network settings…"
 		onClicked: {
