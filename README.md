@@ -1,74 +1,212 @@
 # nix-config
 
-My NixOS and Home Manager configuration: one laptop (`framework`, a Framework
-13 AMD AI 300), Hyprland, and a desktop shell of its own called islands.
+One laptop, declared end to end: NixOS and Home Manager on a Framework 13,
+Hyprland configured in Lua, and **islands**, a desktop shell written for it.
 
-- Hyprland is configured in Lua: see the
-  [configuration notes](modules/hm/wms/hypr/README.md).
-- The islands shell (bar, notifications, control centre, capture overlay,
-  prompts) lives in [modules/hm/wms/islands](modules/hm/wms/islands): its
-  [README](modules/hm/wms/islands/README.md) maps what depends on what, and
-  the top of its `default.nix` says how to run a development copy.
+![The desktop of an empty workspace: the bar's islands along the top, a large clock, and cards for today's captures and things to start](docs/images/hero.webp)
 
-## Usage
+Everything on screen above is this repository: the bar, the clock and cards
+on the empty workspace, and what each island grows into. The screenshots on
+this page were taken on a spare virtual monitor, so they show the real shell
+with nothing else open. The calendar and the Wi-Fi name in them are stand-ins.
 
-The system and the home are built separately (Home Manager is standalone),
-so most changes need only one of the two.
+- [islands, the shell](#islands-the-shell)
+- [The forecast](#the-forecast)
+- [The little things](#the-little-things)
+- [Numbers](#numbers)
+- [Using this configuration](#usage)
 
-```sh
-nh os switch . -H framework              # system    (alias: rb)
-nh home switch . -c ewardner@framework   # home      (alias: rbh)
-```
+## islands, the shell
 
-### Update inputs
+![The bar: weather, the clock, Keep Awake, the next meeting, a finished terminal job, the tray and the system's state, each in its own island](docs/images/bar.webp)
 
-```sh
-nix flake update
-```
+A bar of islands. Each one rests as a pill and grows into what it's about: a
+click on the weather grows it into the forecast, the clock into the
+notification centre, the status icons into the control centre. One grows at
+a time, out of the island you clicked, and Esc or a click anywhere else puts
+it back.
 
-Then rebuild both. The `upd` alias updates the lock file and switches the
-home only; run `rb` after it for the system.
+It is one [Quickshell](https://quickshell.org) process, 89 QML files and
+about 11,000 lines, and it took the place of six programs: waybar, mako,
+swayosd, a Wi-Fi applet, blueman's applet and hyprpolkitagent. So the bar,
+the notifications, the volume popup, the Wi-Fi and Bluetooth lists, and the
+password prompts all look and move the same way, because they are the same
+thing.
 
-### Format and check
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/control-centre.webp" alt="The control centre: tiles for Wi-Fi, Bluetooth, the camera and push-to-talk, sliders for sound, the microphone and brightness, and the power profile"></td>
+    <td width="50%"><img src="docs/images/battery.webp" alt="The battery page: the charge over six hours, the power profile, CPU, chip power, temperature and fan, and the three busiest apps"></td>
+  </tr>
+  <tr>
+    <td><b>The control centre</b> grows out of the status icons. Wi-Fi, Bluetooth, sound devices and the battery each have a page it resizes to.</td>
+    <td><b>The battery page</b> charts the last six hours and names the three busiest things on the machine: right now, on this stretch of battery, or today.</td>
+  </tr>
+</table>
 
-```sh
-nix fmt                     # format everything (treefmt)
-nix flake check             # the pre-commit hooks: treefmt, flake-checker, convco
-scripts/check-hyprland.sh   # render the Hyprland Lua config and verify it
-```
+![The notification centre: the time and date, a calendar with a dot on each day that has an event, today's events, and the notification history with Keep Awake and Do Not Disturb](docs/images/notification-centre.webp)
 
-With direnv, entering the directory loads the dev shell and installs the
-pre-commit hooks.
+**The notification centre** grows out of the clock: a calendar with a dot on
+each day that has something on, the day's events, what's playing, and the
+notification history, with Keep Awake and Do Not Disturb at the top.
 
-## Structure
+![The keyboard shortcuts, in groups: open, toggle, windows, groups, workspaces and capture](docs/images/shortcuts.webp)
 
-```
-flake.nix                  # inputs, the `user` block, hosts, packages
-├── hosts/
-│   ├── framework/         # the laptop
-│   │   ├── configuration.nix
-│   │   ├── disks.nix            # disko: LUKS, btrfs subvolumes, swapfile
-│   │   ├── hardware-configuration.nix
-│   │   └── home-overrides.nix   # monitors, sensors, wallpaper
-│   └── iso/               # the installer image and its install script
-├── home/home.nix          # Home Manager entry (imports modules/hm)
-├── modules/
-│   ├── nixos/             # system modules
-│   ├── hm/                # home modules: shell, git, editors, wms/ (Hyprland, islands, launchers)
-│   └── stylix/            # theme, fonts, wallpapers (shared by both)
-├── pkgs/                  # our own packages, added to pkgs by an overlay
-└── scripts/
-```
+**Every shortcut, one key away.** Super+/ grows the clock into the sheet.
+Typing searches it: what doesn't match fades back, so nothing moves.
 
-Modules sit under one `modules.*` option namespace, most of them on by
-default; a host turns things on or off in its `configuration.nix` and
-`home-overrides.nix`.
+## The forecast
 
-The packages in `pkgs/` are also flake outputs, for use on their own:
+<img align="right" width="340" src="docs/images/forecast-day.webp" alt="The forecast panel through a whole day: its background follows the sky from night through sunrise, the day's blue, sunset and each twilight">
 
-```sh
-nix build .#bar-tools   # also: islands-agent, capture-preview, gather-symbol
-```
+The weather island shows the temperature and when the sun next changes.
+Clicked, it grows into the forecast, and the panel is the sky of the hour:
+the day's blue, a sunset, each twilight in turn, the night.
+
+On the right is the real panel taken through a whole day, with its clock
+driven by hand and a made-up day of weather. Nothing else about it is staged.
+
+- **The sky is worked out here, not fetched.** No weather service gives the
+  twilights, so the shell computes sunrise, sunset and the civil, nautical
+  and astronomical dusks and dawns from where the machine is, to within a
+  minute or two.
+- **The colours follow the sun.** Each is keyed to how far under the horizon
+  the sun is, and blended between. The ink flips from dark to white row by
+  row as the sky behind it darkens.
+- **The line looks only as far as there's something to see.** It runs from
+  now to the last thing coming: the evening's last dusk, then, once night
+  has fallen, sunrise. Moments come towards the sun as their time does, and
+  what has passed squeezes up behind it and fades.
+- **It follows the machine.** The place comes from the network the laptop is
+  on, looked up again when that changes, and the forecast from Open-Meteo
+  every fifteen minutes into a cache, so it shows at once on a restart.
+
+<br clear="right">
+
+![Five moments of the same panel: sunrise, noon, sunset, civil dusk and night](docs/images/forecast-skies.webp)
+
+## The little things
+
+Most of the work went into details like these.
+
+- **Nothing private on a shared screen.** While a screen share runs,
+  notifications are held back and counted in the island, an orange frame
+  goes round what's shared, and the bar names the focused app but never its
+  window title.
+- **A shared window can be resized.** Hyprland's screen-share portal froze a
+  share for good the first time a frame failed to copy, which happens
+  routinely while a shared window is being resized. A small patch carried
+  here makes it try again, until
+  [the fix lands upstream](https://github.com/hyprwm/xdg-desktop-portal-hyprland/issues/445).
+  What to share is picked in the same overlay as a screenshot.
+- **Questions are asked in the island.** A Wi-Fi password, a Bluetooth
+  pairing code, the keyring, a program that needs root: each grows out of
+  the clock, takes the keyboard, and goes away when answered. A YubiKey
+  waiting for a touch is rimmed in Yubico's green.
+- **Terminals report in.** A command running for more than ten seconds gets
+  an island: `test:e2e 3:12`, then `passed 6m 04s` or `failed exit 1` until
+  you look at its terminal. A click takes you there. Claude Code sessions
+  show the same way. More on [what it leaves out](#the-job-island) below.
+- **The next meeting sits by the clock** from half an hour before it starts,
+  with Join if it has a link.
+- **Capture is built in.** Print freezes the screen: drag an area, click a
+  window, or take the whole screen, as a screenshot, a recording, its text,
+  or a colour. A recording shows in the island with its size and a stop
+  button, and opens in a preview with a trim when it ends.
+
+  ![The capture overlay at work: the clock grows into a toolbar over the frozen screen, an area is dragged out and opens in a preview, a click takes a whole window, and the colour picker follows the pointer with a magnifier](docs/images/capture.webp)
+
+  Above: an area dragged out, a window taken with one click, then the colour
+  picker. It was filmed on a spare virtual monitor with the pointer driven
+  by a script, since the overlay being filmed is the thing that normally
+  does the filming.
+
+  ![A recording in the island: a red dot, 0:20, 1210 by 1467, and a stop button](docs/images/recording.webp)
+
+- **Keep Awake is a switch, not a forgotten terminal.** While it's on,
+  nothing dims, locks or suspends, and a steaming cup sits by the clock.
+- **Push-to-talk works everywhere.** Armed from the mic icon, every
+  microphone stays muted except while Right Alt is held. It is a small
+  daemon of its own, so a crash of the shell can never leave a mic open.
+- **An empty workspace is a dashboard.** The time, what's playing, today's
+  captures to drag into a chat, something to start, and the machine's state
+  in a line at the foot.
+- **Monitors come and go.** Each gets its own bar as it's plugged in, and a
+  panel left open on one that's unplugged closes itself.
+
+### The job island
+
+A command that has been running in a terminal for more than ten seconds
+gets an island beside the clock, so you can go and do something else:
+`test:e2e 3:12` while it runs, then `test:e2e passed 6m 04s` or
+`test:e2e failed exit 1` when it ends, until you look at its terminal. A
+click takes you to that terminal; a right click puts the job away. With
+more than one, the island shows `+2` and grows into the list, failures
+first. A command you stopped yourself with Ctrl+C or Ctrl+Z is never
+reported.
+
+Some things run for a long time on purpose, and those are left out:
+
+| Left out                      | Such as                                                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Programs you work in          | `vim`, `less`, `man`, `ssh`, `tmux`, `htop`, `btop`, `watch`, `lazygit`, `yazi`, `fzf`, `psql`, `process-compose`      |
+| A REPL started with no script | `python`, `node`, `bash`, `zsh` (but `python build.py` is a job)                                                       |
+| Servers and watchers          | `npm run dev`, `pnpm start`, `nix develop`, `docker compose up`, `kubectl port-forward`, `tail -f`, anything `--watch` |
+
+The match is on the command itself: aliases are expanded first, and
+anything in front of it (`sudo`, `env`, a `cd … &&`, variable assignments)
+is looked past.
+
+To leave something else out, add it to one of the three lists at the top of
+[`shell/Jobs.qml`](modules/hm/wms/islands/shell/Jobs.qml): a program's name
+to `interactive`, a REPL's to `repls`, or a regular expression for a whole
+command line to `patterns`. Then switch the home configuration.
+
+### How it's put together
+
+The shell keeps its state in singletons, one per subject, and draws it in
+islands that know nothing of each other. Keybinds reach it through
+`qs ipc -c islands call …`, so they know nothing of how it's drawn, and only
+ten of its files know they are running on Hyprland.
+
+The [islands README](modules/hm/wms/islands/README.md) has the map: what
+depends on what, what it would take to lift the weather out for another
+shell, and what is tied to the compositor.
+
+Around it:
+
+- **Hyprland in Lua**, with the [configuration notes](modules/hm/wms/hypr/README.md)
+  on what that changed.
+- **Three small programs** in `pkgs/`, built here: `bar-tools` (push-to-talk
+  and the status watchers, in Rust), `islands-agent` (the Wi-Fi, Bluetooth
+  and keyring prompts) and `capture-preview` (the window a capture opens
+  in).
+- **One theme.** Stylix picks the colours and fonts; the shell reads them
+  from a file Home Manager writes, so a checkout runs as it is, with reload
+  on every save.
+
+## Numbers
+
+Measured on this machine: a Ryzen AI 9 HX 370 driving a 4K screen at 144 Hz
+and the laptop's own at 120 Hz.
+
+### What it costs to run
+
+Measured on 10 November 2026.
+
+|                      | The six programs it replaced | islands              |
+| -------------------- | ---------------------------- | -------------------- |
+| Memory (PSS)         | 231 MB                       | 173 MB               |
+| CPU at rest          |                              | about 1% of one core |
+| CPU over 83 hours up |                              | 0.74% of one core    |
+| Start to ready       |                              | 0.58 s               |
+
+The shell also holds about 180 MB of graphics buffers, which that memory
+figure doesn't count; the old programs' were never measured.
+
+Of the 25 things the bar keeps up to date, 18 arrive as events, 4 are
+polled, 2 are polled only while their page is showing, and 1 is read on
+demand.
 
 ## What's using the CPU
 
@@ -189,6 +327,66 @@ Clicking a row opens a window on it:
   the brief ones seen in the terminals then. `b` goes on to below's own
   recording of those minutes, replayed (`p` for processes, `c` for
   groups).
+
+## Usage
+
+The system and the home are built separately (Home Manager is standalone),
+so most changes need only one of the two.
+
+```sh
+nh os switch . -H framework              # system    (alias: rb)
+nh home switch . -c ewardner@framework   # home      (alias: rbh)
+```
+
+### Update inputs
+
+```sh
+nix flake update
+```
+
+Then rebuild both. The `upd` alias updates the lock file and switches the
+home only; run `rb` after it for the system.
+
+### Format and check
+
+```sh
+nix fmt                     # format everything (treefmt)
+nix flake check             # the pre-commit hooks: treefmt, flake-checker, convco
+scripts/check-hyprland.sh   # render the Hyprland Lua config and verify it
+```
+
+With direnv, entering the directory loads the dev shell and installs the
+pre-commit hooks.
+
+## Structure
+
+```
+flake.nix                  # inputs, the `user` block, hosts, packages
+├── hosts/
+│   ├── framework/         # the laptop
+│   │   ├── configuration.nix
+│   │   ├── disks.nix            # disko: LUKS, btrfs subvolumes, swapfile
+│   │   ├── hardware-configuration.nix
+│   │   └── home-overrides.nix   # monitors, sensors, wallpaper
+│   └── iso/               # the installer image and its install script
+├── home/home.nix          # Home Manager entry (imports modules/hm)
+├── modules/
+│   ├── nixos/             # system modules
+│   ├── hm/                # home modules: shell, git, editors, wms/ (Hyprland, islands, launchers)
+│   └── stylix/            # theme, fonts, wallpapers (shared by both)
+├── pkgs/                  # our own packages, added to pkgs by an overlay
+└── scripts/
+```
+
+Modules sit under one `modules.*` option namespace, most of them on by
+default; a host turns things on or off in its `configuration.nix` and
+`home-overrides.nix`.
+
+The packages in `pkgs/` are also flake outputs, for use on their own:
+
+```sh
+nix build .#bar-tools   # also: islands-agent, capture-preview, gather-symbol
+```
 
 ## Adding a host
 
@@ -311,3 +509,34 @@ That isn't everything. Before it builds for anyone else:
   (`work.tiberius.com`), the Forgejo client ID in `modules/hm/default.nix`,
   and the YubiKey serial in the `oath` command in `hyprland.nix`.
 - Set monitors and sensor paths in the host's `home-overrides.nix`.
+
+## Beta: an iPhone, linked
+
+Still being lived with, and off unless a host turns it on:
+[Tether](https://github.com/zackb/tether) links an iPhone to the laptop over
+Bluetooth, with no Mac and no Apple ID sign-in.
+
+```nix
+modules.tether.enable = true;        # texts and notifications, over Bluetooth
+modules.tether.wifi.enable = true;   # clipboard, files and links, on marked networks only
+```
+
+What works:
+
+- **Texts and notifications arrive** in the shell's own notifications, under
+  the phone app's name and with an icon to match.
+- **The clipboard, files and links** cross over Wi-Fi, but only on networks
+  marked for it. Tether listens and announces itself on every network, so
+  the module keeps its port shut and its announcements off everywhere
+  except a connection given the `home` zone:
+  `nmcli connection modify NAME connection.zone home`.
+
+What doesn't, all of it down to what an iPhone will share over Bluetooth:
+
+- Messages sent from the phone never appear on the laptop.
+- Group chats arrive as one-to-one messages from whoever wrote.
+- No attachments and no reactions.
+
+So for now it is mostly a notification mirror. The module carries Tether
+0.3.6 ahead of nixpkgs, with one small fix so it finds the icon themes in a
+Nix profile, and says at every rebuild once that can go.
