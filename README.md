@@ -121,8 +121,9 @@ Most of the work went into details like these.
   windows was used last, often on another workspace. Here a link clicked in
   a terminal or in Slack opens in the browser window on the same workspace,
   or in a new one there if it has none. From the chat workspace it goes to
-  the browser used last and takes you to it. Command-line tools (`gh`, a
-  login flow) open links the same way.
+  the nearest browser: one in view on another monitor, where the link shows
+  beside chat, then the one on the workspace behind chat, then the one used
+  last. Command-line tools (`gh`, a login flow) open links the same way.
 - **Monitors come and go.** Each gets its own bar as it's plugged in, and a
   panel left open on one that's unplugged closes itself.
 

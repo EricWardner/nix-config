@@ -1,26 +1,39 @@
 # chrome-here: the link handler. Chrome opens a link in whichever of its
 # windows was used last, anywhere; this opens it in the browser window on the
 # workspace it was clicked from, or in a new window there if it has none.
-# From a special workspace (chat) it's the browser window used last, wherever
-# it is. Without Hyprland, Chrome picks.
+# A special workspace (chat) has no browser of its own, so its links go to
+# the nearest one: on another monitor, where the link shows beside chat;
+# else on the workspace chat lies over; else the one used last, wherever
+# that is. Without Hyprland, Chrome picks.
 
 workspace=$(hyprctl activewindow -j | jq -r '.workspace.name // empty') || workspace=""
 [ -n "$workspace" ] || workspace=$(hyprctl activeworkspace -j | jq -r '.name // empty') || workspace=""
 [ -n "$workspace" ] || exec google-chrome-stable "$@"
 
+monitors=$(hyprctl monitors -j) || monitors=""
+[ -n "$monitors" ] || monitors="[]"
+
 # Browser windows' titles end in " - Google Chrome"; app windows (Gather),
 # DevTools and the screen-sharing bar's don't. Special workspaces have no id,
-# only a special: name.
-address=$(hyprctl clients -j | jq -r --arg ws "$workspace" '
-  map(select(.class == "google-chrome" and (.title | endswith(" - Google Chrome"))
-    and (.workspace.name == $ws or ($ws | startswith("special:")))))
-  | sort_by(.focusHistoryID) | first | .address // empty') || address=""
+# only a special: name. From one, the windows are taken by where they are:
+# in view on a monitor with no special workspace over it, then behind this
+# one, then anywhere; and in each place, the one used last.
+address=$(hyprctl clients -j | jq -r --arg ws "$workspace" --argjson monitors "$monitors" '
+  ($monitors | map(select(.specialWorkspace.name == "") | .activeWorkspace.name)) as $beside
+  | ($monitors | map(select(.specialWorkspace.name == $ws) | .activeWorkspace.name)) as $behind
+  | map(select(.class == "google-chrome" and (.title | endswith(" - Google Chrome"))
+      and (.workspace.name == $ws or ($ws | startswith("special:")))))
+  | sort_by([
+      (if (.workspace.name | IN($beside[])) then 0 elif (.workspace.name | IN($behind[])) then 1 else 2 end),
+      .focusHistoryID
+    ])
+  | first | .address // empty') || address=""
 
 if [ -z "$address" ]; then
   exec google-chrome-stable --new-window "$@"
 fi
 
-# Focused, it's the window Chrome opens the link in (from chat, this also
-# leaves chat for it)
+# Focused, it's the window Chrome opens the link in (on the workspace behind
+# chat or further off, this also leaves chat for it)
 hyprctl dispatch "hl.dsp.focus({ window = \"address:$address\" })" >/dev/null
 exec google-chrome-stable "$@"
