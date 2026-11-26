@@ -209,8 +209,10 @@ PanelWindow {
 	}
 
 	// Where the left of the bar ends: the weather rides in on the centre
-	// island's edge as it shrinks back to rest, but only once it's clear
-	// of this (10px clear, as at rest it can be 12 to the pixel)
+	// island's edge as it shrinks back to rest, but only once its pill
+	// there would be clear of this (10px clear, as at rest it can be 12 to
+	// the pixel). By the pill, not the weather's own edge, which the
+	// forecast shrinking back takes over the workspaces.
 	readonly property real leftEnd: focusedApp.visible ? focusedApp.start + focusedApp.width : focusedApp.start - left.spacing
 	// And where the islands after the clock must end: before the tray
 	readonly property real rightEnd: (tray.visible ? tray.x : statusRest.x) - 8
@@ -226,7 +228,7 @@ PanelWindow {
 		readonly property real restWidth: compact ? compactWidth : fullWidth
 
 		compact: bar.squeeze >= 1
-		visible: atRest && (open || (centre.resting && x >= bar.leftEnd + 10))
+		visible: atRest && (open || (centre.resting && centre.x - 8 - restWidth >= bar.leftEnd + 10))
 		x: centre.x - width - 8
 		y: centre.y
 	}
