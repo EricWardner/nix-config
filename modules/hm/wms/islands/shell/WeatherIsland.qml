@@ -15,7 +15,8 @@ Island {
 	property bool compact: false
 	// The pill's width with it, for Bar to judge the room by (added up from
 	// its parts: the row's own width depends on compact)
-	readonly property real fullWidth: pillIcon.width + row.spacing + pillTemp.width + (Weather.sky !== null ? row.spacing + sun.implicitWidth : 0) + 24
+	readonly property real fullWidth: compactWidth + (Weather.sky !== null ? row.spacing + sun.implicitWidth : 0)
+	readonly property real compactWidth: pillIcon.width + row.spacing + pillTemp.width + 24
 
 	align: Qt.AlignRight
 

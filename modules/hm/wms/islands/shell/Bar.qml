@@ -137,6 +137,7 @@ PanelWindow {
 			id: workspaces
 
 			screen: bar.modelData
+			level: Math.max(0, Math.min(2, bar.squeeze - 2))
 		}
 
 		// Up to the islands in the middle, cut short with an ellipsis, and
@@ -151,7 +152,8 @@ PanelWindow {
 			screen: bar.modelData
 			leftPadding: 7
 			width: Math.min(implicitWidth, room)
-			visible: room >= 50
+			// Not back in the room the workspaces give up further on
+			visible: room >= 50 && bar.squeeze < 2
 			elide: Text.ElideRight
 			anchors.verticalCenter: parent.verticalCenter
 		}
@@ -174,16 +176,37 @@ PanelWindow {
 		y: Theme.barTop + 2
 	}
 
-	// Beside the clock while it's at rest: the weather before it, which
-	// drops the sun's next change once the app's name would have less than
-	// about nine letters. Judged by its full width, so dropping it doesn't
-	// bring it straight back.
+	// How the left of the bar gives way as it runs into the weather, in
+	// turn: 1 the weather drops the sun's next change once the app's name
+	// would have less than about nine letters, 2 the name goes, 3 the
+	// workspaces show one icon per app, 4 their names alone, 5 the weather
+	// goes. Judged by what each step would take, not by the widths now, so
+	// a step doesn't undo itself.
+	readonly property int squeeze: {
+		const start = left.x + workspaces.x + left.spacing;
+		const edge = centre.x - 8 - 12;
+		const name = Math.min(focusedApp.implicitWidth, 90);
+		const widths = workspaces.widths;
+		if (edge - weather.fullWidth - start - widths[0] >= name)
+			return 0;
+		if (edge - weather.compactWidth - start - widths[0] >= name)
+			return 1;
+		if (edge - weather.compactWidth - start - widths[0] >= 0)
+			return 2;
+		if (edge - weather.compactWidth - start - widths[1] >= 0)
+			return 3;
+		if (edge - weather.compactWidth - start - widths[2] >= 0)
+			return 4;
+		return 5;
+	}
+
+	// Beside the clock while it's at rest: the weather before it
 	WeatherIsland {
 		id: weather
 
 		screen: bar.modelData
-		compact: centre.x - 8 - fullWidth - 12 - focusedApp.start < Math.min(focusedApp.implicitWidth, 90)
-		visible: Weather.ready && (open || centre.resting)
+		compact: bar.squeeze >= 1
+		visible: Weather.ready && (open || centre.resting) && bar.squeeze < 5
 		x: centre.x - width - 8
 		y: centre.y
 	}

@@ -18,7 +18,30 @@ Item {
 	readonly property var windows: modelData.toplevels.values
 	readonly property var icons: windows.map(w => Glyphs.app(w.wayland?.appId ?? w.lastIpcObject?.class ?? "")).filter(icon => icon !== null)
 
-	implicitWidth: label.implicitWidth + 14
+	// How much it shows, as the bar has room (Bar): 0 an icon per window,
+	// 1 one per app, 2 the name alone
+	property int level: 0
+	// Its width at each level, for the bar to choose by
+	readonly property var widths: {
+		let all = 0;
+		let apps = 0;
+		for (let i = 0; i < iconRepeater.count; i++) {
+			const icon = iconRepeater.itemAt(i);
+			if (!icon)
+				continue;
+			all += label.spacing + icon.implicitWidth;
+			if (icon.firstOfApp)
+				apps += label.spacing + icon.implicitWidth;
+		}
+		const name = nameText.implicitWidth + 14;
+		return [name + all, name + apps, name];
+	}
+
+	function key(icon: var): string {
+		return (icon.glyph ?? "") + "|" + (icon.logo ?? "");
+	}
+
+	implicitWidth: widths[level]
 	implicitHeight: Theme.barHeight
 	opacity: windows.length === 0 ? 0.5 : 1
 
@@ -33,16 +56,23 @@ Item {
 
 		// Bold, as waybar's workspace buttons were
 		BarText {
+			id: nameText
+
 			text: root.name
 			font.weight: Font.Bold
 		}
 
 		Repeater {
+			id: iconRepeater
+
 			model: root.icons
 
 			AppIcon {
 				required property var modelData
+				required property int index
+				readonly property bool firstOfApp: root.icons.findIndex(icon => root.key(icon) === root.key(modelData)) === index
 
+				visible: root.level === 0 || (root.level === 1 && firstOfApp)
 				glyph: modelData.glyph ?? ""
 				logo: modelData.logo ?? ""
 			}
