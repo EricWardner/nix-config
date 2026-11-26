@@ -18,6 +18,8 @@ Island {
 	// The most it may be wide: the bar's room before the tray. Past it the
 	// name is cut short; the time and the "+1" stay.
 	property real room: Infinity
+	// Its width with the name cut to nothing, which no room makes narrower
+	readonly property real minWidth: 24 + icon.implicitWidth + clock.implicitWidth + (more.visible ? more.width + row.spacing : 0) + 2 * row.spacing
 
 	align: Qt.AlignLeft
 

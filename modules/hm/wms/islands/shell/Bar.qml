@@ -147,7 +147,9 @@ PanelWindow {
 			id: focusedApp
 
 			readonly property real start: left.x + workspaces.x + workspaces.width + left.spacing
-			readonly property real room: (weather.visible ? weather.x : centre.x) - 12 - start
+			// Up to where the weather sits at rest, or the centre island
+			// without it: neither the forecast nor a notification moves it
+			readonly property real room: bar.centreLeft - (weather.atRest ? 8 + weather.restWidth : 0) - 12 - start
 
 			screen: bar.modelData
 			leftPadding: 7
@@ -181,32 +183,50 @@ PanelWindow {
 	// would have less than about nine letters, 2 the name goes, 3 the
 	// workspaces show one icon per app, 4 their names alone, 5 the weather
 	// goes. Judged by what each step would take, not by the widths now, so
-	// a step doesn't undo itself.
+	// a step doesn't undo itself. Up to the centre island without what
+	// floats over the bar, so a notification passes over and moves nothing.
+	// The weather only sits beside the clock: a share or a recording hides
+	// it, so it takes no room then.
+	readonly property real centreLeft: (bar.width - centre.baseWidth) / 2
 	readonly property int squeeze: {
 		const start = left.x + workspaces.x + left.spacing;
-		const edge = centre.x - 8 - 12;
+		const edge = centreLeft - 12;
 		const name = Math.min(focusedApp.implicitWidth, 90);
 		const widths = workspaces.widths;
-		if (edge - weather.fullWidth - start - widths[0] >= name)
+		const full = centre.baseResting ? 8 + weather.fullWidth : 0;
+		const compact = centre.baseResting ? 8 + weather.compactWidth : 0;
+		if (edge - full - start - widths[0] >= name)
 			return 0;
-		if (edge - weather.compactWidth - start - widths[0] >= name)
+		if (edge - compact - start - widths[0] >= name)
 			return 1;
-		if (edge - weather.compactWidth - start - widths[0] >= 0)
+		if (edge - compact - start - widths[0] >= 0)
 			return 2;
-		if (edge - weather.compactWidth - start - widths[1] >= 0)
+		if (edge - compact - start - widths[1] >= 0)
 			return 3;
-		if (edge - weather.compactWidth - start - widths[2] >= 0)
+		if (edge - compact - start - widths[2] >= 0)
 			return 4;
 		return 5;
 	}
+
+	// Where the left of the bar ends: the weather rides in on the centre
+	// island's edge as it shrinks back to rest, but only once it's clear
+	// of this (10px clear, as at rest it can be 12 to the pixel)
+	readonly property real leftEnd: focusedApp.visible ? focusedApp.start + focusedApp.width : focusedApp.start - left.spacing
+	// And where the islands after the clock must end: before the tray
+	readonly property real rightEnd: (tray.visible ? tray.x : statusRest.x) - 8
 
 	// Beside the clock while it's at rest: the weather before it
 	WeatherIsland {
 		id: weather
 
 		screen: bar.modelData
+		// Whether it's in the bar's layout, though a popup may hide it for
+		// now, and its width there
+		readonly property bool atRest: Weather.ready && bar.squeeze < 5 && centre.baseResting
+		readonly property real restWidth: compact ? compactWidth : fullWidth
+
 		compact: bar.squeeze >= 1
-		visible: Weather.ready && (open || centre.resting) && bar.squeeze < 5
+		visible: atRest && (open || (centre.resting && x >= bar.leftEnd + 10))
 		x: centre.x - width - 8
 		y: centre.y
 	}
@@ -220,26 +240,35 @@ PanelWindow {
 		y: centre.y
 		spacing: 8
 
+		// Each rides in on the centre island's edge as it shrinks back to
+		// rest, once it's clear of the tray. Placed by what's before it, not
+		// its own x, which the Row leaves alone while it's hidden.
 		DndIsland {
 			id: dnd
 
+			readonly property real start: after.x
+
 			screen: bar.modelData
-			visible: (KeepAwake.on || Inbox.dnd) && centre.resting
+			visible: (KeepAwake.on || Inbox.dnd) && centre.resting && start + width <= bar.rightEnd
 		}
 
 		EventIsland {
 			id: meeting
 
+			readonly property real start: dnd.start + (dnd.visible ? dnd.width + after.spacing : 0)
+
 			screen: bar.modelData
-			visible: soon && centre.resting
+			visible: soon && centre.resting && start + width <= bar.rightEnd
 		}
 
 		JobIsland {
 			id: job
 
+			readonly property real start: meeting.start + (meeting.visible ? meeting.width + after.spacing : 0)
+
 			screen: bar.modelData
-			visible: Jobs.shown.length > 0 && (open || centre.resting)
-			room: (tray.visible ? tray.x : statusRest.x) - 8 - (after.x + x)
+			visible: Jobs.shown.length > 0 && (open || (centre.resting && room >= minWidth))
+			room: bar.rightEnd - start
 		}
 	}
 

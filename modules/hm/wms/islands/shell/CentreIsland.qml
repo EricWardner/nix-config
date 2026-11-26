@@ -24,8 +24,12 @@ Island {
 		}
 	}
 
+	// The popups and panels float over the bar (IslandMode.floats); a
+	// recording or a share, which last, make room instead
+
 	// Not over the control centre, whose sliders show the level already
 	OsdMode {
+		floats: true
 		active: Osd.showing && root.focused && !Panels.shows("control", root.screen)
 	}
 
@@ -41,22 +45,27 @@ Island {
 	}
 
 	NotificationMode {
+		floats: true
 		active: Inbox.popup !== null && root.focused
 	}
 
 	EventMode {
+		floats: true
 		active: Events.reminder !== null && root.focused
 	}
 
 	CentreMode {
+		floats: true
 		active: Panels.shows("centre", root.screen)
 	}
 
 	KeysMode {
+		floats: true
 		active: Panels.shows("keys", root.screen)
 	}
 
 	PromptMode {
+		floats: true
 		active: Agent.current !== null && root.focused
 	}
 }

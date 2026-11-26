@@ -21,6 +21,11 @@ Item {
 	readonly property var modeList: Array.from(stage.children).filter(child => child.isMode)
 	readonly property IslandMode current: modeList.length === 0 ? null : modeList.reduce((best, mode) => mode.active && mode.priority > best.priority ? mode : best, modeList[0])
 	readonly property bool resting: current?.resting ?? true
+	// Its width without the modes that float over the bar
+	// (IslandMode.floats), for what's beside it to keep its place by
+	readonly property IslandMode base: modeList.reduce((best, mode) => mode.active && !mode.floats && (best === null || mode.priority > best.priority) ? mode : best, null)
+	readonly property real baseWidth: base?.islandWidth ?? 0
+	readonly property bool baseResting: base?.resting ?? true
 	// Where Hyprland may blur behind it: a little past the glass, which (by
 	// its alpha) trims the blur to its own smooth edge
 	readonly property Item blurArea: blurArea

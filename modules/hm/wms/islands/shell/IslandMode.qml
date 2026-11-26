@@ -21,6 +21,9 @@ FocusScope {
 	property real cornerRadius: -1
 	// In the faint glass of the bar at rest, rather than grown light glass
 	property bool resting: false
+	// Passing over the bar (a popup, a panel): what's beside the island
+	// keeps its place, as if the island were still the mode under it
+	property bool floats: false
 	// The grown glass's rim; a state can colour it (critical: red)
 	property color rim: Theme.grownRim
 	// The rim at rest (a job that failed: red)
