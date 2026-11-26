@@ -787,18 +787,20 @@ Column {
 		onTriggered: usageCall.running = true
 	}
 
+	// Each read waits for its reload (blockAllReads): text() straight after
+	// reload() otherwise gives what the file held before
 	FileView {
 		id: powerFile
 
 		path: Host.powerFile
-		blockLoading: true
+		blockAllReads: true
 	}
 
 	FileView {
 		id: fanFile
 
 		path: Host.fanFile
-		blockLoading: true
+		blockAllReads: true
 	}
 
 	Timer {

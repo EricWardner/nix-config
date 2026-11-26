@@ -172,8 +172,8 @@ Column {
 
 			Slider {
 				width: parent.width
-				value: Metrics.backlight / 100
-				onMoved: value => Osd.setBrightness(Math.round(value * 100))
+				value: Brightness.level / 100
+				onMoved: value => Brightness.set(Math.round(value * 100))
 			}
 		}
 	}

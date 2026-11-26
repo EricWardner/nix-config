@@ -13,6 +13,10 @@ import Quickshell
 // a frame goes round a screen while it's shared. Sky is the desktop of an
 // empty workspace.
 ShellRoot {
+	// Singletons are made on first use; these take qs ipc calls before
+	// anything on screen uses them
+	readonly property list<QtObject> services: [Brightness]
+
 	Variants {
 		model: Quickshell.screens
 

@@ -4,10 +4,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// CPU, memory, temperature and screen brightness. The CPU and memory are
-// read only while Sky or the control centre shows them, and the temperature
-// while the control centre does; the brightness whenever udev reports a
-// change (the keys, idle dimming), for the popup, so nothing polls it.
+// CPU, memory and temperature. The CPU and memory are read only while Sky
+// or the control centre shows them, and the temperature while the control
+// centre does.
 Singleton {
 	id: root
 
@@ -17,7 +16,6 @@ Singleton {
 	property int cpu: 0 // % busy
 	property int memory: 0 // % used
 	property real temperature: 0 // °C
-	property int backlight: 100 // %
 	property int cores: 1 // the CPUs /proc/stat counts, threads included
 
 
@@ -54,54 +52,27 @@ Singleton {
 		temperature = Number(thermal.text().trim()) / 1000;
 	}
 
-	// Read once the file has loaded again: text() straight after reload()
-	// gave what it held before, so the level was always a change behind,
-	// and an idle dim's undim put back the dim before it
-	function readBacklight() {
-		if (Host.backlightDir !== "")
-			brightness.reload();
-	}
-
-	function backlightLoaded() {
-		const max = Number(maxBrightness.text().trim());
-		if (max > 0)
-			backlight = Math.round(100 * Number(brightness.text().trim()) / max);
-	}
-
+	// Each read waits for its reload (blockAllReads): text() straight after
+	// reload() otherwise gives what the file held before
 	FileView {
 		id: stat
 
 		path: "/proc/stat"
-		blockLoading: true
+		blockAllReads: true
 	}
 
 	FileView {
 		id: meminfo
 
 		path: "/proc/meminfo"
-		blockLoading: true
+		blockAllReads: true
 	}
 
 	FileView {
 		id: thermal
 
 		path: Host.temperatureFile
-		blockLoading: true
-	}
-
-	FileView {
-		id: brightness
-
-		path: Host.backlightDir === "" ? "" : Host.backlightDir + "/brightness"
-		blockLoading: true
-		onLoaded: root.backlightLoaded()
-	}
-
-	FileView {
-		id: maxBrightness
-
-		path: Host.backlightDir === "" ? "" : Host.backlightDir + "/max_brightness"
-		blockLoading: true
+		blockAllReads: true
 	}
 
 	// Two samples a second apart give the first reading, then every 2 s
@@ -129,29 +100,5 @@ Singleton {
 		triggeredOnStart: true
 		running: Host.temperatureFile !== "" && root.onControl
 		onTriggered: root.readTemperature()
-	}
-
-	// udev's events for the backlight, one line each; restarted if it exits
-	Process {
-		id: udev
-
-		command: ["udevadm", "monitor", "--udev", "--subsystem-match=backlight"]
-		running: Host.backlightDir !== ""
-		onRunningChanged: if (running)
-			root.readBacklight()
-		onExited: restartUdev.start()
-		stdout: SplitParser {
-			onRead: line => {
-				if (line.includes("(backlight)"))
-					root.readBacklight();
-			}
-		}
-	}
-
-	Timer {
-		id: restartUdev
-
-		interval: 5000
-		onTriggered: udev.running = true
 	}
 }
