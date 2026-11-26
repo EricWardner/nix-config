@@ -13,10 +13,12 @@ Island {
 	property real flight: open ? 1 : 0
 	// Without the sun's next change, when the bar is short of room (Bar)
 	property bool compact: false
-	// The pill's width with it, for Bar to judge the room by (added up from
-	// its parts: the row's own width depends on compact)
+	// The pill's width with it and without, for Bar to judge the room by
+	// (added up from its parts: the row's own width depends on compact),
+	// and the one it has at rest
 	readonly property real fullWidth: compactWidth + (Weather.sky !== null ? row.spacing + sun.implicitWidth : 0)
 	readonly property real compactWidth: pillIcon.width + row.spacing + pillTemp.width + 24
+	readonly property real restWidth: compact ? compactWidth : fullWidth
 
 	align: Qt.AlignRight
 

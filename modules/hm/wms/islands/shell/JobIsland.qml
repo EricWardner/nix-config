@@ -18,8 +18,12 @@ Island {
 	// The most it may be wide: the bar's room before the tray. Past it the
 	// name is cut short; the time and the "+1" stay.
 	property real room: Infinity
-	// Its width with the name cut to nothing, which no room makes narrower
-	readonly property real minWidth: 24 + icon.implicitWidth + clock.implicitWidth + (more.visible ? more.width + row.spacing : 0) + 2 * row.spacing
+	// There are other jobs (the "+1")
+	readonly property bool others: Jobs.shown.length > 1
+	// Its width with the name cut to nothing, which no room makes narrower.
+	// By `others`, not the "+1"'s visible, which reads false while the
+	// island is hidden and so changed the width the bar judges it by.
+	readonly property real minWidth: 24 + icon.implicitWidth + clock.implicitWidth + (others ? more.width + row.spacing : 0) + 2 * row.spacing
 
 	align: Qt.AlignLeft
 
@@ -58,7 +62,7 @@ Island {
 
 			BarText {
 				anchors.verticalCenter: parent.verticalCenter
-				width: Math.max(0, Math.min(implicitWidth, root.room - 24 - icon.implicitWidth - clock.implicitWidth - (more.visible ? more.width + row.spacing : 0) - 2 * row.spacing))
+				width: Math.max(0, Math.min(implicitWidth, root.room - root.minWidth))
 				// A Claude prompt is just done
 				text: !root.job ? "" : root.running ? root.job.name : root.job.name + (!root.job.shell ? " done" : root.passed ? " passed" : " failed")
 				textFormat: Text.PlainText
@@ -82,7 +86,7 @@ Island {
 			Rectangle {
 				id: more
 
-				visible: Jobs.shown.length > 1
+				visible: root.others
 				anchors.verticalCenter: parent.verticalCenter
 				width: count.implicitWidth + 12
 				height: 18

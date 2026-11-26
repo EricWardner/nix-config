@@ -137,25 +137,21 @@ PanelWindow {
 			id: workspaces
 
 			screen: bar.modelData
-			level: Math.max(0, Math.min(2, bar.squeeze - 2))
+			level: bar.levels.workspaces
 		}
 
-		// Up to the islands in the middle, cut short with an ellipsis, and
-		// gone when only a few letters would fit. Worked out from the
-		// workspaces, not its own x: the Row stops placing it while hidden.
+		// The rest of the room, cut short with an ellipsis. Its start is
+		// worked out from the workspaces, not its own x, which the Row
+		// leaves alone while it's hidden.
 		FocusedApp {
 			id: focusedApp
 
 			readonly property real start: left.x + workspaces.x + workspaces.width + left.spacing
-			// Up to where the weather sits at rest, or the centre island
-			// without it: neither the forecast nor a notification moves it
-			readonly property real room: bar.centreLeft - (weather.atRest ? 8 + weather.restWidth : 0) - 12 - start
 
 			screen: bar.modelData
 			leftPadding: 7
-			width: Math.min(implicitWidth, room)
-			// Not back in the room the workspaces give up further on
-			visible: room >= 50 && bar.squeeze < 2
+			width: Math.min(implicitWidth, bar.leftRoom - start)
+			visible: bar.levels.name === 0
 			elide: Text.ElideRight
 			anchors.verticalCenter: parent.verticalCenter
 		}
@@ -178,57 +174,45 @@ PanelWindow {
 		y: Theme.barTop + 2
 	}
 
-	// How the left of the bar gives way as it runs into the weather, in
-	// turn: 1 the weather drops the sun's next change once the app's name
-	// would have less than about nine letters, 2 the name goes, 3 the
-	// workspaces show one icon per app, 4 their names alone, 5 the weather
-	// goes. Judged by what each step would take, not by the widths now, so
-	// a step doesn't undo itself. Up to the centre island without what
-	// floats over the bar, so a notification passes over and moves nothing.
-	// The weather only sits beside the clock: a share or a recording hides
-	// it, so it takes no room then.
+	// Where the centre island sits at rest, leaving out the popups and
+	// panels that float over the bar (IslandMode.floats): the bar is laid
+	// out around this, so they pass over it and move nothing
 	readonly property real centreLeft: (bar.width - centre.baseWidth) / 2
-	readonly property int squeeze: {
-		const start = left.x + workspaces.x + left.spacing;
-		const edge = centreLeft - 12;
-		const name = Math.min(focusedApp.implicitWidth, 90);
-		const widths = workspaces.widths;
-		const full = centre.baseResting ? 8 + weather.fullWidth : 0;
-		const compact = centre.baseResting ? 8 + weather.compactWidth : 0;
-		if (edge - full - start - widths[0] >= name)
-			return 0;
-		if (edge - compact - start - widths[0] >= name)
-			return 1;
-		if (edge - compact - start - widths[0] >= 0)
-			return 2;
-		if (edge - compact - start - widths[1] >= 0)
-			return 3;
-		if (edge - compact - start - widths[2] >= 0)
-			return 4;
-		return 5;
-	}
 
-	// Where the left of the bar ends: the weather rides in on the centre
-	// island's edge as it shrinks back to rest, but only once its pill
-	// there would be clear of this (10px clear, as at rest it can be 12 to
-	// the pixel). By the pill, not the weather's own edge, which the
-	// forecast shrinking back takes over the workspaces.
+	// The left of the bar gives way as it fills, in turn: the weather drops
+	// the sun's next change once the app's name would have less than about
+	// nine letters, the name goes, the workspaces show one icon per app,
+	// then their names alone, and last the weather goes. The weather only
+	// sits beside the clock, not a share or a recording.
+	readonly property bool weatherBeside: Weather.ready && centre.baseResting
+	readonly property var levels: Layout.squeeze(centreLeft - 12 - left.x - workspaces.x, {
+		"workspaces": workspaces.widths,
+		"name": [left.spacing + Math.min(focusedApp.implicitWidth, 90), 0],
+		"weather": weatherBeside ? [8 + weather.fullWidth, 8 + weather.compactWidth, 0] : [0]
+	}, ["weather", "name", "workspaces", "workspaces", "weather"])
+	readonly property bool weatherShown: weatherBeside && levels.weather < 2
+	// Where the left of the bar may end, 12px before the weather at rest,
+	// and where it does
+	readonly property real leftRoom: centreLeft - 12 - (weatherShown ? 8 + weather.restWidth : 0)
 	readonly property real leftEnd: focusedApp.visible ? focusedApp.start + focusedApp.width : focusedApp.start - left.spacing
-	// And where the islands after the clock must end: before the tray
+	// And where the islands after the clock may end: before the tray
 	readonly property real rightEnd: (tray.visible ? tray.x : statusRest.x) - 8
 
-	// Beside the clock while it's at rest: the weather before it
+	// What sits beside the centre island follows its edge, and shows while
+	// the island is at rest and it fits between that edge and the fixed
+	// parts of the bar: as the island shrinks back from a popup, each rides
+	// in on its edge once it's clear of them (the weather 10px clear, as at
+	// rest it can be 12 to the pixel)
+	readonly property bool weatherFits: centre.resting && Layout.pack(centre.x - 8 - leftEnd - 10, [weather.restWidth], 0)[0]
+	readonly property var afterFits: centre.resting ? Layout.pack(rightEnd - (centre.x + centre.width + 8), [(KeepAwake.on || Inbox.dnd) ? dnd.width : null, meeting.soon ? meeting.width : null, Jobs.shown.length > 0 ? job.minWidth : null], after.spacing) : [false, false, false]
+
+	// Beside the clock: the weather before it
 	WeatherIsland {
 		id: weather
 
 		screen: bar.modelData
-		// Whether it's in the bar's layout, though a popup may hide it for
-		// now, and its width there
-		readonly property bool atRest: Weather.ready && bar.squeeze < 5 && centre.baseResting
-		readonly property real restWidth: compact ? compactWidth : fullWidth
-
-		compact: bar.squeeze >= 1
-		visible: atRest && (open || (centre.resting && centre.x - 8 - restWidth >= bar.leftEnd + 10))
+		compact: bar.levels.weather >= 1
+		visible: bar.weatherShown && (open || bar.weatherFits)
 		x: centre.x - width - 8
 		y: centre.y
 	}
@@ -242,35 +226,26 @@ PanelWindow {
 		y: centre.y
 		spacing: 8
 
-		// Each rides in on the centre island's edge as it shrinks back to
-		// rest, once it's clear of the tray. Placed by what's before it, not
-		// its own x, which the Row leaves alone while it's hidden.
 		DndIsland {
 			id: dnd
 
-			readonly property real start: after.x
-
 			screen: bar.modelData
-			visible: (KeepAwake.on || Inbox.dnd) && centre.resting && start + width <= bar.rightEnd
+			visible: bar.afterFits[0]
 		}
 
 		EventIsland {
 			id: meeting
 
-			readonly property real start: dnd.start + (dnd.visible ? dnd.width + after.spacing : 0)
-
 			screen: bar.modelData
-			visible: soon && centre.resting && start + width <= bar.rightEnd
+			visible: bar.afterFits[1]
 		}
 
 		JobIsland {
 			id: job
 
-			readonly property real start: meeting.start + (meeting.visible ? meeting.width + after.spacing : 0)
-
 			screen: bar.modelData
-			visible: Jobs.shown.length > 0 && (open || (centre.resting && room >= minWidth))
-			room: bar.rightEnd - start
+			visible: open || bar.afterFits[2]
+			room: bar.rightEnd - (after.x + x)
 		}
 	}
 
