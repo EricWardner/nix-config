@@ -7,6 +7,10 @@
 with lib;
 let
   cfg = config.modules.hypridle;
+  # The islands shell dims and undims, as it makes the brightness keys'
+  # changes: a key press that wakes the screen would otherwise race
+  # hypridle's restore
+  brightness = "${pkgs.quickshell}/bin/qs ipc -c islands call brightness";
 in
 {
   options.modules.hypridle = {
@@ -51,8 +55,8 @@ in
           # Dim screen
           {
             timeout = cfg.dimTimeout;
-            on-timeout = "${pkgs.brightnessctl}/bin/brightnessctl -s set 10%";
-            on-resume = "${pkgs.brightnessctl}/bin/brightnessctl -r";
+            on-timeout = "${brightness} dim";
+            on-resume = "${brightness} undim";
           }
           # Lock screen
           {
@@ -63,7 +67,7 @@ in
           {
             timeout = cfg.screenOffTimeout;
             on-timeout = "hyprctl dispatch 'hl.dsp.dpms({ action = \"off\" })'";
-            on-resume = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })' && ${pkgs.brightnessctl}/bin/brightnessctl -r";
+            on-resume = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })' && ${brightness} undim";
           }
           # Suspend
           {
