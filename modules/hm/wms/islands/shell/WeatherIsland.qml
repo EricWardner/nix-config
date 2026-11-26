@@ -11,6 +11,11 @@ Island {
 	readonly property bool open: Panels.shows("weather", screen)
 	// How far the sun and temperature are on their way to the forecast
 	property real flight: open ? 1 : 0
+	// Without the sun's next change, when the bar is short of room (Bar)
+	property bool compact: false
+	// The pill's width with it, for Bar to judge the room by (added up from
+	// its parts: the row's own width depends on compact)
+	readonly property real fullWidth: pillIcon.width + row.spacing + pillTemp.width + (Weather.sky !== null ? row.spacing + sun.implicitWidth : 0) + 24
 
 	align: Qt.AlignRight
 
@@ -54,10 +59,12 @@ Island {
 			// sunset by day, each twilight in turn through the evening,
 			// sunrise overnight
 			Row {
+				id: sun
+
 				anchors.verticalCenter: parent.verticalCenter
 				leftPadding: 5
 				spacing: 5
-				visible: Weather.sky !== null
+				visible: Weather.sky !== null && !root.compact
 
 				WeatherIcon {
 					anchors.verticalCenter: parent.verticalCenter

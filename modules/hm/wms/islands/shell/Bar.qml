@@ -107,6 +107,8 @@ PanelWindow {
 	}
 
 	Row {
+		id: left
+
 		x: 14
 		y: Theme.barTop
 		height: Theme.barHeight
@@ -132,12 +134,25 @@ PanelWindow {
 		}
 
 		Workspaces {
+			id: workspaces
+
 			screen: bar.modelData
 		}
 
+		// Up to the islands in the middle, cut short with an ellipsis, and
+		// gone when only a few letters would fit. Worked out from the
+		// workspaces, not its own x: the Row stops placing it while hidden.
 		FocusedApp {
+			id: focusedApp
+
+			readonly property real start: left.x + workspaces.x + workspaces.width + left.spacing
+			readonly property real room: (weather.visible ? weather.x : centre.x) - 12 - start
+
 			screen: bar.modelData
 			leftPadding: 7
+			width: Math.min(implicitWidth, room)
+			visible: room >= 50
+			elide: Text.ElideRight
 			anchors.verticalCenter: parent.verticalCenter
 		}
 	}
@@ -159,11 +174,15 @@ PanelWindow {
 		y: Theme.barTop + 2
 	}
 
-	// Beside the clock while it's at rest: the weather before it
+	// Beside the clock while it's at rest: the weather before it, which
+	// drops the sun's next change once the app's name would have less than
+	// about nine letters. Judged by its full width, so dropping it doesn't
+	// bring it straight back.
 	WeatherIsland {
 		id: weather
 
 		screen: bar.modelData
+		compact: centre.x - 8 - fullWidth - 12 - focusedApp.start < Math.min(focusedApp.implicitWidth, 90)
 		visible: Weather.ready && (open || centre.resting)
 		x: centre.x - width - 8
 		y: centre.y
