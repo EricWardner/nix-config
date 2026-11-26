@@ -54,11 +54,15 @@ Singleton {
 		temperature = Number(thermal.text().trim()) / 1000;
 	}
 
+	// Read once the file has loaded again: text() straight after reload()
+	// gave what it held before, so the level was always a change behind,
+	// and an idle dim's undim put back the dim before it
 	function readBacklight() {
-		if (Host.backlightDir === "")
-			return;
-		brightness.reload();
-		maxBrightness.reload();
+		if (Host.backlightDir !== "")
+			brightness.reload();
+	}
+
+	function backlightLoaded() {
 		const max = Number(maxBrightness.text().trim());
 		if (max > 0)
 			backlight = Math.round(100 * Number(brightness.text().trim()) / max);
@@ -90,6 +94,7 @@ Singleton {
 
 		path: Host.backlightDir === "" ? "" : Host.backlightDir + "/brightness"
 		blockLoading: true
+		onLoaded: root.backlightLoaded()
 	}
 
 	FileView {
