@@ -101,12 +101,17 @@ Singleton {
 		const pixels = [rect.x, rect.y, rect.width, rect.height].map(v => Math.round(v * scale));
 		phase = "idle";
 		if (kind === "share") {
+			const area = [rect.x, rect.y, rect.width, rect.height].map(Math.round);
+			const region = target !== "screen" && !window;
+			// For the frame round the area (ShareFrame)
+			Sharing.pickedOutput = region ? screen.name : "";
+			Sharing.pickedRegion = Qt.rect(area[0], area[1], area[2], area[3]);
 			if (target === "screen")
 				answer("screen:" + screen.name);
 			else if (window)
 				answer("window:" + window.address + "\t" + window.title);
 			else
-				answer("region:" + screen.name + "@" + [rect.x, rect.y, rect.width, rect.height].map(Math.round).join(","));
+				answer("region:" + screen.name + "@" + area.join(","));
 		} else if (kind === "screenshot") {
 			// From the window itself, so the parts covered or off screen are in it
 			if (window)

@@ -21,11 +21,17 @@ Singleton {
 	property real since: 0
 	// Stop sharing was pressed, and the stream hasn't gone yet
 	property bool stopping: false
-	// What's shared: a screen (`output`, its name, or "" if it isn't known)
-	// or a window (`title`)
+	// What's shared: a screen (`output`, its name, or "" if it isn't known),
+	// a region of one (`output` and `region`, in its logical pixels) or a
+	// window (`title`)
 	property string kind: "screen"
 	property string output: ""
 	property string title: ""
+	property rect region
+	// The area last chosen in the picker and its screen ("" if an area
+	// wasn't the last choice): Hyprland only says which screen a region is on
+	property string pickedOutput: ""
+	property rect pickedRegion
 	// The shared window, found by its title as the share starts
 	property HyprlandToplevel window: null
 	// Hyprland's window rounding and border, for the frame round a shared
@@ -42,8 +48,11 @@ Singleton {
 	function identify() {
 		if (!started || Math.abs(started.at - streamedAt) > 3000)
 			return;
-		kind = started.kind;
-		output = started.kind === "screen" ? started.target : "";
+		// A region the picker didn't choose (a restored share) is framed as
+		// its whole screen
+		kind = started.kind === "region" && started.target !== pickedOutput ? "screen" : started.kind;
+		output = kind === "window" ? "" : started.target;
+		region = pickedRegion;
 		title = started.kind === "window" ? started.target : "";
 		window = kind === "window" ? sharedWindow(title) : null;
 	}
@@ -152,7 +161,7 @@ Singleton {
 			if (state !== "1")
 				return;
 			root.started = {
-				"kind": owner === "window" ? "window" : "screen",
+				"kind": owner === "window" || owner === "region" ? owner : "screen",
 				"target": target.join(","),
 				"at": Date.now()
 			};

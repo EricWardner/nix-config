@@ -4,16 +4,17 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 
 // An orange frame round what's shared on this monitor: the whole screen,
-// or the shared window while its workspace shows here, over the window's
-// own border. Hyprland can't keep a layer out of a screen share, so the
-// people watching see a screen's frame too; a window share is only the
-// window.
+// the shared area, or the shared window while its workspace shows here,
+// over the window's own border. Hyprland can't keep a layer out of a screen
+// share, so the people watching see a screen's frame too; an area's frame
+// sits just outside it, and a window share is only the window.
 PanelWindow {
 	id: root
 
 	required property ShellScreen modelData
 	readonly property HyprlandMonitor monitor: Hyprland.monitorFor(modelData)
 	readonly property bool wholeScreen: Sharing.kind === "screen" && Sharing.output === modelData.name
+	readonly property bool area: Sharing.kind === "region" && Sharing.output === modelData.name
 	// The shared window's box here, in this monitor's logical pixels
 	readonly property var windowBox: {
 		const window = Sharing.kind === "window" ? Sharing.window : null;
@@ -26,7 +27,7 @@ PanelWindow {
 	}
 
 	screen: modelData
-	visible: Sharing.active && (wholeScreen || windowBox !== null)
+	visible: Sharing.active && (wholeScreen || area || windowBox !== null)
 	anchors.top: true
 	anchors.bottom: true
 	anchors.left: true
@@ -42,6 +43,23 @@ PanelWindow {
 		anchors.fill: parent
 		color: "transparent"
 		border.width: 3
+		border.color: Theme.orange
+	}
+
+	// Square inside, so none of it is in the share unless the area touches
+	// the screen's edge
+	Rectangle {
+		readonly property rect box: Sharing.region
+		readonly property int outset: 3
+
+		visible: root.area
+		x: Math.max(0, box.x - outset)
+		y: Math.max(0, box.y - outset)
+		width: Math.min(root.width, box.x + box.width + outset) - x
+		height: Math.min(root.height, box.y + box.height + outset) - y
+		radius: outset
+		color: "transparent"
+		border.width: outset
 		border.color: Theme.orange
 	}
 

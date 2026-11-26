@@ -62,6 +62,8 @@ IslandMode {
 				text: {
 					if (Sharing.kind === "window")
 						return "Sharing a window";
+					if (Sharing.kind === "region")
+						return "Sharing an area";
 					if (Sharing.output === "")
 						return "Sharing your screen";
 					return Sharing.output === root.screen?.name ? "Sharing this screen" : "Sharing your other screen";
