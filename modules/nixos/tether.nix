@@ -8,20 +8,12 @@ let
   inherit (lib)
     mkIf
     mkMerge
-    mkForce
-    mkOption
     mkEnableOption
-    types
     getExe'
-    escapeShellArg
     ;
   cfg = config.modules.tether;
   # tetherd's port for the phone's app (TETHER_PORT would move it)
-  port = "5134";
-  # Says the network side is open, and on which devices: the script
-  # below writes it, and Avahi only starts while it is there
-  open = "/run/tether-wifi";
-  systemctl = getExe' config.systemd.package "systemctl";
+  port = 5134;
 in
 {
   options.modules.tether = {
@@ -34,22 +26,10 @@ in
 
     wifi.enable = mkEnableOption ''
       Tether's network side (the clipboard, files and links shared with the
-      iPhone's Tether app), on the networks marked for it and no others.
-      Mark one by giving its NetworkManager connection the zone below:
-      `nmcli connection modify NAME connection.zone home`, then reconnect
-      or `systemctl restart tether-wifi`
+      iPhone's Tether app), on the networks you trust and no others. Trust
+      the current one with `tether --trust-network`; `tether --networks`
+      lists them
     '';
-
-    wifi.zone = mkOption {
-      type = types.str;
-      default = "home";
-      description = ''
-        The NetworkManager zone (`connection.zone`) of a network Tether may
-        be reached on. NetworkManager only keeps it, for firewalld, which
-        isn't used here: it is a label, set on the machine, so no network
-        is named in this configuration.
-      '';
-    };
   };
 
   config = mkMerge [
@@ -144,38 +124,16 @@ in
     })
 
     (mkIf (cfg.enable && cfg.wifi.enable) {
-      assertions = [
-        {
-          assertion =
-            config.networking.networkmanager.enable
-            && config.networking.firewall.enable
-            && !config.networking.nftables.enable;
-          message = "modules.tether.wifi marks its networks in NetworkManager and opens tetherd's port in the iptables firewall: it needs both, and has no nftables rules";
-        }
-      ];
-
-      # tetherd listens on every network; the firewall is what keeps the
-      # others out. A chain of its own, checked before the firewall refuses
-      # a packet, is empty (so closed) each time the firewall is set up, and
-      # tether-wifi fills it for the marked networks' devices.
-      networking.firewall.extraCommands = ''
-        ip46tables -N tether-wifi 2>/dev/null || true
-        ip46tables -F tether-wifi
-        ip46tables -A nixos-fw -j tether-wifi
-        ${systemctl} --no-block try-restart tether-wifi.service || true
-      '';
-      networking.firewall.extraStopCommands = ''
-        ip46tables -F tether-wifi 2>/dev/null || true
-      '';
+      # tetherd keeps itself to the networks you trust (`tether
+      # --trust-network`): it announces itself only there and refuses
+      # connections from anywhere else, so its port can stay open
+      networking.firewall.allowedTCPPorts = [ port ];
 
       # The phone's app finds tetherd by mDNS, so Avahi answers for it, and
-      # for nothing else about the machine. It runs only on a marked network:
-      # started by tether-wifi and by nothing else (not at boot, and a
-      # program asking for it over D-Bus or its socket is refused while the
-      # network side is closed).
+      # for nothing else about the machine
       services.avahi = {
         enable = true;
-        openFirewall = false;
+        openFirewall = true;
         settings.publish = {
           disable-publishing = false;
           disable-user-service-publishing = false;
@@ -184,68 +142,6 @@ in
           publish-workstation = false;
         };
       };
-      systemd.services.avahi-daemon = {
-        wantedBy = mkForce [ ];
-        unitConfig.ConditionPathExists = open;
-      };
-      systemd.sockets.avahi-daemon.wantedBy = mkForce [ ];
-
-      # Opens the network side on the devices of the active connections
-      # whose zone is the one marked, and closes it when there are none. It
-      # is run again whenever that may have changed: by the firewall above,
-      # and by NetworkManager below as a connection comes or goes.
-      systemd.services.tether-wifi = {
-        description = "Tether's network side, on the networks marked for it";
-        after = [
-          "firewall.service"
-          "NetworkManager.service"
-        ];
-        wantedBy = [ "multi-user.target" ];
-        path = [
-          config.networking.firewall.package
-          pkgs.networkmanager
-          pkgs.coreutils
-        ];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-        };
-        script = ''
-          devices=$(nmcli -t -f UUID,DEVICE connection show --active 2>/dev/null |
-            while IFS=: read -r uuid device; do
-              zone=$(nmcli -g connection.zone connection show "$uuid" 2>/dev/null || true)
-              if [ -n "$device" ] && [ "$zone" = ${escapeShellArg cfg.wifi.zone} ]; then
-                echo "$device"
-              fi
-            done)
-          for table in iptables ip6tables; do
-            "$table" -w -F tether-wifi
-            for device in $devices; do
-              "$table" -w -A tether-wifi -i "$device" -p tcp --dport ${port} -j nixos-fw-accept
-              "$table" -w -A tether-wifi -i "$device" -p udp --dport 5353 -j nixos-fw-accept
-            done
-          done
-          if [ -n "$devices" ]; then
-            echo "$devices" >${open}
-            ${systemctl} start avahi-daemon.service
-          else
-            rm -f ${open}
-            ${systemctl} stop avahi-daemon.socket avahi-daemon.service
-          fi
-        '';
-      };
-      networking.networkmanager.dispatcherScripts = [
-        {
-          type = "basic";
-          source = pkgs.writeShellScript "tether-wifi" ''
-            case "$2" in
-              up | down)
-                ${systemctl} --no-block restart tether-wifi.service
-                ;;
-            esac
-          '';
-        }
-      ];
     })
   ];
 }

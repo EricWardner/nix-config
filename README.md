@@ -511,7 +511,7 @@ Bluetooth, with no Mac and no Apple ID sign-in.
 
 ```nix
 modules.tether.enable = true;        # texts and notifications, over Bluetooth
-modules.tether.wifi.enable = true;   # clipboard, files and links, on marked networks only
+modules.tether.wifi.enable = true;   # clipboard, files and links, on trusted networks only
 ```
 
 What works:
@@ -519,10 +519,8 @@ What works:
 - **Texts and notifications arrive** in the shell's own notifications, under
   the phone app's name and with an icon to match.
 - **The clipboard, files and links** cross over Wi-Fi, but only on networks
-  marked for it. Tether listens and announces itself on every network, so
-  the module keeps its port shut and its announcements off everywhere
-  except a connection given the `home` zone:
-  `nmcli connection modify NAME connection.zone home`.
+  you trust. Tether stays hidden everywhere else; trust the current one
+  with `tether --trust-network`, and list them with `tether --networks`.
 
 What doesn't, all of it down to what an iPhone will share over Bluetooth:
 
@@ -530,6 +528,5 @@ What doesn't, all of it down to what an iPhone will share over Bluetooth:
 - Group chats arrive as one-to-one messages from whoever wrote.
 - No attachments and no reactions.
 
-So for now it is mostly a notification mirror. The module carries Tether
-0.3.6 ahead of nixpkgs, with one small fix so it finds the icon themes in a
-Nix profile, and says at every rebuild once that can go.
+So for now it is mostly a notification mirror. Tether comes from its own
+flake, ahead of nixpkgs.

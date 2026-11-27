@@ -21,7 +21,7 @@
   modules.peripherals.keyd.enable = true;
   # the iPhone's messages and notifications over Bluetooth
   modules.tether.enable = true;
-  # its network side too, on the networks marked for it (see the option)
+  # its network side too, on the networks trusted for it (see the option)
   modules.tether.wifi.enable = true;
   services.fwupd.enable = true;
   # nixos-hardware turns this on; the reader is unused, and when its USB

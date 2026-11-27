@@ -1,7 +1,7 @@
 # This repository's own packages, as members of pkgs: the flake applies it
 # with its other overlays, so modules use pkgs.bar-tools and the rest
 # without knowing where their sources live.
-final: prev: {
+final: _prev: {
   # Push-to-talk (pttd) and the status watchers the islands bar reads
   bar-tools = final.callPackage ./bar-tools { };
   # A finished recording's or screenshot's preview window
@@ -9,43 +9,4 @@ final: prev: {
   # NetworkManager's secret agent, BlueZ's pairing agent and gnome-keyring's
   # prompter, for the islands shell
   islands-agent = final.callPackage ./islands-agent { };
-  # Tether (modules/nixos/tether.nix), ahead of nixpkgs, whose automatic
-  # updates stopped at 0.2.37: later versions need the three libraries added
-  # here (a terminal front end, and the iPhone's camera as a PipeWire
-  # source) and name the JSON library's source differently. It steps aside
-  # once nixpkgs has this version or a later one, and says so at every
-  # rebuild from then on, until it is taken out.
-  tether =
-    if final.lib.versionOlder prev.tether.version "0.3.6" then
-      prev.tether.overrideAttrs (
-        finalAttrs: old: {
-          version = "0.3.6";
-          src = final.fetchFromGitHub {
-            owner = "zackb";
-            repo = "tether";
-            tag = "v${finalAttrs.version}";
-            hash = "sha256-vdAjOi9e4L7M5RfYDuyl5ipbiEK+NU0MR30khCOucLo=";
-          };
-          buildInputs = old.buildInputs ++ [
-            final.ffmpeg
-            final.ncurses
-            final.pipewire
-          ];
-          cmakeFlags = old.cmakeFlags ++ [
-            (final.lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_NLOHMANN_JSON" "${final.nlohmann_json.src}")
-          ];
-          # Its notifications take an icon from the installed themes by name,
-          # and its search for what is installed did not follow links: in a
-          # Nix profile every theme is one, so it found only its own art and
-          # gave everything else (a text, Slack) its own logo.
-          postPatch = old.postPatch + ''
-            substituteInPlace src/daemon/notification.cpp \
-              --replace-fail \
-                "root, std::filesystem::directory_options::skip_permission_denied, ec" \
-                "root, std::filesystem::directory_options::skip_permission_denied | std::filesystem::directory_options::follow_directory_symlink, ec"
-          '';
-        }
-      )
-    else
-      final.lib.warn "nixpkgs now has Tether ${prev.tether.version}: the 0.3.6 override in pkgs/overlay.nix is no longer used and can be removed" prev.tether;
 }

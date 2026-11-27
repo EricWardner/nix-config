@@ -37,6 +37,11 @@
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Tether from its own flake, for fixes ahead of nixpkgs
+    tether = {
+      url = "github:zackb/tether";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     team-claude-skills = {
       url = "git+ssh://git@github.com/tiberius-grail/team-claude-skills";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -62,6 +67,7 @@
         config.allowUnfree = true;
         overlays = [
           claude-code.overlays.default
+          inputs.tether.overlays.default
           self.overlays.default
         ];
       };

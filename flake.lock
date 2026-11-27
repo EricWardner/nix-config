@@ -525,6 +525,7 @@
         "pre-commit-hooks": "pre-commit-hooks",
         "stylix": "stylix",
         "team-claude-skills": "team-claude-skills",
+        "tether": "tether",
         "treefmt-nix": "treefmt-nix_2"
       }
     },
@@ -696,6 +697,26 @@
       "original": {
         "type": "git",
         "url": "ssh://git@github.com/tiberius-grail/team-claude-skills"
+      }
+    },
+    "tether": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795808714,
+        "narHash": "sha256-O2iJ11/PKkFjdA+f5VaLvXBf/O41WPcpU61UZ8EQO0w=",
+        "owner": "zackb",
+        "repo": "tether",
+        "rev": "8d3ba54210280e958270cf4ea3a126a8033c94fe",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zackb",
+        "repo": "tether",
+        "type": "github"
       }
     },
     "tinted-kitty": {
