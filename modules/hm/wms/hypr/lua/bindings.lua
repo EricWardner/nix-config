@@ -27,6 +27,7 @@ local applications = {
 	{ "R", cmd.record },
 	{ "A", cmd.controlCentre },
 	{ "N", cmd.notificationCentre },
+	{ "O", cmd.openNotification },
 	{ "W", cmd.weather },
 	{ "SHIFT + N", cmd.doNotDisturb },
 	{ "Z", cmd.keepAwake },

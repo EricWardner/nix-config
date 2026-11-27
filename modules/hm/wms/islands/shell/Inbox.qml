@@ -322,5 +322,13 @@ Singleton {
 		function clear(): void {
 			root.clearAll();
 		}
+
+		// The notification showing now, as a click on it would
+		function activate(): string {
+			if (!root.popup)
+				return "none";
+			root.activate(root.popup);
+			return "activated";
+		}
 	}
 }

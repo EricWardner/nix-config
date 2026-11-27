@@ -45,6 +45,7 @@ let
     record = "${islands} capture record";
     # The islands shell is the notification server (wms/islands)
     doNotDisturb = "${islands} notifications toggleDnd";
+    openNotification = "${islands} notifications activate";
     keepAwake = "${islands} keepawake toggle";
     controlCentre = "${islands} panel toggle control";
     notificationCentre = "${islands} panel toggle centre";
