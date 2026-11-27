@@ -19,10 +19,15 @@
   modules.powerProfiles.autoSwitch = true;
   # stable virtual keyboard for push-to-talk (see modules/nixos/peripherals)
   modules.peripherals.keyd.enable = true;
-  # the iPhone's messages and notifications over Bluetooth
-  modules.tether.enable = true;
-  # its network side too, on the networks trusted for it (see the option)
-  modules.tether.wifi.enable = true;
+  # an iPhone, linked: messages and notifications over Bluetooth, and the
+  # clipboard, files and links on networks trusted with
+  # `tether --trust-network`
+  programs.tether = {
+    enable = true;
+    bluetooth.enable = true;
+    wifi.enable = true;
+    wifi.openFirewall = true;
+  };
   services.fwupd.enable = true;
   # nixos-hardware turns this on; the reader is unused, and when its USB
   # controller died on resume fprintd hung sudo and stalled shutdown

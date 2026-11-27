@@ -37,7 +37,7 @@
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Tether from its own flake, for fixes ahead of nixpkgs
+    # Tether's own flake: its package and NixOS module, ahead of nixpkgs
     tether = {
       url = "github:zackb/tether";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -67,7 +67,6 @@
         config.allowUnfree = true;
         overlays = [
           claude-code.overlays.default
-          inputs.tether.overlays.default
           self.overlays.default
         ];
       };

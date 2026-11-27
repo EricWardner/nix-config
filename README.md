@@ -510,9 +510,17 @@ Still being lived with, and off unless a host turns it on:
 Bluetooth, with no Mac and no Apple ID sign-in.
 
 ```nix
-modules.tether.enable = true;        # texts and notifications, over Bluetooth
-modules.tether.wifi.enable = true;   # clipboard, files and links, on trusted networks only
+programs.tether = {
+  enable = true;
+  bluetooth.enable = true;     # texts and notifications
+  wifi.enable = true;          # clipboard, files and links, on trusted networks only
+  wifi.openFirewall = true;
+};
 ```
+
+The options are Tether's own NixOS module, from its flake;
+`modules/nixos/tether.nix` adds the daemon's user service and the phone's
+audio.
 
 What works:
 
@@ -528,5 +536,4 @@ What doesn't, all of it down to what an iPhone will share over Bluetooth:
 - Group chats arrive as one-to-one messages from whoever wrote.
 - No attachments and no reactions.
 
-So for now it is mostly a notification mirror. Tether comes from its own
-flake, ahead of nixpkgs.
+So for now it is mostly a notification mirror.
