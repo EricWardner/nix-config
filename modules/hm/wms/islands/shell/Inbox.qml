@@ -330,5 +330,13 @@ Singleton {
 			root.activate(root.popup);
 			return "activated";
 		}
+
+		// And as a right click would: gone, from the history too
+		function dismiss(): string {
+			if (!root.popup)
+				return "none";
+			root.popup.dismiss();
+			return "dismissed";
+		}
 	}
 }
